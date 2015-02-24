@@ -62,6 +62,7 @@ DATABASES = {
     'legacy': dj_database_url.config('LEGACY_DATABASE_URL')
 }
 
+DATABASE_ROUTERS = ['legacy.models.LegacyRouter']
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
