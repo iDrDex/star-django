@@ -46,14 +46,14 @@ Here are steps to make local deployment of this app in order to tinker it.
 4. Create or migrate database tables:
 
     ```bash
-    honcho run ./manage.py migrate
-    honcho run ./manage.py createsuperuser
+    ./manage.py migrate
+    ./manage.py createsuperuser
     ```
 
 5. Run it and have fun:
 
     ```bash
-    honcho run ./manage.py runserver 5000
+    ./manage.py runserver 5000
     ```
 
     Go to `http://localhost:5000/` to see the app
