@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'debug_toolbar',
+    'django_jinja',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -86,3 +87,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
 STATIC_URL = '/static/'
+
+TEMPLATE_DIRS = (
+    BASE_DIR + '/templates',
+)
+
+TEMPLATE_LOADERS = (
+    'django_jinja.loaders.FileSystemLoader',
+    'django_jinja.loaders.AppLoader',
+)
+
+DEFAULT_JINJA2_TEMPLATE_EXTENSION = '.j2'
+TEMPLATE_DEFAULT_EXTENSION = '.j2'
