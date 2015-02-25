@@ -1,0 +1,208 @@
+{% extends "base.j2" %}
+
+{% block content %}
+    <!-- {{ serie }} -->
+    {# {{ samples|json }} #}
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12 main">
+      <h2 class="sub-header">Tagging {{ serie.gse_name }}</h2>
+
+      <form class="form-inline well" id="tag-form">
+        <div class="form-group">
+          <label for="column">Column</label>
+          <!-- <input type="text" class="form-control" id="column"> -->
+          <select name="column" class="form-control" id="column">
+            <option value="">all</option>
+            {% for col in columns %}
+              {% if col != 'sample_id' %}
+                <option value="{{ col }}">{{ col }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div id="regex-form-group" class="form-group">
+          <label for="regex" class="control-label">Regex</label>
+          <input type="text" name="regex" class="form-control" id="regex">
+        </div>
+        <button type="button" class="btn btn-default">Save</button>
+        <span id='my-re'></span>
+      </form>
+
+      <ul id="facets" class="nav nav-tabs">
+        <li role="presentation" class="active"><a href="#"><b>All</b> ({{ samples|count }})</a></li>
+        <!-- <li role="presentation" class="active"><a href="#">Profile</a></li> -->
+        <!-- <li role="presentation"><a href="#">Messages</a></li> -->
+      </ul>
+
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered" id="data-table">
+          <thead>
+            <tr>
+              {% for col in columns %}
+                <th class="col-{{ col }}">{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for sample in samples %}
+            <tr>
+              {% for col in columns %}
+                <td class="col-{{ col }}">{{ sample[col] }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style type="text/css">
+#data-table {width: auto}
+#data-table th {cursor: pointer; text-decoration: underline;}
+#data-table mark {padding: 0; background-color: yellow}
+</style>
+
+<script>
+var columns = {{ columns|json|safe }};
+var samples = {{ samples|json|safe }};
+var state = {};
+
+function updateUI() {
+  state.regex = state.regex || '';
+  state.facet = state.facet || '';
+
+  // Show that regex is broken
+  var re = null;
+  if (state.regex) {
+    try {
+      re = new RegExp(state.regex)
+    } catch (e) {}
+  }
+  console.log('sss', state, re)
+  $('#regex-form-group').toggleClass('has-error', !!(state.regex && !re));
+
+  // Select current column
+  $('#tag-form [name=column]').val(state.column);
+
+  // Hide/show column headers
+  columns.forEach(function (col) {
+    $('th.col-' + col).toggle(!state.column || col == state.column || col == 'sample_id');
+  })
+
+  // Mark matched function
+  var mark = function (s) {return s};
+  if (re) {
+    var reCapture = new RegExp('(' + state.regex + ')');
+    mark = function (s) {
+      console.log(s)
+      return s.replace(reCapture, '<mark>$1</mark>');
+    }
+  }
+
+  // Generate facets
+  var facets;
+  if (re) {
+    facets = getFacets(re);
+    var facetsHTML = facets.map(function (facet) {
+      return '<li role="presentation" class="{cls}"><a href="#" data-match="{match}"><b>{title}</b> ({count})</a></li>'
+        .supplant({
+          match: facet.match,
+          title: facet.title || facet.match,
+          count: facet.count,
+          cls: facet.match == (state.facet) ? 'active' : ''})
+    }).join('');
+    $('#facets').html(facetsHTML);
+  }
+
+  // Generate table
+  var visibleColumns = state.column ? ['sample_id', state.column] : columns;
+  var rows = samples.map(function (sample) {
+    if (state.facet && state.facet != '__unmatched' && state.facet != sample.facet) return '';
+    if (state.facet == '__unmatched' && sample.facet) return '';
+
+    var cells = visibleColumns.map(function (col) {
+      return '<td>' + (col == 'sample_id' ? sample[col] : mark(sample[col])) + '</td>';
+    });
+    return '<tr>' + cells.join('') + '</tr>';
+  }).join('');
+  $('#data-table tbody').html(rows);
+}
+
+
+function getFacets(re) {
+  var counts = {}, unmatched = 0;
+  var cols = state.column? ['', state.column] : columns;
+  cols.unshift();
+
+  // Count matches
+  samples.forEach(function (sample) {
+    var m, i;
+    sample.facet = null;
+    for (i = 0; i < cols.length; i++) {
+      m = re.exec(sample[cols[i]]);
+      if (m) {
+        var key = m[1] || m[0];
+        if (!counts.hasOwnProperty(key)) counts[key] = 0;
+        counts[key]++;
+        sample.facet = key;
+        return;
+      }
+    }
+    unmatched++;
+  });
+
+  // Prepare structure
+  var facets = Object.keys(counts).sort().map(function (match) {
+    return {match: match, count: counts[match]};
+  });
+  facets.unshift({title: 'All', count: samples.length, match: ''});
+  if (unmatched)
+    facets.push({title: 'Unmatched', count: unmatched, match: '__unmatched'});
+
+  return facets;
+}
+
+
+// Event listeners
+$('#tag-form [name=regex]').on('keyup paste', function () {
+  var element = this;
+  setTimeout(function () {
+    state.regex = element.value;
+    updateUI()
+  }, 50);
+})
+
+$('#tag-form [name=column]').on('change', function () {
+  state.column = this.value;
+  updateUI()
+})
+
+$('#facets').on('click', 'a', function () {
+  state.facet = $(this).data('match');
+  updateUI()
+})
+
+$('#data-table th').on('click', function () {
+  var col = this.innerText.trim();
+  state.column = col != 'sample_id' ? col : '';
+  updateUI()
+})
+
+// extend js
+if (!String.prototype.supplant) {
+    String.prototype.supplant = function (o) {
+        return this.replace(
+            /\{([^{}]*)\}/g,
+            function (a, b) {
+                var r = o[b];
+                return typeof r === 'string' || typeof r === 'number' ? r : a;
+            }
+        );
+    };
+}
+</script>
+{% endblock %}

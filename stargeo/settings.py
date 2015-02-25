@@ -41,6 +41,8 @@ INSTALLED_APPS = (
 
     'debug_toolbar',
     'django_jinja',
+
+    'tags'
 )
 
 MIDDLEWARE_CLASSES = (
