@@ -63,7 +63,9 @@
 <style type="text/css">
 #data-table {width: auto}
 #data-table th {cursor: pointer; text-decoration: underline;}
-#data-table mark {padding: 0; background-color: yellow}
+#data-table mark {padding: 0;}
+#data-table mark:first-child {background-color: yellow}
+#data-table mark.bg-danger {background-color: #ff9070}
 </style>
 
 <script>
@@ -82,7 +84,6 @@ function updateUI() {
       re = new RegExp(state.regex)
     } catch (e) {}
   }
-  console.log('sss', state, re)
   $('#regex-form-group').toggleClass('has-error', !!(state.regex && !re));
 
   // Select current column
@@ -94,36 +95,44 @@ function updateUI() {
   })
 
   // Mark matched function
-  var mark = function (s) {return s};
-  if (re) {
-    var reCapture = new RegExp('(' + state.regex + ')');
-    mark = function (s) {
-      console.log(s)
-      return s.replace(reCapture, '<mark>$1</mark>');
+  var reCapture = re ? new RegExp('(' + state.regex + ')', 'g') : null;
+  function getMark() {
+    if (!re) return function (s) {return s};
+
+    var i = 0;
+
+    return function (s) {
+      return (s + '').replace(reCapture, function (m) {
+        return i++ ? '<mark class="bg-danger">' + m + '</mark>'
+                   : '<mark>' + m + '</mark>'
+      })
     }
   }
 
   // Generate facets
-  var facets;
-  if (re) {
-    facets = getFacets(re);
-    var facetsHTML = facets.map(function (facet) {
-      return '<li role="presentation" class="{cls}"><a href="#" data-match="{match}"><b>{title}</b> ({count})</a></li>'
-        .supplant({
-          match: facet.match,
-          title: facet.title || facet.match,
-          count: facet.count,
-          cls: facet.match == (state.facet) ? 'active' : ''})
-    }).join('');
-    $('#facets').html(facetsHTML);
-  }
+  var stats = re ? getStats(state.regex) : emptyStats();
+  var facetsHTML = stats.facets.map(function (facet) {
+    return '<li role="presentation" class="{active}"><a href="#" data-facet="{facet}" class="text-{cls}"><b>{title}</b> ({count})</a></li>'
+      .supplant({
+        facet: facet.facet,
+        title: facet.title || facet.facet,
+        count: facet.count,
+        cls: facet.cls || '',
+        active: facet.facet == (state.facet) ? 'active' : ''})
+  }).join('');
+  $('#facets').html(facetsHTML);
 
   // Generate table
   var visibleColumns = state.column ? ['sample_id', state.column] : columns;
-  var rows = samples.map(function (sample) {
-    if (state.facet && state.facet != '__unmatched' && state.facet != sample.facet) return '';
-    if (state.facet == '__unmatched' && sample.facet) return '';
+  var rows = samples.map(function (sample, i) {
+    var report = stats.reports ? stats.reports[i] : null;
+    if (report) {
+      if (state.facet && state.facet[0] != '_' && state.facet != report.facet) return '';
+      if (state.facet == '__unmatched' && report.facet) return '';
+      if (state.facet == '__extra' && report.matches <= 1) return '';
+    }
 
+    var mark = getMark();
     var cells = visibleColumns.map(function (col) {
       return '<td>' + (col == 'sample_id' ? sample[col] : mark(sample[col])) + '</td>';
     });
@@ -133,37 +142,50 @@ function updateUI() {
 }
 
 
-function getFacets(re) {
-  var counts = {}, unmatched = 0;
-  var cols = state.column? ['', state.column] : columns;
-  cols.unshift();
+function getStats(regex) {
+  var re = new RegExp(regex);
+  var reG = new RegExp(regex, 'g');
+
+  // var counts = {};//, unmatched = 0;
+  var reports = [];
+  var cols = state.column? [state.column] : _.without(columns, 'sample_id');
 
   // Count matches
   samples.forEach(function (sample) {
-    var m, i;
-    sample.facet = null;
+    var m = null, i, s;
+
+    var report = {matches: 0, facet: ''};
+    reports.push(report);
+
     for (i = 0; i < cols.length; i++) {
-      m = re.exec(sample[cols[i]]);
-      if (m) {
-        var key = m[1] || m[0];
-        if (!counts.hasOwnProperty(key)) counts[key] = 0;
-        counts[key]++;
-        sample.facet = key;
-        return;
+      s = sample[cols[i]] + '';
+      if (!m) {
+        m = re.exec(s);
+        if (m) report.facet = m[1] || m[0];
       }
+      report.matches += (s.match(reG) || '').length;
     }
-    unmatched++;
   });
 
   // Prepare structure
-  var facets = Object.keys(counts).sort().map(function (match) {
-    return {match: match, count: counts[match]};
-  });
-  facets.unshift({title: 'All', count: samples.length, match: ''});
-  if (unmatched)
-    facets.push({title: 'Unmatched', count: unmatched, match: '__unmatched'});
+  var counts = _.countBy(reports, 'facet');
+  var facets = _.chain(counts).keys().compact().map(function (facet) {
+    return {facet: facet, count: counts[facet]};
+  }).value();
 
-  return facets;
+  facets.unshift({title: 'All', count: samples.length, facet: ''});
+  if (counts[''])
+    facets.push({title: 'Unmatched', count: counts[''], facet: '__unmatched', cls: 'danger'});
+
+  var xMatches = reports.filter(function (r) {return r.matches > 1}).length;
+  if (xMatches)
+    facets.push({title: 'Extra Matches', count: xMatches, facet: '__extra', cls: 'danger'});
+
+  return {facets: facets, reports: reports};
+}
+
+function emptyStats() {
+  return {facets: [{title: 'All', count: samples.length, facet: ''}]};
 }
 
 
@@ -182,7 +204,7 @@ $('#tag-form [name=column]').on('change', function () {
 })
 
 $('#facets').on('click', 'a', function () {
-  state.facet = $(this).data('match');
+  state.facet = $(this).data('facet');
   updateUI()
 })
 
