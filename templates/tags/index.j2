@@ -130,6 +130,7 @@ function updateUI() {
       if (state.facet && state.facet[0] != '_' && state.facet != report.facet) return '';
       if (state.facet == '__unmatched' && report.facet) return '';
       if (state.facet == '__extra' && report.matches <= 1) return '';
+      if (state.facet == '__partial' && !report.partial) return '';
     }
 
     var mark = getMark();
@@ -145,6 +146,7 @@ function updateUI() {
 function getStats(regex) {
   var re = new RegExp(regex);
   var reG = new RegExp(regex, 'g');
+  var reAround = new RegExp('(^|\w|\w-|\d\.(?=\d))' + regex + '|' + regex + '($|\w|-\w|\.\d)');
 
   // var counts = {};//, unmatched = 0;
   var reports = [];
@@ -162,6 +164,7 @@ function getStats(regex) {
       if (!m) {
         m = re.exec(s);
         if (m) report.facet = m[1] || m[0];
+        if (reAround.test(s)) report.partial = true;
       }
       report.matches += (s.match(reG) || '').length;
     }
@@ -180,6 +183,10 @@ function getStats(regex) {
   var xMatches = reports.filter(function (r) {return r.matches > 1}).length;
   if (xMatches)
     facets.push({title: 'Extra Matches', count: xMatches, facet: '__extra', cls: 'danger'});
+
+  var pMatches = reports.filter(function (r) {return r.partial}).length;
+  if (pMatches)
+    facets.push({title: 'Partial Matches', count: pMatches, facet: '__partial', cls: 'danger'});
 
   return {facets: facets, reports: reports};
 }
