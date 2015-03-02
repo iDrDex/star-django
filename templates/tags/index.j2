@@ -32,8 +32,6 @@
 
       <ul id="facets" class="nav nav-tabs">
         <li role="presentation" class="active"><a href="#"><b>All</b> ({{ samples|count }})</a></li>
-        <!-- <li role="presentation" class="active"><a href="#">Profile</a></li> -->
-        <!-- <li role="presentation"><a href="#">Messages</a></li> -->
       </ul>
 
       <div class="table-responsive">
@@ -66,6 +64,7 @@
 #data-table mark {padding: 0;}
 #data-table mark:first-child {background-color: yellow}
 #data-table mark.bg-danger {background-color: #ff9070}
+.nav-tabs .glyphicon {top: 2px;}
 </style>
 
 <script>
@@ -112,12 +111,13 @@ function updateUI() {
   // Generate facets
   var stats = re ? getStats(state.regex) : emptyStats();
   var facetsHTML = stats.facets.map(function (facet) {
-    return '<li role="presentation" class="{active}"><a href="#" data-facet="{facet}" class="text-{cls}"><b>{title}</b> ({count})</a></li>'
+    return '<li role="presentation" class="{active}"><a href="#" data-facet="{facet}" class="text-{cls}">{icon}<b>{title}</b> ({count})</a></li>'
       .supplant({
         facet: facet.facet,
         title: facet.title || facet.facet,
         count: facet.count,
         cls: facet.cls || '',
+        icon: facet.cls == 'danger' ? '<span class="glyphicon glyphicon-exclamation-sign"></span> ' : '',
         active: facet.facet == (state.facet) ? 'active' : ''})
   }).join('');
   $('#facets').html(facetsHTML);
