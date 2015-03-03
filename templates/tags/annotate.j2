@@ -146,9 +146,17 @@ function updateUI() {
 function getStats(regex) {
   var re = new RegExp(regex);
   var reG = new RegExp(regex, 'g');
-  var reAround = new RegExp('(^|\w|\w-|\d\.(?=\d))' + regex + '|' + regex + '($|\w|-\w|\.\d)');
 
-  // var counts = {};//, unmatched = 0;
+  function isPartial(m, s) {
+    var pre = s.substr(0, m.index);
+    var post = s.substr(m.index + m[0].length);
+
+    return m[0].match(/^\w/) && pre.match(/(\w|\w-)$/)
+        || m[0].match(/^\d/) && pre.match(/\d\.$/)
+        || m[0].match(/\w$/) && post.match(/^(\w|-\w)/)
+        || m[0].match(/\d$/) && post.match(/^\.\d/);
+  }
+
   var reports = [];
   var cols = state.column? [state.column] : _.without(columns, 'sample_id');
 
@@ -163,8 +171,10 @@ function getStats(regex) {
       s = sample[cols[i]] + '';
       if (!m) {
         m = re.exec(s);
-        if (m) report.facet = m[1] || m[0];
-        if (reAround.test(s)) report.partial = true;
+        if (m) {
+          report.facet = m[1] || m[0];
+          report.partial = report.partial || isPartial(m, s);
+        }
       }
       report.matches += (s.match(reG) || '').length;
     }
