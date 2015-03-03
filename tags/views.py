@@ -16,7 +16,7 @@ def search(request):
     else:
         series = None
     return {
-        'columns': get_columns('series_view'),
+        'columns': get_series_columns(),
         'series': series,
         'page': series,
     }
@@ -26,12 +26,11 @@ def search(request):
 def annotate(request):
     series_id = request.GET.get('id', 1)
 
-    # serie = fetch_serie(series_id)
     serie = Series.objects.values().get(pk=series_id)
 
     samples = fetch_samples(series_id)
     samples = remove_constant_fields(samples)
-    columns = get_columns('sample_view')
+    columns = get_samples_columns()
     if samples:
         desired = set(samples[0].keys()) - {'id'}
         columns = filter(desired, columns)
@@ -59,39 +58,39 @@ def remove_constant_fields(rows):
 
 # Data fetching utils
 
-HIDE_SAMPLE_FIELDS = ['sample_supplementary_file']
-
 def search_series_qs(query_string):
     sql = """
              select {}, ts_rank_cd(doc, q) as rank
              from series_view, plainto_tsquery(%s) as q
              where doc @@ q order by rank desc
-          """.format(', '.join(get_columns('series_view')))
+          """.format(', '.join(get_series_columns()))
+    print sql
     return SQLQuerySet(sql, (query_string,), server='legacy')
 
-
-def search_series(query_string):
-    return fetch_dicts(sql, (query_string,), 'legacy')
-
-
 def fetch_serie(series_id):
-    cols = ', '.join(get_columns('series_view'))
+    cols = ', '.join(get_series_columns())
     return fetch_dict(
         'select ' + cols + ' from series_view where series_id = %s',
         (series_id,), 'legacy')
 
 def fetch_samples(series_id):
-    cols = get_columns('sample_view')
-    cols = without(cols, *HIDE_SAMPLE_FIELDS)
-    cols = ', '.join(cols)
+    cols = ', '.join(get_samples_columns())
     return fetch_dicts(
         'select ' + cols + ' from sample_view where series_id = %s',
         (series_id,), 'legacy')
 
+
+def get_series_columns():
+    return _get_columns('series_view', exclude=('id', 'doc'))
+
+def get_samples_columns():
+    return _get_columns('sample_view', exclude=('id', 'doc', 'sample_supplementary_file'))
+
 @memoize
-def get_columns(table):
+def _get_columns(table, exclude=()):
     with db_execute('select * from %s limit 1' % table, (), 'legacy') as cursor:
-        return without([col.name for col in cursor.description], 'doc')
+        columns = [col.name for col in cursor.description]
+        return without(columns, *exclude)
 
 
 # Pagination utility
