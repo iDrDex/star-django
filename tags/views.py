@@ -59,6 +59,8 @@ def remove_constant_fields(rows):
 
 # Data fetching utils
 
+HIDE_SAMPLE_FIELDS = ['sample_supplementary_file']
+
 def search_series_qs(query_string):
     sql = """
              select {}, ts_rank_cd(doc, q) as rank
@@ -79,7 +81,9 @@ def fetch_serie(series_id):
         (series_id,), 'legacy')
 
 def fetch_samples(series_id):
-    cols = ', '.join(get_columns('sample_view'))
+    cols = get_columns('sample_view')
+    cols = without(cols, *HIDE_SAMPLE_FIELDS)
+    cols = ', '.join(cols)
     return fetch_dicts(
         'select ' + cols + ' from sample_view where series_id = %s',
         (series_id,), 'legacy')
