@@ -27,6 +27,7 @@ $('#search-form input[name=q]').focus();
   <table class="table table-striped table-bordered" id="data-table">
     <thead>
       <tr>
+        <th></th>
         {% for col in columns %}
           <th class="col-{{ col }}">{{ col }}</th>
         {% endfor %}
@@ -35,6 +36,7 @@ $('#search-form input[name=q]').focus();
     <tbody>
       {% for serie in series %}
       <tr>
+        <td><a href="{{ url('annotate') }}?id={{ serie.series_id }}">tag</a></td>
         {% for col in columns %}
           <td class="col-{{ col }}">{{ serie[col]|string|truncate(70, True) }}</td>
         {% endfor %}
