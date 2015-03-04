@@ -24,14 +24,16 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="#">Dashboard</a></li>
-            <li><a href="#">Settings</a></li>
-            <li><a href="#">Profile</a></li>
-            <li><a href="#">Help</a></li>
+            <!-- <li><a href="#">Profile</a></li> -->
+            {% if request.user_data %}
+              <li><a href="{{ legacy_app_url }}/default/user/profile">
+                Welcome {{ request.user_data['first_name'] }}</a></li>
+              <li><a href="{{ legacy_app_url }}/default/user/logout">
+                Log Out</a></li>
+            {% else %}
+              <li><a href="{{ legacy_app_url }}/default/user/login">Log In</a></li>
+            {% endif %}
           </ul>
-          <form class="navbar-form navbar-right">
-            <input type="text" class="form-control" placeholder="Search...">
-          </form>
         </div>
       </div>
     </nav>
