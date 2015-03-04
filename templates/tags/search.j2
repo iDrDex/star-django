@@ -39,7 +39,7 @@ $('#search-form input[name=q]').focus();
     <tbody>
       {% for serie in series %}
       <tr>
-        <td><a href="{{ url('annotate') }}?id={{ serie.series_id }}">tag</a></td>
+        <td><a class="btn btn-primary btn-sm" href="{{ url('annotate') }}?id={{ serie.series_id }}">Tag</a></td>
         {% for col in columns %}
           <td class="col-{{ col }}">{{ serie[col]|string|truncate(70, True) }}</td>
         {% endfor %}
