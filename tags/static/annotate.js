@@ -1,20 +1,50 @@
-var state = {};
+// This code uses simplified React-like approach:
+// - there is program state that defines its UI,
+// - there is updateUI() function you call to sync actual UI with state,
+// - there are event handlers that change state and call updateUI().
+
+var state = {
+  tag: '',
+  column: '',
+  regex: '',
+  facet: '',
+  tags: [],
+};
+
+var derivedState = {};
+
+
+function updateDerivedState() {
+  derivedState.regexValid = state.regex ? checkRegex(state.regex) : null;
+  derivedState.tagName = state.tag ? tagNames[state.tag] : null;
+
+  // Calculate facets
+  var stats = derivedState.regexValid ? getStats(state.regex) : emptyStats();
+  derivedState.facets = stats.facets;
+  derivedState.reports = stats.reports;
+
+  // Calculate tag values
+  derivedState.values = derivedState.reports.map(function (report, i) {
+    return !_.isUndefined(state.tags[i]) ? state.tags[i]
+      : report && report.facet ? report.capture || derivedState.tagName : '';
+  })
+}
 
 function updateUI() {
-  state.regex = state.regex || '';
-  state.facet = state.facet || '';
-
-  var regexValid = state.regex ? checkRegex(state.regex) : null;
+  var ds = derivedState;
 
   // Show that regex is broken
-  $('#regex-form-group').toggleClass('has-error', !!(state.regex && !regexValid));
+  $('#regex-form-group').toggleClass('has-error', !!(state.regex && !ds.regexValid));
 
-  // Select current column
+  // Update form
+  $('#tag-form [name=tag]').val(state.tag);
   $('#tag-form [name=column]').val(state.column);
+  if ($('#tag-form [name=regex]').val() != state.regex)
+    $('#tag-form [name=regex]').val(state.regex);
+  $('#tag-form button').prop('disabled', !ds.regexValid);
 
   // Generate facets
-  var stats = regexValid ? getStats(state.regex) : emptyStats();
-  var facetsHTML = stats.facets.map(function (facet) {
+  var facetsHTML = ds.facets.map(function (facet) {
     return '<li role="presentation" class="{active}"><a href="#" data-facet="{facet}" class="text-{cls}">{icon}<b>{title}</b> ({count})</a></li>'
       .supplant({
         facet: facet.facet,
@@ -34,7 +64,7 @@ function updateUI() {
   // Generate table
   var visibleColumns = state.column ? ['sample_id', state.column] : columns;
   var rows = samples.map(function (sample, i) {
-    var report = stats.reports ? stats.reports[i] : null;
+    var report = ds.reports ? ds.reports[i] : null;
     if (report) {
       if (state.facet && state.facet[0] != '_' && state.facet != report.facet) return '';
       if (state.facet == '__unmatched' && report.facet) return '';
@@ -42,11 +72,22 @@ function updateUI() {
       if (state.facet == '__partial' && !report.partial) return '';
     }
 
-    var mark = regexValid ? getRowMarker(state.regex) : function (s) {return s};
+    var mark = ds.regexValid ? getRowMarker(state.regex) : function (s) {return s};
     var cells = visibleColumns.map(function (col) {
       return '<td>' + (col == 'sample_id' ? sample[col] : mark(sample[col])) + '</td>';
     });
-    return '<tr>' + cells.join('') + '</tr>';
+
+    // Tag value input
+    cells.unshift(multiline(function(){/*
+      <td>
+        <div class="input-group">
+          <input type="text" class="form-control tag-value-input" data-index="{index}" value="{value}">
+        </div>
+      </td>
+    */}).supplant({value: ds.values[i], index: i}));
+
+    var trClass = _.isUndefined(state.tags[i]) ? '' : 'fixed';
+    return '<tr class="' + trClass + '">' + cells.join('') + '</tr>';
   }).join('');
   $('#data-table tbody').html(rows);
 }
@@ -93,6 +134,7 @@ function getStats(regex) {
       if (!m) {
         m = re.exec(s);
         if (m) {
+          report.capture = m[1];
           report.facet = m[1] || m[0];
           report.partial = report.partial || isPartialMatch(m, s);
         }
@@ -156,10 +198,19 @@ $('#facets').on('click', 'a', function () {
   updateUI()
 })
 
-$('#data-table th').on('click', function () {
+$('#data-table th.selectable').on('click', function () {
   var col = this.innerText.trim();
   state.column = col != 'sample_id' ? col : '';
   updateUI()
+})
+
+$('#data-table').on('keyup change', '.tag-value-input', function () {
+  var index = Number($(this).data('index'));
+  if (this.value == derivedState.values[index]) return;
+  state.tags[index] = this.value;
+  // NOTE: we don't call udpateUI() here, but make it this way cause we don't want to loose focus.
+  //       There is a way to get both once we switch to Virtual DOM or make a focus explicit state.
+  $(this).closest('tr').addClass('fixed');
 })
 
 
@@ -175,5 +226,21 @@ if (!String.prototype.supplant) {
         );
     };
 }
+
+function multiline(fn) {
+  if (typeof fn !== 'function') {
+    throw new TypeError('Expected a function');
+  }
+
+  var reCommentContents = /\/\*!?(?:\@preserve)?[ \t]*(?:\r\n|\n)([\s\S]*?)(?:\r\n|\n)[ \t]*\*\//;
+  var match = reCommentContents.exec(fn.toString());
+
+  if (!match) {
+    throw new TypeError('Multiline comment missing.');
+  }
+
+  return match[1];
+};
+
 
 updateUI(); // Generate first time

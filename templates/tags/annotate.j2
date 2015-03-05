@@ -5,8 +5,16 @@
 
 <form class="form-inline well" id="tag-form">
   <div class="form-group">
+    <label for="tag">Tag</label>
+    <select name="tag" class="form-control" id="tag">
+      <option value="">...</option>
+      {% for tag in tags %}
+          <option value="{{ tag.id }}">{{ tag.tag_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-group">
     <label for="column">Column</label>
-    <!-- <input type="text" class="form-control" id="column"> -->
     <select name="column" class="form-control" id="column">
       <option value="">all</option>
       {% for col in columns %}
@@ -32,8 +40,9 @@
   <table class="table table-striped table-bordered" id="data-table">
     <thead>
       <tr>
+        <th>Tag Value</th>
         {% for col in columns %}
-          <th class="col-{{ col }}">{{ col }}</th>
+          <th class="col-{{ col }} selectable">{{ col }}</th>
         {% endfor %}
       </tr>
     </thead>
@@ -44,17 +53,24 @@
 </div>
 
 <style type="text/css">
+.nav-tabs .glyphicon {top: 2px;}
 #data-table {width: auto}
-#data-table th {cursor: pointer; text-decoration: underline;}
+#data-table th.selectable {cursor: pointer; text-decoration: underline;}
+#data-table tr.fixed {background-color: #D6EDFF}
 #data-table mark {padding: 0;}
 #data-table mark:first-child {background-color: yellow}
 #data-table mark.bg-danger {background-color: #ff9070}
-.nav-tabs .glyphicon {top: 2px;}
+#data-table input {width: 10em;}
 </style>
 
 <script>
+var tags = {{ tags|json|safe }};
 var columns = {{ columns|json|safe }};
 var samples = {{ samples|json|safe }};
+
+var tagNames = _.object(tags.map(function (tag) {
+  return [tag.id, tag.tag_name]
+}));
 </script>
 <script type="text/javascript" src="{{ static('annotate.js') }}"></script>
 {% endblock %}

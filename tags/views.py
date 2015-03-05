@@ -4,7 +4,7 @@ from funcy import filter, project, memoize, without, zipdict
 from handy.db import db_execute, fetch_val
 from handy.decorators import render_to
 
-from legacy.models import Sample, Series
+from legacy.models import Sample, Series, Tag
 
 
 @render_to()
@@ -34,7 +34,9 @@ def annotate(request):
     if samples:
         desired = set(samples[0].keys()) - {'id'}
         columns = filter(desired, columns)
+
     return {
+        'tags': Tag.objects.filter(is_active='T').order_by('tag_name').values('id', 'tag_name'),
         'serie': serie,
         'columns': columns,
         'samples': samples,
@@ -64,7 +66,6 @@ def search_series_qs(query_string):
              from series_view, plainto_tsquery(%s) as q
              where doc @@ q order by rank desc
           """.format(', '.join(get_series_columns()))
-    print sql
     return SQLQuerySet(sql, (query_string,), server='legacy')
 
 def fetch_serie(series_id):
