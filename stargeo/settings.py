@@ -91,6 +91,16 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
+
+# For debug toolbar
+DEBUG_TOOLBAR_CONFIG = {
+    'JQUERY_URL': '/static/jquery.min.js'
+}
+
+
 TEMPLATE_DIRS = (
     BASE_DIR + '/templates',
 )
