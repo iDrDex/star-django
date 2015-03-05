@@ -3,6 +3,7 @@ Django==1.7.4
 django-debug-toolbar==1.2.2
 django-jinja==1.1.1
 funcy==1.4
+gunicorn==19.2.1
 handy==0.3
 honcho==0.6.4
 Jinja2==2.7.3
