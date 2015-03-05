@@ -4,40 +4,16 @@ function updateUI() {
   state.regex = state.regex || '';
   state.facet = state.facet || '';
 
+  var regexValid = state.regex ? checkRegex(state.regex) : null;
+
   // Show that regex is broken
-  var re = null;
-  if (state.regex) {
-    try {
-      re = new RegExp(state.regex)
-    } catch (e) {}
-  }
-  $('#regex-form-group').toggleClass('has-error', !!(state.regex && !re));
+  $('#regex-form-group').toggleClass('has-error', !!(state.regex && !regexValid));
 
   // Select current column
   $('#tag-form [name=column]').val(state.column);
 
-  // Hide/show column headers
-  columns.forEach(function (col) {
-    $('th.col-' + col).toggle(!state.column || col == state.column || col == 'sample_id');
-  })
-
-  // Mark matched function
-  var reCapture = re ? new RegExp('(' + state.regex + ')', 'g') : null;
-  function getMark() {
-    if (!re) return function (s) {return s};
-
-    var i = 0;
-
-    return function (s) {
-      return (s + '').replace(reCapture, function (m) {
-        return i++ ? '<mark class="bg-danger">' + m + '</mark>'
-                   : '<mark>' + m + '</mark>'
-      })
-    }
-  }
-
   // Generate facets
-  var stats = re ? getStats(state.regex) : emptyStats();
+  var stats = regexValid ? getStats(state.regex) : emptyStats();
   var facetsHTML = stats.facets.map(function (facet) {
     return '<li role="presentation" class="{active}"><a href="#" data-facet="{facet}" class="text-{cls}">{icon}<b>{title}</b> ({count})</a></li>'
       .supplant({
@@ -50,6 +26,11 @@ function updateUI() {
   }).join('');
   $('#facets').html(facetsHTML);
 
+  // Hide/show column headers
+  columns.forEach(function (col) {
+    $('th.col-' + col).toggle(!state.column || col == state.column || col == 'sample_id');
+  })
+
   // Generate table
   var visibleColumns = state.column ? ['sample_id', state.column] : columns;
   var rows = samples.map(function (sample, i) {
@@ -61,7 +42,7 @@ function updateUI() {
       if (state.facet == '__partial' && !report.partial) return '';
     }
 
-    var mark = getMark();
+    var mark = regexValid ? getRowMarker(state.regex) : function (s) {return s};
     var cells = visibleColumns.map(function (col) {
       return '<td>' + (col == 'sample_id' ? sample[col] : mark(sample[col])) + '</td>';
     });
@@ -71,20 +52,32 @@ function updateUI() {
 }
 
 
+function checkRegex(regex) {
+  try {
+    new RegExp(regex)
+    return true
+  } catch (e) {
+    return false;
+  }
+}
+
+function getRowMarker(regex) {
+  var reCapture = new RegExp('(' + state.regex + ')', 'g');
+  var i = 0;
+
+  return function (s) {
+    return (s + '').replace(reCapture, function (m) {
+      return i++ ? '<mark class="bg-danger">' + m + '</mark>'
+                 : '<mark>' + m + '</mark>'
+    })
+  }
+}
+
+
+// Stats and facets calculation
 function getStats(regex) {
   var re = new RegExp(regex);
   var reG = new RegExp(regex, 'g');
-
-  function isPartial(m, s) {
-    var pre = s.substr(0, m.index);
-    var post = s.substr(m.index + m[0].length);
-
-    return m[0].match(/^\w/) && pre.match(/(\w|\w-)$/)
-        || m[0].match(/^\d/) && pre.match(/\d\.$/)
-        || m[0].match(/\w$/) && post.match(/^(\w|-\w)/)
-        || m[0].match(/\d$/) && post.match(/^\.\d/);
-  }
-
   var reports = [];
   var cols = state.column? [state.column] : _.without(columns, 'sample_id');
 
@@ -101,7 +94,7 @@ function getStats(regex) {
         m = re.exec(s);
         if (m) {
           report.facet = m[1] || m[0];
-          report.partial = report.partial || isPartial(m, s);
+          report.partial = report.partial || isPartialMatch(m, s);
         }
       }
       report.matches += (s.match(reG) || '').length;
@@ -131,6 +124,16 @@ function getStats(regex) {
 
 function emptyStats() {
   return {facets: [{title: 'All', count: samples.length, facet: ''}]};
+}
+
+function isPartialMatch(m, s) {
+  var pre = s.substr(0, m.index);
+  var post = s.substr(m.index + m[0].length);
+
+  return m[0].match(/^\w/) && pre.match(/(\w|\w-)$/)
+      || m[0].match(/^\d/) && pre.match(/\d\.$/)
+      || m[0].match(/\w$/) && post.match(/^(\w|-\w)/)
+      || m[0].match(/\d$/) && post.match(/^\.\d/);
 }
 
 
@@ -172,3 +175,5 @@ if (!String.prototype.supplant) {
         );
     };
 }
+
+updateUI(); // Generate first time
