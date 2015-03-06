@@ -31,6 +31,7 @@ function updateDerivedState() {
 }
 
 function updateUI() {
+  updateDerivedState();
   var ds = derivedState;
 
   // Show that regex is broken
@@ -84,7 +85,7 @@ function updateUI() {
           <input type="text" class="form-control tag-value-input" data-index="{index}" value="{value}">
         </div>
       </td>
-    */}).supplant({value: ds.values[i], index: i}));
+    */}).supplant({value: ds.values[i] || '', index: i}));
 
     var trClass = _.isUndefined(state.tags[i]) ? '' : 'fixed';
     return '<tr class="' + trClass + '">' + cells.join('') + '</tr>';
@@ -165,7 +166,7 @@ function getStats(regex) {
 }
 
 function emptyStats() {
-  return {facets: [{title: 'All', count: samples.length, facet: ''}]};
+  return {facets: [{title: 'All', count: samples.length, facet: ''}], reports: []};
 }
 
 function isPartialMatch(m, s) {
