@@ -4,9 +4,9 @@ import sys
 import honcho.environ
 
 
-def load_env():
+def load_env(filename):
     manage_dir = os.path.dirname(__file__)
-    env_file = os.path.join(manage_dir, '.env')
+    env_file = os.path.join(manage_dir, filename)
 
     env = honcho.environ.parse(open(env_file).read())
     for key, value in env.items():
@@ -14,7 +14,7 @@ def load_env():
 
 
 if __name__ == "__main__":
-    load_env()
+    load_env('.env')
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "stargeo.settings")
 
     from django.core.management import execute_from_command_line
