@@ -8,3 +8,4 @@ handy==0.3
 honcho==0.6.4
 Jinja2==2.7.3
 psycopg2==2.6
+sqlparse
