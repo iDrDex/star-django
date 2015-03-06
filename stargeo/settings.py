@@ -125,6 +125,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.messages.context_processors.messages"
 )
 
+LEGACY_APP_URL = os.environ['LEGACY_APP_URL']
 JINJA2_CONSTANTS = {
     "legacy_app_url": os.environ['LEGACY_APP_URL'],
 }

@@ -24,15 +24,20 @@ function updateDerivedState() {
   derivedState.reports = stats.reports;
 
   // Calculate tag values
-  derivedState.values = derivedState.reports.map(function (report, i) {
-    return !_.isUndefined(state.tags[i]) ? state.tags[i]
+  derivedState.values = samples.map(function (sample, i) {
+    var tag = state.tags[i], report = derivedState.reports[i];
+    return !_.isUndefined(tag) ? tag
       : report && report.facet ? report.capture || derivedState.tagName : '';
   })
 }
 
+var sampleIds = _.pluck(samples, 'sample_id');
+
 function updateUI() {
   updateDerivedState();
   var ds = derivedState;
+
+  $('#tag-form [name=values]').val(JSON.stringify(_.zip(sampleIds, ds.values)));
 
   // Show that regex is broken
   $('#regex-form-group').toggleClass('has-error', !!(state.regex && !ds.regexValid));
@@ -42,7 +47,7 @@ function updateUI() {
   $('#tag-form [name=column]').val(state.column);
   if ($('#tag-form [name=regex]').val() != state.regex)
     $('#tag-form [name=regex]').val(state.regex);
-  $('#tag-form button').prop('disabled', !ds.regexValid);
+  $('#tag-form button').prop('disabled', !(state.tag && ds.regexValid));
 
   // Generate facets
   var facetsHTML = ds.facets.map(function (facet) {
@@ -189,6 +194,11 @@ $('#tag-form [name=regex]').on('keyup paste', function () {
   }, 50);
 })
 
+$('#tag-form [name=tag]').on('change', function () {
+  state.tag = this.value;
+  updateUI()
+})
+
 $('#tag-form [name=column]').on('change', function () {
   state.column = this.value;
   updateUI()
@@ -213,6 +223,10 @@ $('#data-table').on('keyup change', '.tag-value-input', function () {
   //       There is a way to get both once we switch to Virtual DOM or make a focus explicit state.
   $(this).closest('tr').addClass('fixed');
 })
+
+$('#data-table').on('blur', '.tag-value-input', function () {
+  updateUI()
+});
 
 
 // extend js

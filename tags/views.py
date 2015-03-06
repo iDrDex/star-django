@@ -1,14 +1,21 @@
 import re
+import json
 
-from funcy import filter, project, memoize, without, zipdict
+from funcy import filter, project, memoize, without, zipdict, group_by
 from handy.db import db_execute, fetch_val
 from handy.decorators import render_to
 
-from legacy.models import Sample, Series, Tag
+from django.conf import settings
+from django.db import transaction
+from django.http import Http404
+from django.shortcuts import redirect
+
+from legacy.models import Sample, Series, Tag, SeriesTag, SampleTag
 
 
 @render_to()
 def search(request):
+    request.session['last_search'] = request.get_full_path()
     q = request.GET.get('q', '')
     if q:
         qs = search_series_qs(q)
@@ -24,7 +31,17 @@ def search(request):
 
 @render_to()
 def annotate(request):
-    series_id = request.GET.get('id', 1)
+    if not request.user_data.get('id'):
+        return redirect(settings.LEGACY_APP_URL + '/default/user/login')
+
+    if request.method == 'POST':
+        save_annotation(request)
+        return redirect(request.session.get('last_search', '/'))
+        # return redirect(request.get_full_path())
+
+    series_id = request.GET.get('id')
+    if not series_id:
+        raise Http404
 
     serie = Series.objects.values().get(pk=series_id)
 
@@ -41,6 +58,39 @@ def annotate(request):
         'columns': columns,
         'samples': samples,
     }
+
+@transaction.atomic
+def save_annotation(request):
+    user_id = request.user_data['id']
+
+    # Do not check input, just crash for now
+    series_id = request.POST['id']
+    tag_id = request.POST['tag']
+    column = request.POST['column']
+    regex = request.POST['regex']
+    values = dict(json.loads(request.POST['values']))
+
+    # Group samples by platform
+    sample_to_platform = dict(Sample.objects.filter(id__in=values).values_list('id', 'platform_id'))
+    groups = group_by(lambda (id, _): sample_to_platform[id], values.items())
+
+    # Save all annotations and used regexes
+    for platform_id, annotations in groups.items():
+        # Do not allow for same user to annotate same serie twice
+        series_tag, created = SeriesTag.objects.get_or_create(
+            series_id=series_id, platform_id=platform_id, tag_id=tag_id, created_by_id=user_id,
+            defaults=dict(header=column, regex=regex, modified_by_id=user_id)
+        )
+        if not created:
+            SampleTag.objects.filter(series_tag=series_tag).delete()
+
+        # Create all sample tags
+        SampleTag.objects.bulk_create([
+            SampleTag(sample_id=sample_id, series_tag=series_tag, annotation=annotation,
+                created_by_id=user_id, modified_by_id=user_id)
+            for sample_id, annotation in annotations
+        ])
+
 
 
 # Data utils

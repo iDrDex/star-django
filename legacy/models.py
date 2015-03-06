@@ -55,17 +55,16 @@ class Series(models.Model):
 
 
 class SeriesTag(models.Model):
-    id = models.IntegerField(primary_key=True)  # AutoField?
     series = models.ForeignKey(Series, blank=True, null=True)
     platform = models.ForeignKey(Platform, blank=True, null=True)
     tag = models.ForeignKey('Tag', blank=True, null=True)
     header = models.CharField(max_length=512, blank=True)
     regex = models.CharField(max_length=512, blank=True)
     show_invariant = models.CharField(max_length=1, blank=True)
-    is_active = models.CharField(max_length=1, blank=True)
-    created_on = models.DateTimeField(blank=True, null=True)
+    is_active = models.CharField(max_length=1, blank=True, default='T')
+    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True)
-    modified_on = models.DateTimeField(blank=True, null=True)
+    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
     modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True)
 
     class Meta:
@@ -85,14 +84,13 @@ class Sample(models.Model):
 
 
 class SampleTag(models.Model):
-    id = models.IntegerField(primary_key=True)  # AutoField?
     sample = models.ForeignKey(Sample, blank=True, null=True)
     series_tag = models.ForeignKey('SeriesTag', blank=True, null=True)
     annotation = models.TextField(blank=True)
-    is_active = models.CharField(max_length=1, blank=True)
-    created_on = models.DateTimeField(blank=True, null=True)
+    is_active = models.CharField(max_length=1, blank=True, default='T')
+    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True)
-    modified_on = models.DateTimeField(blank=True, null=True)
+    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
     modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True)
 
     class Meta:
