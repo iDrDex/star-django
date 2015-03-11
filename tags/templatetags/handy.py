@@ -1,7 +1,6 @@
 import json
 
 from django_jinja import library
-from django.core.serializers import serialize
 from django.db.models.query import QuerySet
 
 

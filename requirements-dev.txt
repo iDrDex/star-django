@@ -1,3 +1,6 @@
 -r requirements.txt
 django-debug-toolbar==1.2.2
 sqlparse
+flake8>=2.4.0
+flake8-print
+pep8-naming

@@ -87,10 +87,9 @@ def save_annotation(request):
         # Create all sample tags
         SampleTag.objects.bulk_create([
             SampleTag(sample_id=sample_id, series_tag=series_tag, annotation=annotation,
-                created_by_id=user_id, modified_by_id=user_id)
+                      created_by_id=user_id, modified_by_id=user_id)
             for sample_id, annotation in annotations
         ])
-
 
 
 # Data utils

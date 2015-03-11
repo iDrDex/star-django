@@ -1,4 +1,6 @@
-import json, base64
+import json
+import base64
+
 
 class Web2PyUser(object):
     def process_request(self, request):
@@ -12,4 +14,3 @@ class Web2PyUser(object):
                 request.user_data = json.loads(base64.b64decode(encoded))
             except (TypeError, ValueError):
                 pass
-
