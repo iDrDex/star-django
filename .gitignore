@@ -1,3 +1,5 @@
 *.pyc
 .env
+.env.ec2
 bower_components
+.ipynb_checkpoints/
