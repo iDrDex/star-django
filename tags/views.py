@@ -52,8 +52,12 @@ def annotate(request):
         desired = set(samples[0].keys()) - {'id'}
         columns = filter(desired, columns)
 
+    done_tags = SeriesTag.objects.filter(series_id=series_id).values('tag_id')
+    tags = Tag.objects.filter(is_active='T').exclude(id__in=done_tags) \
+        .order_by('tag_name').values('id', 'tag_name')
+
     return {
-        'tags': Tag.objects.filter(is_active='T').order_by('tag_name').values('id', 'tag_name'),
+        'tags': tags,
         'serie': serie,
         'columns': columns,
         'samples': samples,
