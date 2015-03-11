@@ -1,11 +1,12 @@
 import re
 import json
 
-from funcy import filter, project, memoize, without, zipdict, group_by
+from funcy import filter, project, memoize, without, zipdict, group_by, first
 from handy.db import db_execute, fetch_val
 from handy.decorators import render_to
 
 from django.conf import settings
+from django.contrib import messages
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import redirect
@@ -35,9 +36,10 @@ def annotate(request):
         return redirect(settings.LEGACY_APP_URL + '/default/user/login')
 
     if request.method == 'POST':
-        save_annotation(request)
-        return redirect(request.session.get('last_search', '/'))
-        # return redirect(request.get_full_path())
+        if save_annotation(request):
+            return redirect(request.session.get('last_search', '/'))
+        else:
+            return redirect(request.get_full_path())
 
     series_id = request.GET.get('id')
     if not series_id:
@@ -79,6 +81,12 @@ def save_annotation(request):
     sample_to_platform = dict(Sample.objects.filter(id__in=values).values_list('id', 'platform_id'))
     groups = group_by(lambda (id, _): sample_to_platform[id], values.items())
 
+    old_annotation = first(SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id))
+    if old_annotation:
+        messages.error(request, 'Serie %s is already annotated with tag %s'
+            % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
+        return False
+
     # Save all annotations and used regexes
     for platform_id, annotations in groups.items():
         # Do not allow for same user to annotate same serie twice
@@ -86,8 +94,6 @@ def save_annotation(request):
             series_id=series_id, platform_id=platform_id, tag_id=tag_id, created_by_id=user_id,
             defaults=dict(header=column, regex=regex, modified_by_id=user_id)
         )
-        if not created:
-            SampleTag.objects.filter(series_tag=series_tag).delete()
 
         # Create all sample tags
         SampleTag.objects.bulk_create([
@@ -95,6 +101,7 @@ def save_annotation(request):
                       created_by_id=user_id, modified_by_id=user_id)
             for sample_id, annotation in annotations
         ])
+    return True
 
 
 # Data utils
