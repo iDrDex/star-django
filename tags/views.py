@@ -59,7 +59,8 @@ def annotate(request):
         'samples': samples,
     }
 
-@transaction.atomic
+
+@transaction.atomic('legacy')
 def save_annotation(request):
     user_id = request.user_data['id']
 
