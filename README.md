@@ -27,7 +27,7 @@ Here are steps to make local deployment of this app in order to tinker it.
 
     ```
     mkvirtualenv star
-    pip install -r requirements.txt
+    pip install -r requirements-dev.txt
     ```
 
 3. Update settings:
