@@ -41,7 +41,8 @@ INSTALLED_APPS = (
 
     'django_jinja',
 
-    'tags'
+    'legacy',
+    'tags',
 )
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar',)

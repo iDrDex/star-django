@@ -4,7 +4,6 @@ from django.db import models
 
 
 class AuthUser(models.Model):
-    id = models.IntegerField(primary_key=True)  # AutoField?
     first_name = models.CharField(max_length=128, blank=True)
     last_name = models.CharField(max_length=128, blank=True)
     email = models.CharField(max_length=512, blank=True)
@@ -19,10 +18,9 @@ class AuthUser(models.Model):
 
 
 class Platform(models.Model):
-    id = models.IntegerField(primary_key=True)  # AutoField?
     gpl_name = models.TextField(blank=True)
-    scopes = models.CharField(max_length=-1, blank=True)
-    identifier = models.CharField(max_length=-1, blank=True)
+    scopes = models.CharField(max_length=512, blank=True)
+    identifier = models.CharField(max_length=512, blank=True)
     datafile = models.TextField(blank=True)
 
     class Meta:
@@ -31,14 +29,15 @@ class Platform(models.Model):
 
 
 class Tag(models.Model):
-    id = models.IntegerField(primary_key=True)  # AutoField?
     tag_name = models.CharField(unique=True, max_length=512, blank=True)
     description = models.CharField(max_length=512, blank=True)
     is_active = models.CharField(max_length=1, blank=True)
     created_on = models.DateTimeField(blank=True, null=True)
-    created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True)
+    created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True,
+                                   related_name='tags')
     modified_on = models.DateTimeField(blank=True, null=True)
-    modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True)
+    modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True,
+                                    related_name='+')
 
     class Meta:
         managed = False
@@ -46,7 +45,6 @@ class Tag(models.Model):
 
 
 class Series(models.Model):
-    id = models.IntegerField(primary_key=True)  # AutoField?
     gse_name = models.TextField(blank=True)
 
     class Meta:
@@ -63,9 +61,11 @@ class SeriesTag(models.Model):
     show_invariant = models.CharField(max_length=1, blank=True)
     is_active = models.CharField(max_length=1, blank=True, default='T')
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True)
+    created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True,
+                                   related_name='serie_annotations')
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True)
+    modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True,
+                                    related_name='+')
 
     class Meta:
         managed = False
@@ -73,7 +73,6 @@ class SeriesTag(models.Model):
 
 
 class Sample(models.Model):
-    id = models.IntegerField(primary_key=True)  # AutoField?
     series = models.ForeignKey('Series', blank=True, null=True)
     platform = models.ForeignKey(Platform, blank=True, null=True)
     gsm_name = models.TextField(blank=True)
@@ -89,9 +88,11 @@ class SampleTag(models.Model):
     annotation = models.TextField(blank=True)
     is_active = models.CharField(max_length=1, blank=True, default='T')
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True)
+    created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True,
+                                   related_name='sample_annotations')
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True)
+    modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True,
+                                    related_name='+')
 
     class Meta:
         managed = False
