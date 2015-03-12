@@ -1,9 +1,9 @@
 import re
 import json
 
-from funcy import filter, project, memoize, without, zipdict, group_by, first
-from handy.db import db_execute, fetch_val
-from handy.decorators import render_to
+from funcy import filter, project, memoize, without, group_by, first
+from handy.db import db_execute, fetch_val, fetch_dict, fetch_dicts
+from handy.decorators import render_to, paginate
 
 from django.conf import settings
 from django.contrib import messages
@@ -15,18 +15,13 @@ from legacy.models import Sample, Series, Tag, SeriesTag, SampleTag
 
 
 @render_to()
+@paginate('series', 10)
 def search(request):
     request.session['last_search'] = request.get_full_path()
-    q = request.GET.get('q', '')
-    if q:
-        qs = search_series_qs(q)
-        series = paginate(request, qs, 10)
-    else:
-        series = None
+    q = request.GET.get('q')
     return {
         'columns': get_series_columns(),
-        'series': series,
-        'page': series,
+        'series': search_series_qs(q) if q else None,
     }
 
 
@@ -155,23 +150,6 @@ def _get_columns(table, exclude=()):
         return without(columns, *exclude)
 
 
-# Pagination utility
-
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
-def paginate(request, objects, ipp):
-    paginator = Paginator(objects, ipp)
-    page = request.GET.get('p')
-    try:
-        return paginator.page(page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver first page.
-        return paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), deliver last page of results.
-        return paginator.page(paginator.num_pages)
-
-
 # SQL
 
 class SQLQuerySet(object):
@@ -206,19 +184,3 @@ class SQLQuerySet(object):
 
         sql = ' '.join(clauses)
         return fetch_dicts(sql, self.params, self.server)
-
-
-# Low level fetching tools
-
-from operator import itemgetter
-
-def fetch_dicts(sql, params=(), server='default'):
-    with db_execute(sql, params, server) as cursor:
-        field_names = map(itemgetter(0), cursor.description)
-        return [zipdict(field_names, row) for row in cursor.fetchall()]
-
-def fetch_dict(sql, params=(), server='default'):
-    with db_execute(sql, params, server) as cursor:
-        field_names = map(itemgetter(0), cursor.description)
-        row = cursor.fetchone()
-        return zipdict(field_names, row) if row else None
