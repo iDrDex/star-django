@@ -97,14 +97,3 @@ class SampleTag(models.Model):
     class Meta:
         managed = False
         db_table = 'sample_tag'
-
-
-class LegacyRouter(object):
-    def db_for_write(self, model, **hints):
-        if model._meta.app_label == 'legacy':
-            return 'legacy'
-    db_for_read = db_for_write
-
-    def allow_relation(self, obj1, obj2, **hints):
-        is_legacy = lambda o: o._meta.app_label == 'legacy'
-        return is_legacy(obj1) == is_legacy(obj2)
