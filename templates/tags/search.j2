@@ -19,9 +19,10 @@ $('#search-form input[name=q]').focus();
 <div class="row" style="margin-top: 1em">
 <div class="col-lg-10 col-lg-offset-1">
 
-{% if page %}
+{% if page is not none %}
 <p class="text-muted">
-  {{ page.paginator.count }} series found, {{ page.start_index() }}&ndash;{{ page.end_index() }} shown.
+  {{ page.paginator.count }} page{{ page.paginator.count|pluralize }} found,
+  {{ page.start_index() }}&ndash;{{ page.end_index() }} shown.
 </p>
 {% endif %}
 
@@ -39,7 +40,7 @@ $('#search-form input[name=q]').focus();
     <tbody>
       {% for serie in series %}
       <tr>
-        <td><a class="btn btn-primary btn-sm" href="{{ url('annotate') }}?id={{ serie.series_id }}">Tag</a></td>
+        <td><a class="btn btn-primary btn-sm" href="{{ url('annotate') }}?series_id={{ serie.series_id }}">Tag</a></td>
         {% for col in columns %}
           <td class="col-{{ col }}">{{ serie[col]|string|truncate(70, True) }}</td>
         {% endfor %}
@@ -55,7 +56,7 @@ $('#search-form input[name=q]').focus();
   <ul class="pagination">
     {% if page.has_previous() %}
     <li>
-      <a href="#" aria-label="Previous">
+      <a href="/?q={{ request.GET.q }}&amp;p={{ page.previous_page_number() }}" aria-label="Previous">
         <span aria-hidden="true">&laquo;</span>
       </a>
     </li>
@@ -67,7 +68,7 @@ $('#search-form input[name=q]').focus();
     {% endfor %}
     {% if page.has_next() %}
     <li>
-      <a href="#" aria-label="Next">
+      <a href="/?q={{ request.GET.q }}&amp;p={{ page.next_page_number() }}" aria-label="Next">
         <span aria-hidden="true">&raquo;</span>
       </a>
     </li>
