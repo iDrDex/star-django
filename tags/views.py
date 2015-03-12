@@ -8,10 +8,13 @@ from handy.decorators import render_to, paginate
 from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import redirect
+from django.utils import timezone
 
 from legacy.models import Sample, Series, Tag, SeriesTag, SampleTag
+from tags.models import ValidationJob, SerieValidation, SampleValidation
 
 
 @render_to()
@@ -27,33 +30,29 @@ def search(request):
 
 @render_to()
 def annotate(request):
-    if not request.user_data.get('id'):
-        return redirect(settings.LEGACY_APP_URL + '/default/user/login')
-
     if request.method == 'POST':
+        if not request.user_data.get('id'):
+            return redirect(settings.LEGACY_APP_URL + '/default/user/login')
+
         if save_annotation(request):
             return redirect(request.session.get('last_search', '/'))
         else:
             return redirect(request.get_full_path())
 
-    series_id = request.GET.get('id')
+    series_id = request.GET.get('series_id')
     if not series_id:
         raise Http404
 
     serie = Series.objects.values().get(pk=series_id)
+    samples, columns = fetch_annotation_data(series_id)
 
-    samples = fetch_samples(series_id)
-    samples = remove_constant_fields(samples)
-    columns = get_samples_columns()
-    if samples:
-        desired = set(samples[0].keys()) - {'id'}
-        columns = filter(desired, columns)
-
-    done_tags = SeriesTag.objects.filter(series_id=series_id).values('tag_id')
-    tags = Tag.objects.filter(is_active='T').exclude(id__in=done_tags) \
+    done_tag_ids = SeriesTag.objects.filter(series_id=series_id).values('tag_id')
+    done_tags = Tag.objects.filter(id__in=done_tag_ids).order_by('tag_name')
+    tags = Tag.objects.filter(is_active='T').exclude(id__in=done_tag_ids) \
         .order_by('tag_name').values('id', 'tag_name')
 
     return {
+        'done_tags': done_tags,
         'tags': tags,
         'serie': serie,
         'columns': columns,
@@ -66,8 +65,8 @@ def save_annotation(request):
     user_id = request.user_data['id']
 
     # Do not check input, just crash for now
-    series_id = request.POST['id']
-    tag_id = request.POST['tag']
+    series_id = request.POST['series_id']
+    tag_id = request.POST['tag_id']
     column = request.POST['column']
     regex = request.POST['regex']
     values = dict(json.loads(request.POST['values']))
@@ -79,7 +78,7 @@ def save_annotation(request):
     old_annotation = first(SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id))
     if old_annotation:
         messages.error(request, 'Serie %s is already annotated with tag %s'
-            % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
+                       % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
         return False
 
     # Save all annotations and used regexes
@@ -96,7 +95,96 @@ def save_annotation(request):
                       created_by_id=user_id, modified_by_id=user_id)
             for sample_id, annotation in annotations
         ])
+
+        # Create 2 validation jobs
+        ValidationJob.objects.bulk_create([
+            ValidationJob(series_tag=series_tag),
+            ValidationJob(series_tag=series_tag),
+        ])
+
     return True
+
+
+@render_to('tags/annotate.j2')
+def validate(request):
+    # TODO: write @login_required
+    if not request.user_data.get('id'):
+        return redirect(settings.LEGACY_APP_URL + '/default/user/login')
+
+    if request.method == 'POST':
+        save_validation(request)
+        return redirect(request.get_full_path())
+
+    job = lock_validation_job(request.user_data['id'])
+    serie = job.series_tag.series
+    tag = job.series_tag.tag
+    samples, columns = fetch_annotation_data(job.series_tag.series_id)
+
+    return {
+        'job': job,
+        'serie': serie,
+        'tag': tag,
+        'columns': columns,
+        'samples': samples,
+    }
+
+@transaction.atomic('legacy')
+def save_validation(request):
+    # Do not check input, just crash for now
+    user_id = request.user_data['id']
+    job_id = request.POST['job_id']
+    column = request.POST['column']
+    regex = request.POST['regex']
+    values = dict(json.loads(request.POST['values']))
+
+    # Make database lock on job in queue
+    try:
+        job = ValidationJob.objects.select_for_update().get(id=job_id, locked_by=user_id)
+    except ValidationJob.DoesNotExist:
+        # TODO: fast-acquire lock if available
+        messages.error(request, 'Validation task timed out. Someone else could have done it.')
+        return
+
+    # Save validation with used column and regex
+    st = job.series_tag
+    serie_validation, created = SerieValidation.objects.get_or_create(
+        series_tag_id=st.id, created_by_id=user_id,
+        defaults=dict(
+            column=column, regex=regex,
+            series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id
+        )
+    )
+    # Do not allow user validate same serie, same platform for same tag twice
+    if not created:
+        messages.error(request, 'You had already validated this annotation')
+        return
+
+    # Create all sample validations
+    SampleValidation.objects.bulk_create([
+        SampleValidation(sample_id=sample_id, serie_validation=serie_validation,
+                         annotation=annotation, created_by_id=user_id)
+        for sample_id, annotation in values.items()
+    ])
+
+    # Remove validation job from queue
+    job.delete()
+
+    messages.success(request, 'Saved {} validations for {} and {}'.format(
+        len(values), serie_validation.series.gse_name, serie_validation.tag.tag_name))
+
+
+@transaction.atomic('legacy')
+def lock_validation_job(user_id):
+    # Get first job in order of addition to annotations (series_tag) and the one that:
+    #   - either not locked or locked by this user,
+    #   - not validated by this user.
+    job = ValidationJob.objects.filter(Q(locked_by__isnull=True) | Q(locked_by=user_id)) \
+                       .exclude(series_tag__validations__created_by=user_id)             \
+                       .select_for_update().earliest('series_tag_id')
+    job.locked_by_id = user_id
+    job.locked_on = timezone.now()
+    job.save()
+    return job
 
 
 # Data utils
@@ -113,8 +201,18 @@ def remove_constant_fields(rows):
     }
     return [project(row, varying) for row in rows]
 
-
 # Data fetching utils
+
+def fetch_annotation_data(series_id):
+    samples = fetch_samples(series_id)
+    samples = remove_constant_fields(samples)
+    columns = get_samples_columns()
+    if samples:
+        desired = set(samples[0].keys()) - {'id'}
+        columns = filter(desired, columns)
+
+    return samples, columns
+
 
 def search_series_qs(query_string):
     sql = """

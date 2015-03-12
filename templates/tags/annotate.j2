@@ -1,21 +1,39 @@
 {% extends "base.j2" %}
 
 {% block content %}
-<h2 class="sub-header">Tagging {{ serie.gse_name }}</h2>
+{% if not tag %}
+  <h2 class="sub-header">Tagging {{ serie.gse_name }}</h2>
+  {% if done_tags %}
+    <p>Tags done: {{ done_tags|map(attribute='tag_name')|join(', ') }}</p>
+  {% endif %}
+{% else %}
+  <h2 class="sub-header">
+    Validating {{ tag.tag_name }}
+    <small>({{ tag.description or 'no description' }})</small>
+  </h2>
+{% endif %}
+
 
 <form method="post" class="form-inline well" id="tag-form">
   {% csrf_token %}
-  <input type="hidden" name="id" value="{{ request.GET.id }}">
+  <input type="hidden" name="series_id" value="{{ serie.id }}">
   <input type="hidden" name="values" value="">
+  {% if tags %}
   <div class="form-group">
-    <label for="tag">Tag</label>
-    <select name="tag" class="form-control" id="tag">
+    <label for="tag_id">Tag</label>
+    <select name="tag_id" class="form-control" id="tag">
       <option value="">...</option>
       {% for tag in tags %}
           <option value="{{ tag.id }}">{{ tag.tag_name }}</option>
       {% endfor %}
     </select>
   </div>
+  {% else %}
+    <input type="hidden" name="job_id" value="{{ job.id }}">
+<!--     <input type="hidden" name="series_tag_id" value="{{ job.id }}">
+    <input type="hidden" name="platform_id" value="{{ job.series_tag.platform_id }}">
+    <input type="hidden" name="tag_id" value="{{ tag.id }}"> -->
+  {% endif %}
   <div class="form-group">
     <label for="column">Column</label>
     <select name="column" class="form-control" id="column">
@@ -67,13 +85,22 @@
 </style>
 
 <script>
-var tags = {{ tags|json|safe }};
 var columns = {{ columns|json|safe }};
 var samples = {{ samples|json|safe }};
 
+{% if tags %}
+var tags = {{ tags|json|safe }};
 var tagNames = _.object(tags.map(function (tag) {
   return [tag.id, tag.tag_name]
 }));
+{% else %}
+var tagNames = {{ {tag.id: tag.tag_name}|json|safe }};
+{% endif %}
 </script>
 <script type="text/javascript" src="{{ static('annotate.js') }}"></script>
+{% if tag %}
+<script type="text/javascript">
+state.tag = {{ tag.id }};
+</script>
+{% endif %}
 {% endblock %}

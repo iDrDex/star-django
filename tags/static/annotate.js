@@ -43,7 +43,7 @@ function updateUI() {
   $('#regex-form-group').toggleClass('has-error', !!(state.regex && !ds.regexValid));
 
   // Update form
-  $('#tag-form [name=tag]').val(state.tag);
+  $('#tag-form [name=tag_id]').val(state.tag);
   $('#tag-form [name=column]').val(state.column);
   if ($('#tag-form [name=regex]').val() != state.regex)
     $('#tag-form [name=regex]').val(state.regex);
@@ -194,7 +194,7 @@ $('#tag-form [name=regex]').on('keyup paste', function () {
   }, 50);
 })
 
-$('#tag-form [name=tag]').on('change', function () {
+$('#tag-form [name=tag_id]').on('change', function () {
   state.tag = this.value;
   updateUI()
 })
