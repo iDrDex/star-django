@@ -2,7 +2,7 @@ from django.db import models
 
 
 class ValidationJob(models.Model):
-    series_tag = models.ForeignKey('legacy.SeriesTag')
+    series_tag = models.ForeignKey('legacy.SeriesTag', on_delete=models.CASCADE)
     locked_on = models.DateTimeField(blank=True, null=True)
     locked_by = models.ForeignKey('legacy.AuthUser', blank=True, null=True)
 
@@ -11,7 +11,8 @@ class ValidationJob(models.Model):
 
 
 class SerieValidation(models.Model):
-    series_tag = models.ForeignKey('legacy.SeriesTag', related_name='validations')
+    series_tag = models.ForeignKey('legacy.SeriesTag', related_name='validations',
+                                   blank=True, null=True, on_delete=models.SET_NULL)
     series = models.ForeignKey('legacy.Series', related_name='validations')
     platform = models.ForeignKey('legacy.Platform', related_name='validations')
     tag = models.ForeignKey('legacy.Tag', related_name='validations')
