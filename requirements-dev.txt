@@ -4,3 +4,7 @@ sqlparse
 flake8>=2.4.0
 flake8-print
 pep8-naming
+pytest==2.6.4
+pytest-django==2.8.0
+lxml
+cssselect
