@@ -1,7 +1,7 @@
 {% extends "base.j2" %}
 
 {% block content %}
-{% if not tag %}
+{% if not job %}
   <h2 class="sub-header">Tagging {{ serie.gse_name }}</h2>
   {% if done_tags %}
     <p>Tags done: {{ done_tags|map(attribute='tag_name')|join(', ') }}</p>
@@ -18,21 +18,19 @@
   {% csrf_token %}
   <input type="hidden" name="series_id" value="{{ serie.id }}">
   <input type="hidden" name="values" value="">
-  {% if tags %}
-  <div class="form-group">
-    <label for="tag_id">Tag</label>
-    <select name="tag_id" class="form-control" id="tag">
-      <option value="">...</option>
-      {% for tag in tags %}
-          <option value="{{ tag.id }}">{{ tag.tag_name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  {% else %}
+  {% if job %}
     <input type="hidden" name="job_id" value="{{ job.id }}">
-<!--     <input type="hidden" name="series_tag_id" value="{{ job.id }}">
-    <input type="hidden" name="platform_id" value="{{ job.series_tag.platform_id }}">
-    <input type="hidden" name="tag_id" value="{{ tag.id }}"> -->
+  {% endif %}
+  {% if tags %}
+    <div class="form-group">
+      <label for="tag_id">Tag</label>
+      <select name="tag_id" class="form-control" id="tag">
+        <option value="">...</option>
+        {% for tag in tags %}
+            <option value="{{ tag.id }}">{{ tag.tag_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
   {% endif %}
   <div class="form-group">
     <label for="column">Column</label>
