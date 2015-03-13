@@ -100,6 +100,7 @@ def save_annotation(request):
         # Create validation job
         ValidationJob.objects.create(series_tag=series_tag)
 
+    messages.success(request, 'Saved annotations')
     return True
 
 
