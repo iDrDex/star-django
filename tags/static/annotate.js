@@ -47,7 +47,8 @@ function updateUI() {
   $('#tag-form [name=column]').val(state.column);
   if ($('#tag-form [name=regex]').val() != state.regex)
     $('#tag-form [name=regex]').val(state.regex);
-  $('#tag-form button').prop('disabled', !(state.tag && ds.regexValid));
+  $('#tag-form button').prop('disabled',
+    !(state.tag && (!state.regex || ds.regexValid) && (state.regex || _.some(state.tags))));
 
   // Generate facets
   var facetsHTML = ds.facets.map(function (facet) {
@@ -222,6 +223,10 @@ $('#data-table').on('keyup change', '.tag-value-input', function () {
   // NOTE: we don't call udpateUI() here, but make it this way cause we don't want to loose focus.
   //       There is a way to get both once we switch to Virtual DOM or make a focus explicit state.
   $(this).closest('tr').addClass('fixed');
+  $('#tag-form button').prop('disabled',
+    !(state.tag
+      && (!state.regex || derivedState.regexValid)
+      && (state.regex || _.some(state.tags))));
 })
 
 $('#data-table').on('blur', '.tag-value-input', function () {
