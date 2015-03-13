@@ -19,7 +19,7 @@ $('#search-form input[name=q]').focus();
 <div class="row" style="margin-top: 1em">
 <div class="col-lg-10 col-lg-offset-1">
 
-{% if page is not none %}
+{% if page and page is not none %}
 <p class="text-muted">
   {{ page.paginator.count }} page{{ page.paginator.count|pluralize }} found,
   {{ page.start_index() }}&ndash;{{ page.end_index() }} shown.
