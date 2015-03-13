@@ -96,11 +96,8 @@ def save_annotation(request):
             for sample_id, annotation in annotations
         ])
 
-        # Create 2 validation jobs
-        ValidationJob.objects.bulk_create([
-            ValidationJob(series_tag=series_tag),
-            ValidationJob(series_tag=series_tag),
-        ])
+        # Create validation job
+        ValidationJob.objects.create(series_tag=series_tag)
 
     return True
 

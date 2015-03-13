@@ -10,7 +10,9 @@ FILL_SQL = '''
     SELECT id FROM series_tag
 '''
 
-EMPTY_SQL = 'SELECT 1'
+EMPTY_SQL = '''
+    DELETE FROM validation_job;
+'''
 
 
 class Migration(migrations.Migration):
@@ -20,7 +22,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Do it twice cause we need 2 validation jobs for each annotation
-        migrations_plus.RunSQL(FILL_SQL, reverse_sql=EMPTY_SQL, db='legacy'),
         migrations_plus.RunSQL(FILL_SQL, reverse_sql=EMPTY_SQL, db='legacy'),
     ]
