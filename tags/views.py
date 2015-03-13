@@ -1,5 +1,6 @@
 import re
 import json
+from datetime import timedelta
 
 from funcy import filter, project, memoize, without, group_by, first
 from handy.db import db_execute, fetch_val, fetch_dict, fetch_dicts
@@ -114,7 +115,11 @@ def validate(request):
         save_validation(request)
         return redirect(request.get_full_path())
 
-    job = lock_validation_job(request.user_data['id'])
+    try:
+        job = lock_validation_job(request.user_data['id'])
+    except ValidationJob.DoesNotExist:
+        return {'TEMPLATE': 'tags/nothing_to_validate.j2'}
+
     serie = job.series_tag.series
     tag = job.series_tag.tag
     samples, columns = fetch_annotation_data(job.series_tag.series_id, blind=BLIND_FIELDS)
@@ -174,15 +179,24 @@ def save_validation(request):
 
 @transaction.atomic('legacy')
 def lock_validation_job(user_id):
-    # Get first job in order of addition to annotations (series_tag) and the one that:
-    #   - either not locked or locked by this user,
+    # Get a job that:
+    #   - not authored by this user,
+    #   - either not locked or locked by this user or lock expired,
     #   - not validated by this user.
-    job = ValidationJob.objects.filter(Q(locked_by__isnull=True) | Q(locked_by=user_id)) \
-                       .exclude(series_tag__validations__created_by=user_id)             \
-                       .select_for_update().earliest('series_tag_id')
+    stale_lock = timezone.now() - timedelta(minutes=30)
+    lock_cond = Q(locked_by__isnull=True) | Q(locked_by=user_id) | Q(locked_on__lt=stale_lock)
+    job = ValidationJob.objects.filter(lock_cond)                            \
+                       .exclude(series_tag__created_by=user_id)              \
+                       .exclude(series_tag__validations__created_by=user_id) \
+                       .select_for_update().earliest('?')
     job.locked_by_id = user_id
     job.locked_on = timezone.now()
     job.save()
+
+    # Remove all previous locks by this user
+    ValidationJob.objects.filter(locked_by=user_id).exclude(pk=job.pk) \
+        .update(locked_by=None, locked_on=None)
+
     return job
 
 
