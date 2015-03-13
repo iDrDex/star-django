@@ -102,6 +102,8 @@ def save_annotation(request):
     return True
 
 
+BLIND_FIELDS = {'id', 'sample_id', 'sample_geo_accession', 'sample_platform_id', 'platform_id'}
+
 @render_to('tags/annotate.j2')
 def validate(request):
     # TODO: write @login_required
@@ -115,7 +117,7 @@ def validate(request):
     job = lock_validation_job(request.user_data['id'])
     serie = job.series_tag.series
     tag = job.series_tag.tag
-    samples, columns = fetch_annotation_data(job.series_tag.series_id)
+    samples, columns = fetch_annotation_data(job.series_tag.series_id, blind=BLIND_FIELDS)
 
     return {
         'job': job,
@@ -166,8 +168,8 @@ def save_validation(request):
     # Remove validation job from queue
     job.delete()
 
-    messages.success(request, 'Saved {} validations for {} and {}'.format(
-        len(values), serie_validation.series.gse_name, serie_validation.tag.tag_name))
+    message = 'Saved {} validations for {}'.format(len(values), serie_validation.tag.tag_name)
+    messages.success(request, message)
 
 
 @transaction.atomic('legacy')
@@ -200,12 +202,12 @@ def remove_constant_fields(rows):
 
 # Data fetching utils
 
-def fetch_annotation_data(series_id):
+def fetch_annotation_data(series_id, blind={'id'}):
     samples = fetch_samples(series_id)
     samples = remove_constant_fields(samples)
     columns = get_samples_columns()
     if samples:
-        desired = set(samples[0].keys()) - {'id'}
+        desired = set(samples[0].keys()) - blind
         columns = filter(desired, columns)
 
     return samples, columns

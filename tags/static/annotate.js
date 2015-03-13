@@ -63,13 +63,15 @@ function updateUI() {
   }).join('');
   $('#facets').html(facetsHTML);
 
-  // Hide/show column headers
+  // Hide/show column headers and update select/deselect links
   columns.forEach(function (col) {
-    $('th.col-' + col).toggle(!state.column || col == state.column || col == 'sample_id');
+    $('th.col-' + col).toggle(!state.column || col == state.column);
   })
+  $('#data-table th .selectable').toggleClass('select', !state.column);
+  $('#data-table th .deselect').toggle(!!state.column);
 
   // Generate table
-  var visibleColumns = state.column ? ['sample_id', state.column] : columns;
+  var visibleColumns = state.column ? [state.column] : columns;
   var rows = samples.map(function (sample, i) {
     var report = ds.reports ? ds.reports[i] : null;
     if (report) {
@@ -210,9 +212,14 @@ $('#facets').on('click', 'a', function () {
   updateUI()
 })
 
-$('#data-table th.selectable').on('click', function () {
+$('#data-table').on('click', '.select', function () {
   var col = this.innerText.trim();
   state.column = col != 'sample_id' ? col : '';
+  updateUI()
+})
+
+$('#data-table').on('click', '.deselect', function () {
+  state.column = '';
   updateUI()
 })
 

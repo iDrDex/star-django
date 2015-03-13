@@ -63,7 +63,9 @@
       <tr>
         <th>Tag Value</th>
         {% for col in columns %}
-          <th class="col-{{ col }} selectable">{{ col }}</th>
+          <th class="col-{{ col }}">
+            <span class="selectable select">{{ col }}</span>
+            <span class="deselect">(deselect)</span></th>
         {% endfor %}
       </tr>
     </thead>
@@ -76,7 +78,8 @@
 <style type="text/css">
 .nav-tabs .glyphicon {top: 2px;}
 #data-table {width: auto}
-#data-table th.selectable {cursor: pointer; text-decoration: underline;}
+#data-table .select, #data-table .deselect {cursor: pointer; text-decoration: underline;}
+#data-table .deselect {color: gray;}
 #data-table tr.fixed {background-color: #D6EDFF}
 #data-table mark {padding: 0;}
 #data-table mark:first-child {background-color: yellow}
