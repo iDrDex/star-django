@@ -250,16 +250,24 @@ def fetch_samples(series_id):
 
 
 def get_series_columns():
-    return _get_columns('series_view', exclude=('id', 'doc'))
+    preferred = ['series_id', 'series_title', 'series_summary', 'series_overall_design']
+    columns = _get_columns('series_view', exclude=('id', 'doc'))
+    return lift(preferred, columns)
 
 def get_samples_columns():
-    return _get_columns('sample_view', exclude=('id', 'doc', 'sample_supplementary_file'))
+    preferred = ['sample_id', 'sample_description',
+                 'sample_characteristics_ch1', 'sample_characteristics_ch2']
+    columns = _get_columns('sample_view', exclude=('id', 'doc', 'sample_supplementary_file'))
+    return lift(preferred, columns)
 
 @memoize
 def _get_columns(table, exclude=()):
     with db_execute('select * from %s limit 1' % table, (), 'legacy') as cursor:
         columns = [col.name for col in cursor.description]
         return without(columns, *exclude)
+
+def lift(preferred, seq):
+    return [col for col in preferred if col in seq] + without(seq, *preferred)
 
 
 # SQL
