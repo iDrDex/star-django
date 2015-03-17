@@ -123,7 +123,8 @@ def validate(request):
 
     serie = job.series_tag.series
     tag = job.series_tag.tag
-    samples, columns = fetch_annotation_data(job.series_tag.series_id, blind=BLIND_FIELDS)
+    samples, columns = fetch_annotation_data(
+        job.series_tag.series_id, platform_id=job.series_tag.platform_id, blind=BLIND_FIELDS)
 
     return {
         'job': job,
@@ -217,8 +218,8 @@ def remove_constant_fields(rows):
 
 # Data fetching utils
 
-def fetch_annotation_data(series_id, blind={'id'}):
-    samples = fetch_samples(series_id)
+def fetch_annotation_data(series_id, platform_id=None, blind={'id'}):
+    samples = fetch_samples(series_id, platform_id=platform_id)
     samples = remove_constant_fields(samples)
     columns = get_samples_columns()
     if samples:
@@ -242,11 +243,14 @@ def fetch_serie(series_id):
         'select ' + cols + ' from series_view where series_id = %s',
         (series_id,), 'legacy')
 
-def fetch_samples(series_id):
+def fetch_samples(series_id, platform_id=None):
     cols = ', '.join(get_samples_columns())
-    return fetch_dicts(
-        'select ' + cols + ' from sample_view where series_id = %s',
-        (series_id,), 'legacy')
+    sql = 'select ' + cols + ' from sample_view where series_id = %s'
+    params = (series_id,)
+    if platform_id:
+        sql += ' and platform_id = %s'
+        params += (platform_id,)
+    return fetch_dicts(sql, params, 'legacy')
 
 
 def get_series_columns():
