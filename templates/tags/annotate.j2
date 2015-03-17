@@ -2,10 +2,12 @@
 
 {% block content %}
 {% if not job %}
-  <h2 class="sub-header">Tagging {{ serie.gse_name }}</h2>
+  <h2 class="sub-header">Tagging "{{ serie.series_title }}" <small>{{ serie.gse_name }}</small></h2>
   {% if done_tags %}
     <p>Tags done: {{ done_tags|map(attribute='tag_name')|join(', ') }}</p>
   {% endif %}
+  <p>{{ serie.series_summary }}</p>
+  <p>Overall design: {{ serie.series_overall_design }}</p>
 {% else %}
   <h2 class="sub-header">
     Validating {{ tag.tag_name }}

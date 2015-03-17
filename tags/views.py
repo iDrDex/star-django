@@ -14,7 +14,7 @@ from django.http import Http404
 from django.shortcuts import redirect
 from django.utils import timezone
 
-from legacy.models import Sample, Series, Tag, SeriesTag, SampleTag
+from legacy.models import Sample, Tag, SeriesTag, SampleTag
 from tags.models import ValidationJob, SerieValidation, SampleValidation
 
 
@@ -44,7 +44,7 @@ def annotate(request):
     if not series_id:
         raise Http404
 
-    serie = Series.objects.values().get(pk=series_id)
+    serie = fetch_serie(series_id)
     samples, columns = fetch_annotation_data(series_id)
 
     done_tag_ids = SeriesTag.objects.filter(series_id=series_id).values('tag_id')
@@ -240,7 +240,9 @@ def search_series_qs(query_string):
 def fetch_serie(series_id):
     cols = ', '.join(get_series_columns())
     return fetch_dict(
-        'select ' + cols + ' from series_view where series_id = %s',
+        '''select ''' + cols + ''', S.gse_name from series_view V
+            join series S on (V.series_id = S.id)
+            where V.series_id = %s''',
         (series_id,), 'legacy')
 
 def fetch_samples(series_id, platform_id=None):
