@@ -18,7 +18,7 @@
 
 <form method="post" class="form-inline well" id="tag-form">
   {% csrf_token %}
-  <input type="hidden" name="series_id" value="{{ serie.id }}">
+  <input type="hidden" name="series_id" value="{{ serie.series_id }}">
   <input type="hidden" name="values" value="">
   {% if job %}
     <input type="hidden" name="job_id" value="{{ job.id }}">
