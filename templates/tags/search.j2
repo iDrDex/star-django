@@ -56,30 +56,25 @@
     {% endfor %}
 
     {% if page and page.has_other_pages() %}
-    <div class="panel-footer" style="font-size: 100%;">
-    <nav>
-      <ul class="pagination" style="margin: 0.3em 0 0 0">
-        {% if page.has_previous() %}
-        <li>
-          <a href="/search/?q={{ request.GET.q }}&amp;p={{ page.previous_page_number() }}" aria-label="Previous">
-            <span aria-hidden="true">&laquo;</span>
-          </a>
-        </li>
-        {% endif %}
-        {% for p in page.paginator.page_range %}
-          <li{% if p == page.number %} class="active"{% endif %}>
-            <a href="/search/?q={{ request.GET.q }}&amp;p={{ p }}">{{ p }}</a>
-          </li>
-        {% endfor %}
-        {% if page.has_next() %}
-        <li>
-          <a href="/search/?q={{ request.GET.q }}&amp;p={{ page.next_page_number() }}" aria-label="Next">
-            <span aria-hidden="true">&raquo;</span>
-          </a>
-        </li>
-        {% endif %}
-      </ul>
-    </nav>
+    <div class="panel-footer">
+        <div class="btn-group">
+            {% if page.has_previous() %}
+                <a href="/search/?q={{ request.GET.q }}&amp;p={{ page.previous_page_number() }}" class="btn btn-default">
+                    <i class="fa fa-chevron-left"></i>
+                </a>
+            {% endif %}
+
+            {% for p in page.paginator.page_range %}
+                <a href="/search/?q={{ request.GET.q }}&amp;p={{ p }}" class="btn btn-default{% if p == page.number %} active{% endif %}">{{ p }}</a>
+            {% endfor %}
+
+            {% if page.has_next() %}
+              <a href="/search/?q={{ request.GET.q }}&amp;p={{ page.next_page_number() }}" class="btn btn-default">
+                <i class="fa fa-chevron-right"></i>
+              </a>
+            </li>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
 </div>
