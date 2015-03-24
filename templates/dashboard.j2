@@ -6,7 +6,7 @@
         <h2>
             Welcome to STAR application
         </h2>
-
+        <p>Redefining the meaning of disease... Together!</p>
     </div>
 </div>
 <div class="row">
@@ -28,60 +28,108 @@
                             {# <i class="fa fa-bolt"></i> Page views #}
                         </div>
 
-                        <div>
+                        <div style="margin-top: 9.35em">
                             <h1 class="font-extra-bold m-t-xl m-b-xs">
                                 298,115
                             </h1>
-                            <small>Sample annotations</small>
+                            <small>sample annotations</small>
                         </div>
+
 {#                         <div class="small m-t-xl">
                             <i class="fa fa-clock-o"></i> Data from January
                         </div>
  #}                    </div>
-                    <div class="col-md-6">
+                    <div class="col-md-9">
                         <div class="text-center small">
-                            <i class="fa fa-laptop"></i> Active users in current month (December)
+                            <i class="fa fa-sellsy"></i> Samples annotated
                         </div>
-                        <div class="flot-chart" style="height: 160px">
+                        <div class="flot-chart" style="height: 320px">
                             <div class="flot-chart-content" id="flot-line-chart"></div>
                         </div>
                     </div>
-                    <div class="col-md-3 text-center">
-                        <div class="small">
-                            <i class="fa fa-clock-o"></i> Active duration
-                        </div>
-                        <div>
-                            <h1 class="font-extra-bold m-t-xl m-b-xs">
-                                3 Weeks
-                            </h1>
-                            {# <small>And four weeks</small> #}
-                        </div>
-{#                         <div class="small m-t-xl">
-                            <i class="fa fa-clock-o"></i> Last active in 12.10.2015
-                        </div> #}
-                    </div>
                 </div>
             </div>
-{#             <div class="panel-footer">
-                    <span class="pull-right">
-                          You have two new messages from <a href="">Monica Bolt</a>
-                    </span>
-                Last update: 21.05.2015
-            </div> #}
         </div>
     </div>
 </div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="hpanel">
+            <div class="panel-body">
+                <style>.embed-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; } .embed-container iframe, .embed-container object, .embed-container embed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }</style><div class='embed-container'><iframe src='http://www.youtube.com/embed/sLf8ynM-B-k' frameborder='0' allowfullscreen></iframe></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="hpanel">
+            <div class="hpanel">
+
+            <ul class="nav nav-tabs">
+                <li class="active"><a data-toggle="tab" href="#tab-1">Search</a></li>
+                <li class=""><a data-toggle="tab" href="#tab-2">Tag</a></li>
+                <li class=""><a data-toggle="tab" href="#tab-3">Analyze</a></li>
+                <li class=""><a data-toggle="tab" href="#tab-4">Resource</a></li>
+            </ul>
+            <div class="tab-content">
+                <div id="tab-1" class="tab-pane active">
+                    <div class="panel-body">
+                        <p>STAR provides a powerful search engine across samples, experiments, and attributes from GEO.
+                        In all, 465,770 digital samples
+                        described by 15,340,350 attributes that are
+                        drawn from 11,903 experiments
+                        described by 295,786 attributes are available.</p>
+                    </div>
+                </div>
+                <div id="tab-2" class="tab-pane">
+                    <div class="panel-body">
+                        <p>STAR uses an annotation engine based on a semantic network of crowd-sourced tags that
+                        that represent biological annotations. In all, 116 tags have been used
+                        to make  2,249 annotations of digital experiments
+                        representing 152,089 annotations of digital samples.</p>
+                    </div>
+                </div>
+                <div id="tab-3" class="tab-pane">
+                    <div class="panel-body">
+                        <p>STAR enables meta-analysis of digitally tagged samples for robust gene signatures
+                        using 28,254,323 gene probes across 1,682 platforms
+                        within
+                        GEO. In all 21 meta-analyses of standard fixed and random models have
+                        been
+                        run with corresponding Forrest plots available.</p>
+                    </div>
+                </div>
+                <div id="tab-4" class="tab-pane">
+                    <div class="panel-body">
+                        <p>STAR represents an annotation layer built on open public data provided by GEO. It is provided as
+                        an open resource for the scientific community as a tool to derive robust gene signatures from
+                        public
+                        functional genomics data. Currently 31 users have contributed.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style type="text/css">
+.tab-pane p {
+    margin-top: 0.5em;
+    font-size: 135%;
+    line-height: 165%;
+    color: #444;
+}
+</style>
 {% endblock %}
 
 {% block script %}
+<script src="{{ static('jquery.flot.time.js') }}"></script>
 <script>
     $(function () {
-
-        /**
-         * Flot charts data and options
-         */
-        var data1 = [ [0, 55], [1, 48], [2, 40], [3, 36], [4, 40], [5, 60], [6, 50], [7, 51] ];
-        var data2 = [ [0, 56], [1, 49], [2, 41], [3, 38], [4, 46], [5, 67], [6, 57], [7, 59] ];
+        var annotations = {"columns":["anno","valid","invalid","extra"],"index":[1416614400000,1416873600000,1416960000000,1417651200000,1417824000000,1418860800000,1420156800000,1420243200000,1420416000000,1421193600000,1421712000000,1421798400000,1422489600000,1422576000000,1422662400000,1422748800000,1422835200000,1422921600000,1423008000000,1423094400000,1423180800000,1423267200000,1423353600000,1423440000000,1423526400000,1423612800000,1423699200000,1423785600000,1423958400000,1424044800000,1424131200000,1424649600000,1424736000000,1424822400000,1425168000000,1425427200000,1425600000000,1425859200000,1426204800000,1426291200000,1426377600000,1426464000000,1426550400000,1426896000000,1426982400000,1427068800000],"data":[[418.0,209.0,209.0,0.0],[1163.0,816.0,271.0,0.0],[1261.0,914.0,271.0,0.0],[1299.0,952.0,271.0,0.0],[1412.0,1065.0,271.0,0.0],[4538.0,2099.0,1182.0,0.0],[4592.0,2135.0,1182.0,0.0],[4910.0,2265.0,1182.0,0.0],[5023.0,2378.0,1182.0,0.0],[5125.0,2409.0,1253.0,0.0],[5155.0,2439.0,1253.0,0.0],[5185.0,2439.0,1283.0,0.0],[5239.0,2493.0,1283.0,0.0],[6194.0,3436.0,1295.0,0.0],[6296.0,3538.0,1295.0,0.0],[7420.0,4630.0,1327.0,0.0],[7470.0,4680.0,1327.0,0.0],[7782.0,4981.0,1338.0,0.0],[8440.0,5561.0,1416.0,0.0],[9494.0,6614.0,1417.0,0.0],[9691.0,6811.0,1417.0,0.0],[16791.0,12481.0,1929.0,0.0],[21618.0,16404.0,2197.0,0.0],[28507.0,22183.0,2549.0,0.0],[34909.0,27193.0,3026.0,0.0],[38236.0,29543.0,3377.0,0.0],[40010.0,29827.0,3656.0,0.0],[41758.0,31402.0,3829.0,0.0],[41856.0,31476.0,3853.0,0.0],[44252.0,32780.0,3937.0,0.0],[47570.0,35087.0,4156.0,0.0],[48222.0,35737.0,4158.0,0.0],[49022.0,36484.0,4211.0,0.0],[49070.0,36532.0,4211.0,0.0],[113306.0,94781.0,9599.0,0.0],[113344.0,94819.0,9599.0,0.0],[113358.0,94847.0,9599.0,0.0],[113388.0,94862.0,9614.0,0.0],[113426.0,94900.0,9614.0,10991.0],[121000.0,94900.0,9614.0,27885.0],[127677.0,94900.0,9614.0,38645.0],[133424.0,94900.0,9614.0,41248.0],[142046.0,94900.0,9614.0,41248.0],[146213.0,94900.0,9614.0,41248.0],[148504.0,94900.0,9614.0,41248.0],[152089.0,94900.0,9614.0,41248.0]]};
+        var plotData = [0, 2].map(function (i) {
+            return _.zip(annotations.index, _.pluck(annotations.data, i))
+        })
 
         var chartUsersOptions = {
             series: {
@@ -98,11 +146,16 @@
                 borderColor: 'f0f0f0',
                 color: '#6a6c6f'
             },
-            colors: [ "#62cb31", "#efefef"],
+            colors: [
+                // "#B7B7B7",
+                "#62cb31", "#FC0000", "#7991C8"],
+            xaxis: {
+                mode: "time",
+                timeformat: "%Y/%m/%d"
+            }
         };
 
-        $.plot($("#flot-line-chart"), [data1, data2], chartUsersOptions);
-
+        $.plot($("#flot-line-chart"), plotData, chartUsersOptions);
     });
 </script>
 {% endblock %}
