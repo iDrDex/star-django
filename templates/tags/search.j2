@@ -26,7 +26,7 @@
 <div class="hpanel forum-box">
     {% if page and page is not none %}
     <div class="panel-heading">
-        {{ page.paginator.count }} page{{ page.paginator.count|pluralize }} found,
+        {{ page.paginator.count }} serie{{ page.paginator.count|pluralize }} found,
         {{ page.start_index() }}&ndash;{{ page.end_index() }} shown.
     </div>
     {% endif %}
@@ -41,8 +41,10 @@
                 <h4>{{ serie.series_title }}</h4>
                 <div class="desc">{{ serie.series_summary|truncate(300, True) }}</div>
                 <p style="margin: 0.5em 0 0">
-                    Series: {{ serie.gse_name }},
-                    Platform: {{ serie.series_platform_id }}
+                    Serie: {{ serie.gse_name }},
+                    {% with platforms = serie.series_platform_id.split('---') %}
+                        Platform{{ platforms|count|pluralize }}: {{ platforms|join(', ') }}
+                    {% endwith %}
                 </p>
             </div>
             <div class="col-md-1 forum-info">
