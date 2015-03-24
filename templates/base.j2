@@ -106,6 +106,7 @@
 
 <!-- Main Wrapper -->
 <div id="wrapper">
+    <div class="content">
     {% if messages %}
       {% for message in messages %}
           <div class="alert alert-{{ 'danger' if message.tags == 'error' else message.tags }}">{{ message }}</div>
@@ -113,10 +114,11 @@
     {% endif %}
 
     {% block main %}
-        <div class="content"><div class="row"><div class="panel"><div class="panel-body">
+        <div class="row"><div class="panel"><div class="panel-body">
             {% block content %}{% endblock %}
-        </div></div></div></div>
+        </div></div></div>
     {% endblock %}
+    </div>
 </div>
 
 <!-- Vendor scripts -->
