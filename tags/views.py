@@ -231,8 +231,9 @@ def fetch_annotation_data(series_id, platform_id=None, blind={'id'}):
 
 def search_series_qs(query_string):
     sql = """
-             select {}, ts_rank_cd(doc, q) as rank
-             from series_view, plainto_tsquery('english', %s) as q
+             select S.gse_name, {}, ts_rank_cd(doc, q) as rank
+             from series_view SV join series S on (SV.series_id = S.id)
+             , plainto_tsquery('english', %s) as q
              where doc @@ q order by rank desc
           """.format(', '.join(get_series_columns()))
     return SQLQuerySet(sql, (query_string,), server='legacy')

@@ -1,34 +1,97 @@
 {% extends "base.j2" %}
 
-{% block content %}
-<div class="row"><div class="panel"><div class="panel-body">
+{% block main %}
 
-<h1 class="sub-header col-lg-offset-1">Search series</h1>
+<div class="normalheader">
+    <div class="hpanel">
+        <div class="panel-body">
+            <h2 class="font-light m-b-xs">
+                Search series
+            </h2>
 
-<form id="search-form" class="col-lg-offset-1">
-  <div class="row">
-    <div class="col-lg-10">
-      <input type="text" class="form-control input-lg" name="q" value="{{ request.GET.q or '' }}" placeholder="Type in keywords">
+            <form id="search-form" cclass="col-lg-offset-1" style="margin-top: 1em">
+              <div class="row">
+                <div class="col-lg-10">
+                  <input type="text" class="form-control input-lg" name="q" value="{{ request.GET.q or '' }}" placeholder="Type in keywords">
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg">Search</button>
+              </div>
+            </form>
+            <script>
+            $('#search-form input[name=q]').focus();
+            </script>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary btn-lg">Search</button>
-  </div>
-</form>
-<script>
-$('#search-form input[name=q]').focus();
-</script>
-
-
-<div class="row" style="margin-top: 1em">
-<div class="col-lg-10 col-lg-offset-1">
-
-{% if page and page is not none %}
-<p class="text-muted">
-  {{ page.paginator.count }} page{{ page.paginator.count|pluralize }} found,
-  {{ page.start_index() }}&ndash;{{ page.end_index() }} shown.
-</p>
-{% endif %}
+</div>
 
 {% if series %}
+<div class="content ">
+
+<div class="hpanel forum-box">
+    {% if page and page is not none %}
+    <div class="panel-heading">
+        {{ page.paginator.count }} page{{ page.paginator.count|pluralize }} found,
+        {{ page.start_index() }}&ndash;{{ page.end_index() }} shown.
+    </div>
+    {% endif %}
+
+    {% for serie in series %}
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-1 forum-info" style="width: 4.5em">
+                <a class="btn btn-success btn-sm" href="{{ url('annotate') }}?series_id={{ serie.series_id }}">Tag</a>
+            </div>
+            <div class="col-md-10 forum-heading">
+                <h4>{{ serie.series_title }}</h4>
+                <div class="desc">{{ serie.series_summary|truncate(300, True) }}</div>
+                <p style="margin: 0.5em 0 0">
+                    Series: {{ serie.gse_name }},
+                    Platform: {{ serie.series_platform_id }}
+                </p>
+            </div>
+            <div class="col-md-1 forum-info">
+                <span class="number">{{ serie.series_sample_id.split()|count }}</span>
+                <small>Samples</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if page and page.has_other_pages() %}
+    <div class="panel-footer" style="font-size: 100%;">
+    <nav>
+      <ul class="pagination" style="margin: 0.3em 0 0 0">
+        {% if page.has_previous() %}
+        <li>
+          <a href="/search/?q={{ request.GET.q }}&amp;p={{ page.previous_page_number() }}" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        {% endif %}
+        {% for p in page.paginator.page_range %}
+          <li{% if p == page.number %} class="active"{% endif %}>
+            <a href="/search/?q={{ request.GET.q }}&amp;p={{ p }}">{{ p }}</a>
+          </li>
+        {% endfor %}
+        {% if page.has_next() %}
+        <li>
+          <a href="/search/?q={{ request.GET.q }}&amp;p={{ page.next_page_number() }}" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+    </div>
+    {% endif %}
+</div>
+
+
+</div>
+{% endif %}
+
+
+{#  {% if series %}
 <div class="table-responsive" sstyle="margin-top: 1em">
   <table class="table table-striped table-bordered" id="data-table">
     <thead>
@@ -52,37 +115,9 @@ $('#search-form input[name=q]').focus();
   </table>
 </div>
 {% endif %}
-
-{% if page and page.has_other_pages() %}
-<nav>
-  <ul class="pagination">
-    {% if page.has_previous() %}
-    <li>
-      <a href="/?q={{ request.GET.q }}&amp;p={{ page.previous_page_number() }}" aria-label="Previous">
-        <span aria-hidden="true">&laquo;</span>
-      </a>
-    </li>
-    {% endif %}
-    {% for p in page.paginator.page_range %}
-      <li{% if p == page.number %} class="active"{% endif %}>
-        <a href="/?q={{ request.GET.q }}&amp;p={{ p }}">{{ p }}</a>
-      </li>
-    {% endfor %}
-    {% if page.has_next() %}
-    <li>
-      <a href="/?q={{ request.GET.q }}&amp;p={{ page.next_page_number() }}" aria-label="Next">
-        <span aria-hidden="true">&raquo;</span>
-      </a>
-    </li>
-    {% endif %}
-  </ul>
-</nav>
-{% endif %}
+ #}
 
 
-</div>
-</div>
 
-</div></div></div>
-{% endblock %}
+ {% endblock %}
 
