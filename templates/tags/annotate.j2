@@ -2,14 +2,26 @@
 
 {% block content %}
 {% if not job %}
-  <h2 class="sub-header">Tagging "{{ serie.series_title }}" <small>{{ serie.gse_name }}</small></h2>
-  {% if done_tags %}
-    <p>Tags done: {{ done_tags|map(attribute='tag_name')|join(', ') }}</p>
-  {% endif %}
-  <p>{{ serie.series_summary }}</p>
-  <p>Overall design: {{ serie.series_overall_design }}</p>
+  <h2>Tagging "{{ serie.series_title }}" <small>{{ serie.gse_name }}</small></h2>
+    {% if done_tags %}
+    <p>Tags done:
+        {%- for tag in done_tags %}
+        <span class="label label-success">{{ tag.tag_name }}</span>
+        {% endfor %}
+    </p>
+    {% endif %}
+
+    <p id="less-desc">
+        {{ serie.series_summary|truncate(150, True) }}
+        <a href="javascript:$('#more-desc').show();$('#less-desc').hide()">More</a>
+    </p>
+    <div id="more-desc" style="display: none">
+        <p>{{ serie.series_summary }}
+        <p>Overall design: {{ serie.series_overall_design }}</p>
+        <p><a href="javascript:$('#more-desc').hide();$('#less-desc').show()">Less</a></p>
+    </div>
 {% else %}
-  <h2 class="sub-header">
+  <h2>
     Validating {{ tag.tag_name }}
     <small>({{ tag.description or 'no description' }})</small>
   </h2>
