@@ -66,3 +66,38 @@ Here are steps to make local deployment of this app in order to tinker it.
 [geo]: http://www.ncbi.nlm.nih.gov/geo/
 [virtualenv]: https://virtualenv.pypa.io/en/latest/
 [virtualenvwrapper]: https://virtualenvwrapper.readthedocs.org/en/latest/
+
+
+## Deploying
+
+1. Configure ssh connection by adding something like this to `~/.ssh/config`:
+
+    ```ini
+    Host stargeo
+    HostName ec2-52-11-148-105.us-west-2.compute.amazonaws.com
+    User ubuntu
+    IdentityFile /path/to/stargeo.pem
+    IdentitiesOnly yes
+    ```
+
+2. Ssh to server and create a deployment key:
+
+    ```bash
+    # On server
+    ls ~/.ssh
+    cat ~/.ssh/id_rsa.pub
+    ```
+
+    Copy a public key from `id_rsa.pub` to Github repository -> Settings -> Deploy keys.
+
+    If you don't have a key on server then generate it with `ssh-keygen`.
+
+3. Run locally:
+
+    ```bash
+    # to deploy latest commited
+    fab deploy
+
+    # to deploy whatever you have locally (not recommended)
+    fab dirty_deploy
+    ```
