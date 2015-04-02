@@ -27,7 +27,7 @@
   </h2>
 {% endif %}
 
-
+<div id="tag-form-placeholder"></div>
 <form method="post" class="form-inline well" id="tag-form">
   {% csrf_token %}
   <input type="hidden" name="series_id" value="{{ serie.series_id }}">
@@ -97,7 +97,33 @@
 #data-table mark:first-child {background-color: yellow}
 #data-table mark.bg-danger {background-color: #ff9070}
 #data-table input {width: 10em;}
+
+#tag-form {
+  display: inline-block;
+  margin-left: 0;
+  transition: all 0.5s ease-out;
+}
+#tag-form.flow {
+  position: fixed;
+  top: 5px;
+  z-index: 1000;
+  box-shadow: 0.5px 0.5px 2.5px 1px rgba(0,0,0,0.55);
+}
 </style>
+
+<script type="text/javascript">
+$(function () {
+  var offset = $('#tag-form').offset();
+  var height = $('#tag-form').height();
+  $('#tag-form-placeholder').height(height + 60).hide();
+
+  $(window).on('scroll', function () {
+    var flow = window.scrollY >= offset.top - 5;
+    $('#tag-form').toggleClass('flow', flow);
+    $('#tag-form-placeholder').toggle(flow);
+  });
+})
+</script>
 
 <script>
 var columns = {{ columns|json|safe }};
