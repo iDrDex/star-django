@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from legacy.models import Sample, Tag, SeriesTag, SampleTag
 from tags.models import ValidationJob, SerieValidation, SampleValidation
+from core.tasks import update_stats, update_graph
 
 
 @render_to()
@@ -101,6 +102,10 @@ def save_annotation(request):
         ValidationJob.objects.create(series_tag=series_tag)
 
     messages.success(request, 'Saved annotations')
+
+    update_stats.delay()
+    update_graph.delay()
+
     return True
 
 
@@ -177,6 +182,9 @@ def save_validation(request):
 
     message = 'Saved {} validations for {}'.format(len(values), serie_validation.tag.tag_name)
     messages.success(request, message)
+
+    update_stats.delay()
+    update_graph.delay()
 
 
 @transaction.atomic('legacy')

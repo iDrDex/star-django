@@ -40,7 +40,9 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
 
     'django_jinja',
+    'django_jinja.contrib._humanize',
 
+    'core',
     'legacy',
     'tags',
 )
@@ -71,6 +73,13 @@ DATABASES = {
 }
 
 DATABASE_ROUTERS = ['tags.models.LegacyRouter']
+
+REDIS = {
+    'host': 'localhost',
+    'port': 6379,
+    'db': 3,
+    'socket_timeout': 3,
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
