@@ -8,6 +8,7 @@ from handy.decorators import render_to, paginate
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Q
 from django.http import Http404
@@ -37,7 +38,7 @@ def annotate(request):
             return redirect(settings.LEGACY_APP_URL + '/default/user/login')
 
         if save_annotation(request):
-            return redirect(request.session.get('last_search', '/'))
+            return redirect(reverse(annotate) + '?series_id=' + request.POST['series_id'])
         else:
             return redirect(request.get_full_path())
 
