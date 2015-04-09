@@ -1,2 +1,2 @@
-web: gunicorn stargeo.wsgi --log-file -
+web: ./manage.py runserver
 celery: celery -A stargeo worker -l info
