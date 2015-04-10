@@ -27,7 +27,7 @@ def update_stats():
 
 @shared_task
 def update_graph():
-    SAMPLES_GRAPH_SQL = """
+    samples_graph_sql = """
         SELECT d, sum(c) over (order by d) FROM
         (
             SELECT date_trunc('day', created_on), count(*) FROM sample_tag group by 1
@@ -38,7 +38,7 @@ def update_graph():
         ) as foo (d, c)
         order by 1
     """
-    WRONG_VALIDATIONS_GRAPH_SQL = """
+    wrong_validations_graph_sql = """
         SELECT date_trunc('day', V.created_on),
                sum(count(*)) over (order by date_trunc('day', V.created_on))
             FROM sample_validation V
@@ -49,9 +49,8 @@ def update_graph():
         GROUP BY 1 ORDER BY 1
     """
 
-
-    total = fetch_all(SAMPLES_GRAPH_SQL, server='legacy')
-    wrong = fetch_all(WRONG_VALIDATIONS_GRAPH_SQL, server='legacy')
+    total = fetch_all(samples_graph_sql, server='legacy')
+    wrong = fetch_all(wrong_validations_graph_sql, server='legacy')
     graph_data = {'total': total, 'wrong': wrong}
     redis_client.set('core.graph', json.dumps(graph_data, default=defaultencode))
 
