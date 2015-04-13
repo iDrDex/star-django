@@ -8,15 +8,30 @@
             </h2>
 
             <form id="search-form" cclass="col-lg-offset-1" style="margin-top: 1em">
-              <div class="row">
-                <div class="col-lg-10">
-                  <input type="text" class="form-control input-lg" name="q" value="{{ request.GET.q or '' }}" placeholder="Type in keywords">
+                <div class="input-group">
+                    <input type="text" class="form-control input-lg" name="q" value="{{ request.GET.q or '' }}" placeholder="Type in keywords">
+                    <span class="input-group-btn">
+                        <button type="submit" class="btn btn-primary btn-lg">Search</button>
+                    </span>
                 </div>
-                <button type="submit" class="btn btn-primary btn-lg">Search</button>
-              </div>
+                {% if tags %}
+                    <div class="input-group" style="margin-top: 1em">
+                        <label class="control-label" style="padding-left: 0; font-weight: bold">Exclude:</label> &nbsp;
+                        {% for tag in tags|sort %}
+                        <label class="checkbox-inline">
+                            <input type="checkbox" name="exclude_tags" value="{{ tag }}"
+                                {%- if tag in request.GET.getlist('exclude_tags') %} checked{% endif -%}
+                            >{{ tag }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </form>
             <script>
-            $('#search-form input[name=q]').focus();
+                $('#search-form input[name=q]').focus();
+                $('#search-form [name=exclude_tags]').on('click', function () {
+                    $('#search-form').submit();
+                })
             </script>
         </div>
     </div>
@@ -44,7 +59,13 @@
                     Serie: {{ serie.gse_name }},
                     {% with platforms = serie.series_platform_id.split('---') %}
                         Platform{{ platforms|count|pluralize }}: {{ platforms|join(', ') }}
-                    {% endwith %}
+                    {%- endwith -%}
+                    {%- if serie_tags[serie.series_id] -%}
+                        , Tags done:
+                        {%- for tag in serie_tags[serie.series_id] %}
+                        <span class="label label-success">{{ tag }}</span>
+                        {% endfor %}
+                    {% endif %}
                 </p>
             </div>
             <div class="col-md-1 forum-info">

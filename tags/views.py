@@ -1,9 +1,10 @@
 import re
 import json
 from datetime import timedelta
+from collections import defaultdict
 
-from funcy import filter, project, memoize, without, group_by, first
-from handy.db import db_execute, fetch_val, fetch_dict, fetch_dicts
+from funcy import filter, project, memoize, without, group_by, first, imapcat, str_join
+from handy.db import db_execute, fetch_val, fetch_dict, fetch_dicts, fetch_col
 from handy.decorators import render_to, paginate
 
 from django.conf import settings
@@ -23,11 +24,27 @@ from core.tasks import update_stats, update_graph
 @render_to()
 @paginate('series', 10)
 def search(request):
-    request.session['last_search'] = request.get_full_path()
     q = request.GET.get('q')
+    exclude_tags = request.GET.getlist('exclude_tags')
+    serie_tags, tag_series = series_tags_data()
+
+    if q:
+        qs = search_series_qs(q)
+        series_ids = qs.values_list('series_id', flat=True)
+        tags = set(imapcat(lambda s: serie_tags.get(s, ()), series_ids))
+
+        if exclude_tags:
+            exclude_series = set(imapcat(lambda t: tag_series.get(t, ()), exclude_tags))
+            qs = qs.where('series_id not in (%s)' % str_join(',', exclude_series))
+    else:
+        qs = None
+        tags = None
+
     return {
         'columns': get_series_columns(),
-        'series': search_series_qs(q) if q else None,
+        'series': qs,
+        'tags': tags,
+        'serie_tags': serie_tags,
     }
 
 
@@ -247,6 +264,19 @@ def search_series_qs(query_string):
           """.format(', '.join(get_series_columns()))
     return SQLQuerySet(sql, (query_string,), server='legacy')
 
+
+def series_tags_data():
+    pairs = SeriesTag.objects.values_list('series_id', 'tag__tag_name').distinct()
+
+    serie_tags = defaultdict(list)
+    tag_series = defaultdict(list)
+    for serie, tag in pairs:
+        serie_tags[serie].append(tag)
+        tag_series[tag].append(serie)
+
+    return serie_tags, tag_series
+
+
 def fetch_serie(series_id):
     cols = ', '.join(get_series_columns())
     return fetch_dict(
@@ -289,16 +319,20 @@ def lift(preferred, seq):
 # SQL
 
 class SQLQuerySet(object):
-    def __init__(self, sql, params=(), server='default'):
+    def __init__(self, sql, params=(), server='default', flat=False):
         self.sql = sql
         self.params = params
         self.server = server
+        self.flat = flat
 
     def count(self):
         # TODO: use sqlparse here
         count_sql = re.sub(r'select.*?from\b', 'select count(*) from', self.sql, flags=re.I | re.S)
         count_sql = re.sub(r'order by .*', '', count_sql, re.I | re.S)
         return fetch_val(count_sql, self.params, self.server)
+
+    def __iter__(self):
+        return iter(self[:])
 
     def __getitem__(self, k):
         if not isinstance(k, (slice, int, long)):
@@ -319,4 +353,25 @@ class SQLQuerySet(object):
             clauses.append('limit 1 offset %d' % k)
 
         sql = ' '.join(clauses)
-        return fetch_dicts(sql, self.params, self.server)
+        if self.flat:
+            return fetch_col(sql, self.params, self.server)
+        else:
+            return fetch_dicts(sql, self.params, self.server)
+
+    def values_list(self, *fields, **kwargs):
+        flat = kwargs.pop('flat', False)
+        if kwargs:
+            raise TypeError('Unexpected keyword arguments to values_list: %s' % (list(kwargs),))
+        if flat and len(fields) > 1:
+            raise TypeError("'flat' is not valid when values_list is called"
+                            " with more than one field.")
+
+        fields_sql = ', '.join(fields)
+        sql = re.sub(r'select.*?from\b', 'select %s from' % fields_sql, self.sql, flags=re.I | re.S)
+        # HACK: new fields could miss something in order by clause
+        sql = re.sub(r'order by .*', '', sql, re.I | re.S)
+        return SQLQuerySet(sql, self.params, self.server, flat)
+
+    def where(self, sql, params=()):
+        new_sql = re.sub(r'(where.*?)(order by|group by|$)', '\\1 and %s \\2' % sql, self.sql, re.I)
+        return SQLQuerySet(new_sql, self.params + params, self.server, self.flat)
