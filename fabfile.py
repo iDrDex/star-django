@@ -6,7 +6,7 @@ from fabric.contrib import django
 from fabric.colors import green, cyan, red, yellow
 
 
-__all__ = ('deploy', 'dirty_deploy', 'dirty_fast',
+__all__ = ('deploy', 'dirty_deploy', 'dirty_fast', 'shell',
            'restart', 'manage', 'incoming_files', 'install_requirements', 'migrate')
 
 
@@ -49,6 +49,9 @@ def manage(cmd):
     with activate():
         run('./manage.py %s' % cmd)
 
+def shell():
+    with activate():
+        run('./manage.py shell')
 
 def incoming_files():
     return run('git --no-pager diff --name-only origin..HEAD',
