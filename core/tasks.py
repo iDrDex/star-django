@@ -28,30 +28,25 @@ def update_stats():
 @shared_task
 def update_graph():
     samples_graph_sql = """
-        SELECT d, sum(c) over (order by d) FROM
-        (
-            SELECT date_trunc('day', created_on), count(*) FROM sample_tag group by 1
-            UNION
-            SELECT date_trunc('day', created_on), count(*) FROM sample_validation group by 1
-            UNION
-            SELECT date_trunc('day', created_on), count(*) FROM sample_validation__backup group by 1
-        ) as foo (d, c)
-        order by 1
+        SELECT date_trunc('day', created_on),
+               sum(count(*)) over (order by date_trunc('day', created_on))
+        FROM sample_tag GROUP BY 1 ORDER BY 1
     """
-    wrong_validations_graph_sql = """
+    validations_graph_sql = """
         SELECT date_trunc('day', V.created_on),
                sum(count(*)) over (order by date_trunc('day', V.created_on))
             FROM sample_validation V
             JOIN series_validation SV on (V.serie_validation_id = SV.id)
             JOIN series_tag ST on (SV.series_tag_id = ST.id)
             JOIN sample_tag T on (V.sample_id = T.sample_id and T.series_tag_id = ST.id)
-        WHERE V.annotation != T.annotation
+        WHERE V.annotation %s T.annotation
         GROUP BY 1 ORDER BY 1
     """
 
     total = fetch_all(samples_graph_sql, server='legacy')
-    wrong = fetch_all(wrong_validations_graph_sql, server='legacy')
-    graph_data = {'total': total, 'wrong': wrong}
+    right = fetch_all(validations_graph_sql % '=', server='legacy')
+    wrong = fetch_all(validations_graph_sql % '!=', server='legacy')
+    graph_data = {'total': total, 'right': right, 'wrong': wrong}
     redis_client.set('core.graph', json.dumps(graph_data, default=defaultencode))
 
 
@@ -62,11 +57,12 @@ from decimal import Decimal
 import pytz
 
 
-EPOCH = datetime.fromtimestamp(0).replace(tzinfo=pytz.timezone('UTC'))
-
+EPOCH_NAIVE = datetime.fromtimestamp(0)
+EPOCH = EPOCH_NAIVE.replace(tzinfo=pytz.timezone('UTC'))
 
 def unix_milliseconds(dt):
-    return int((dt - EPOCH).total_seconds() * 1000)
+    epoch = EPOCH_NAIVE if dt.tzinfo is None else EPOCH
+    return int((dt - epoch).total_seconds() * 1000)
 
 def defaultencode(obj):
     if isinstance(obj, datetime):

@@ -41,7 +41,7 @@
  #}                    </div>
                     <div class="col-md-9">
                         <div class="text-center small">
-                            <i class="fa fa-sellsy"></i> Samples annotated
+                            <i class="fa fa-sellsy"></i> Samples annotated and validated
                         </div>
                         <div class="flot-chart" style="height: 320px">
                             <div class="flot-chart-content" id="flot-line-chart"></div>
@@ -129,8 +129,8 @@
         var annotations = {{ stats['core.graph']|safe }};
 
         // Construct plot data and options
-        fixSeries(annotations.wrong, annotations.total);
-        var plotData = [annotations.total, annotations.wrong];
+        fixSeries(annotations);
+        var plotData = [annotations.total, annotations.right, annotations.wrong];
 
         var chartUsersOptions = {
             series: {
@@ -148,7 +148,7 @@
                 color: '#6a6c6f'
             },
             colors: [
-                // "#B7B7B7",
+                "#B7B7B7",
                 "#62cb31", "#FC0000", "#7991C8"],
             xaxis: {
                 mode: "time",
@@ -159,21 +159,23 @@
         $.plot($("#flot-line-chart"), plotData, chartUsersOptions);
     });
 
-    function fixSeries(data, reference) {
-        if (!data.length || !reference.length) return;
+    function fixSeries(annotations) {
+        var lastDay = _(annotations).map(function (data) {
+            return data[data.length - 1][0]
+        }).max();
 
+        _.each(annotations, _.partial(fixSeriesSpan, _, lastDay));
+    }
+
+    function fixSeriesSpan(data, lastDay) {
         // Fill to the end
         var dayInMillis = 24 * 60 * 60 * 1000;
-        var lastDay = reference[reference.length - 1][0];
         var lastData = data[data.length - 1];
         var lastDataDay = lastData[0], lastDataValue = lastData[1];
         while (lastDataDay <= lastDay) {
             data.push([lastDataDay, lastDataValue]);
             lastDataDay += dayInMillis;
         }
-
-        // Add zero day at the start to smoothen graph
-        data.unshift([data[0][0] - dayInMillis, 0]);
     }
 </script>
 {% endblock %}
