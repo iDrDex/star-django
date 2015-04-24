@@ -84,7 +84,7 @@ class Sample(models.Model):
 
 class SampleTag(models.Model):
     sample = models.ForeignKey(Sample, blank=True, null=True)
-    series_tag = models.ForeignKey('SeriesTag', blank=True, null=True)
+    series_tag = models.ForeignKey('SeriesTag', blank=True, null=True, related_name='sample_tags')
     annotation = models.TextField(blank=True)
     is_active = models.CharField(max_length=1, blank=True, default='T')
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)

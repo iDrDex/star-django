@@ -21,16 +21,24 @@ class SerieValidation(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('legacy.AuthUser')
 
+    # Calculated fields
+    samples_total = models.IntegerField(null=True)
+    samples_concordant = models.IntegerField(null=True)
+    samples_concordancy = models.FloatField(null=True)
+
     class Meta:
         db_table = 'series_validation'
 
 
 class SampleValidation(models.Model):
     sample = models.ForeignKey('legacy.Sample', blank=True, null=True)
-    serie_validation = models.ForeignKey(SerieValidation)
+    serie_validation = models.ForeignKey(SerieValidation, related_name='sample_validations')
     annotation = models.TextField(blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('legacy.AuthUser')
+
+    # Calculated field
+    concordant = models.NullBooleanField(null=True)
 
     class Meta:
         db_table = 'sample_validation'

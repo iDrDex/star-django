@@ -17,8 +17,9 @@ from django.shortcuts import redirect
 from django.utils import timezone
 
 from legacy.models import Sample, Tag, SeriesTag, SampleTag
-from tags.models import ValidationJob, SerieValidation, SampleValidation
 from core.tasks import update_stats, update_graph
+from .models import ValidationJob, SerieValidation, SampleValidation
+from .tasks import calc_validation_stats
 
 
 @render_to()
@@ -201,6 +202,7 @@ def save_validation(request):
     message = 'Saved {} validations for {}'.format(len(values), serie_validation.tag.tag_name)
     messages.success(request, message)
 
+    calc_validation_stats.delay(serie_validation.pk)
     update_stats.delay()
     update_graph.delay()
 
