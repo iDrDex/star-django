@@ -25,6 +25,7 @@ def update_stats():
     redis_client.set('core.stats.sample_annotations', sample_annotations)
 
 
+# TODO: debounce this task
 @shared_task
 def update_graph():
     samples_graph_sql = """
@@ -32,6 +33,7 @@ def update_graph():
                sum(count(*)) over (order by date_trunc('day', created_on))
         FROM sample_tag GROUP BY 1 ORDER BY 1
     """
+    # TODO: update this to use concordant field
     validations_graph_sql = """
         SELECT date_trunc('day', V.created_on),
                sum(count(*)) over (order by date_trunc('day', V.created_on))
