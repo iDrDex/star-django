@@ -161,13 +161,16 @@
 
     function fixSeries(annotations) {
         var lastDay = _(annotations).map(function (data) {
-            return data[data.length - 1][0]
+            if (!data.length) return 0;
+            return data[data.length - 1][0];
         }).max();
 
         _.each(annotations, _.partial(fixSeriesSpan, _, lastDay));
     }
 
     function fixSeriesSpan(data, lastDay) {
+        if (!data.length) return;
+
         // Fill to the end
         var dayInMillis = 24 * 60 * 60 * 1000;
         var lastData = data[data.length - 1];
