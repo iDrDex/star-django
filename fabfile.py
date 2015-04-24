@@ -116,6 +116,9 @@ def dirty_deploy():
     print(green('Collecting static files...'))
     execute(collect_static)
 
+    print(green('Restarting celery...'))
+    sudo('supervisorctl restart celery')
+
     print(green('Reloading uWSGI...'))
     execute(restart)
 
