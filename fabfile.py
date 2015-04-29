@@ -7,7 +7,8 @@ from fabric.colors import green, cyan, red, yellow
 
 
 __all__ = ('deploy', 'dirty_deploy', 'dirty_fast', 'shell',
-           'restart', 'manage', 'incoming_files', 'install_requirements', 'migrate')
+           'restart', 'manage', 'incoming_files', 'install_requirements', 'migrate',
+           'pull_db')
 
 
 django.project('stargeo')
@@ -129,3 +130,48 @@ def dirty_fast():
 
     print(green('Reloading uWSGI...'))
     execute(restart)
+
+
+import os.path
+import honcho.environ
+import dj_database_url
+
+def pull_db(dump='remote'):
+    app_env = honcho.environ.parse(open('.env').read())
+    remote_db = dj_database_url.parse(app_env['REAL_LEGACY_DATABASE_URL'])
+    local_db = dj_database_url.parse(app_env['LEGACY_DATABASE_URL'])
+
+    # Make and download database dump
+    if dump == 'remote':
+        # Dump directly from remote database with local pg_dump
+        print('Making database dump...')
+        local('PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s > stargeo.sql'
+                % remote_db)
+    elif dump == 'app':
+        # Alternative: dump to app-server than rsync here,
+        #              useful with slow or flaky internet connection
+        print('Making database dump...')
+        run('PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s > stargeo.sql'
+                % remote_db)
+        print('Downloading dump...')
+        local('rsync -avz --progress stargeo:/home/ubuntu/stargeo.sql stargeo.sql')
+        run('rm stargeo.sql')
+    elif dump == 'local':
+        print('Using local dump...')
+        if not os.path.exists('stargeo.sql'):
+            print(red('Local database dump not found (stargeo.sql).\n'
+                      'Please use "remote" or "app" dump.'))
+            return
+
+    print('Dropping %(NAME)s...' % local_db)
+    local('psql -Upostgres -c "drop database if exists %(NAME)s"' % local_db)
+
+    # Check if database is deleted
+    with quiet():
+        if local('psql -Upostgres -d %(NAME)s -c ""' % local_db, capture=True).succeeded:
+            print(red('Database not dropped.\n'
+                      'Disconnect all the clients and retry with "fab pull_db:local"'))
+            return
+
+    # Load dump
+    local('psql -Upostgres -f stargeo.sql')
