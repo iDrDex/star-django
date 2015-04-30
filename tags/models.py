@@ -1,6 +1,20 @@
 from django.db import models
 
 
+class UserStats(models.Model):
+    user = models.OneToOneField('legacy.AuthUser', primary_key=True, related_name='stats')
+
+    serie_tags = models.IntegerField(default=0)
+    sample_tags = models.IntegerField(default=0)
+    serie_validations = models.IntegerField(default=0)
+    sample_validations = models.IntegerField(default=0)
+    serie_validations_concordant = models.IntegerField(default=0)
+    sample_validations_concordant = models.IntegerField(default=0)
+
+    samples_to_pay_for = models.IntegerField(default=0)
+    samples_payed = models.IntegerField(default=0)
+
+
 class ValidationJob(models.Model):
     series_tag = models.ForeignKey('legacy.SeriesTag', on_delete=models.CASCADE)
     locked_on = models.DateTimeField(blank=True, null=True)
@@ -28,6 +42,10 @@ class SerieValidation(models.Model):
 
     class Meta:
         db_table = 'series_validation'
+
+    @property
+    def concordant(self):
+        return self.samples_concordant == self.samples_total
 
 
 class SampleValidation(models.Model):

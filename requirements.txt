@@ -10,3 +10,4 @@ psycopg2==2.6
 redis==2.10.3
 django-migrations-plus
 celery==3.1.17
+tqdm==1.0
