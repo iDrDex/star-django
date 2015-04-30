@@ -98,6 +98,12 @@
             <li{% if request.path == '/validate/' %} class="active"{% endif %}>
                 <a href="/validate/"> <span class="nav-label">Validate</span> </a>
             </li>
+            {# HACK: hardcode my and Dexters ids #}
+            {% if request.user_data.id in (1, 24) %}
+            <li{% if request.path == '/stats/' %} class="active"{% endif %}>
+                <a href="/stats/"> <span class="nav-label">Statistics</span> </a>
+            </li>
+            {% endif %}
         </ul>
     </div>
 </aside>

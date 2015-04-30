@@ -16,7 +16,7 @@ from django.http import Http404
 from django.shortcuts import redirect
 from django.utils import timezone
 
-from legacy.models import Sample, Tag, SeriesTag, SampleTag
+from legacy.models import Sample, Tag, SeriesTag, SampleTag, AuthUser
 from core.tasks import update_stats, update_graph
 from .models import ValidationJob, SerieValidation, SampleValidation
 from .tasks import calc_validation_stats
@@ -228,6 +228,20 @@ def lock_validation_job(user_id):
         .update(locked_by=None, locked_on=None)
 
     return job
+
+
+@render_to()
+def stats(request):
+    if not request.user_data.get('id'):
+        return redirect(settings.LEGACY_APP_URL + '/default/user/login')
+    # HACK: hardcode my and Dexters ids
+    if request.user_data['id'] not in (1, 24):
+        raise Http404
+
+    return {
+        'users': AuthUser.objects.select_related('stats').exclude(stats=None)
+                                 .order_by('first_name', 'last_name')
+    }
 
 
 # Data utils

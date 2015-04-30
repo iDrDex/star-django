@@ -1,0 +1,35 @@
+{% extends "base.j2" %}
+
+{% block content %}
+<h2>User statistics</h2>
+
+<div class="table-responsive">
+  <table class="table table-striped table-bordered" id="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th class="text-right">Series validated</th>
+        <th class="text-right">Concordant</th>
+        <th class="text-right">Concordancy %</th>
+        <th class="text-right">Samples validated</th>
+        <th class="text-right">Samples to pay for</th>
+        <th class="text-right">Sum</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+        <tr>
+          <td>{{ user.first_name }} {{ user.last_name }}</td>
+          <td class="text-right">{{ user.stats.serie_validations }}</td>
+          <td class="text-right">{{ user.stats.serie_validations_concordant }}</td>
+          <td class="text-right">{{ '{:.0f}%'.format(user.stats.serie_validation_concordancy * 100) if user.stats.serie_validation_concordancy else '-' }}</td>
+          <td class="text-right">{{ user.stats.sample_validations }}</td>
+          <td class="text-right">{{ user.stats.samples_to_pay_for }}</td>
+          <td class="text-right">{{ '${:0.2f}'.format(user.stats.samples_to_pay_for * 0.05) }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

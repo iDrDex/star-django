@@ -14,6 +14,13 @@ class UserStats(models.Model):
     samples_to_pay_for = models.IntegerField(default=0)
     samples_payed = models.IntegerField(default=0)
 
+    @property
+    def serie_validation_concordancy(self):
+        if self.serie_validations:
+            return float(self.serie_validations_concordant) / self.serie_validations
+        else:
+            return None
+
 
 class ValidationJob(models.Model):
     series_tag = models.ForeignKey('legacy.SeriesTag', on_delete=models.CASCADE)

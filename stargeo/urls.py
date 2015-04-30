@@ -8,6 +8,7 @@ urlpatterns = patterns('',  # noqa
     url(r'^search/$', 'tags.views.search', name='search'),
     url(r'^annotate/$', 'tags.views.annotate', name='annotate'),
     url(r'^validate/$', 'tags.views.validate', name='validate'),
+    url(r'^stats/$', 'tags.views.stats', name='stats'),
 
     url(r'^admin/', include(admin.site.urls)),
 )
