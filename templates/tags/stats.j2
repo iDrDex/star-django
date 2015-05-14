@@ -13,7 +13,9 @@
         <th class="text-right">Concordancy %</th>
         <th class="text-right">Samples validated</th>
         <th class="text-right">Samples to pay for</th>
+        <th class="text-right">Samples unpayed</th>
         <th class="text-right">Sum</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -25,7 +27,13 @@
           <td class="text-right">{{ '{:.0f}%'.format(user.stats.serie_validation_concordancy * 100) if user.stats.serie_validation_concordancy else '-' }}</td>
           <td class="text-right">{{ user.stats.sample_validations }}</td>
           <td class="text-right">{{ user.stats.samples_to_pay_for }}</td>
-          <td class="text-right">{{ '${:0.2f}'.format(user.stats.samples_to_pay_for * 0.05) }}</td>
+          <td class="text-right">{{ user.stats.samples_unpayed }}</td>
+          <td class="text-right">{{ '${:0.2f}'.format(user.stats.samples_unpayed * 0.05) }}</td>
+          <td>
+            {% if user.stats.samples_unpayed %}
+              <a href="{{ url('pay') }}?user_id={{ user.id }}" class="btn btn-primary btn-xs">Pay</a>
+            {% endif %}
+          </td>
         </tr>
       {% endfor %}
     </tbody>

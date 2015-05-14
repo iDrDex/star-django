@@ -21,6 +21,19 @@ class UserStats(models.Model):
         else:
             return None
 
+    @property
+    def samples_unpayed(self):
+        return self.samples_to_pay_for - self.samples_payed
+
+
+class Payment(models.Model):
+    receiver = models.ForeignKey('legacy.AuthUser', related_name='payments')
+    samples = models.IntegerField()
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+    method = models.TextField()
+    created_on = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey('legacy.AuthUser')
+
 
 class ValidationJob(models.Model):
     series_tag = models.ForeignKey('legacy.SeriesTag', on_delete=models.CASCADE)

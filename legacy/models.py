@@ -16,6 +16,9 @@ class AuthUser(models.Model):
         managed = False
         db_table = 'auth_user'
 
+    def __unicode__(self):
+        return self.first_name + ' ' + self.last_name
+
 
 class Platform(models.Model):
     gpl_name = models.TextField(blank=True)

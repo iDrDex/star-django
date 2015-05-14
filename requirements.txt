@@ -1,6 +1,7 @@
 dj-database-url==0.3.0
 Django==1.7.4
-django-jinja==1.1.1
+django-jinja==1.4.1
+django-jinja-bootstrap-form==4.0.3
 funcy==1.4
 gunicorn==19.2.1
 handy==0.4

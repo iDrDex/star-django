@@ -41,6 +41,7 @@ INSTALLED_APPS = (
 
     'django_jinja',
     'django_jinja.contrib._humanize',
+    'bootstrapform_jinja',
 
     'core',
     'legacy',
@@ -120,7 +121,7 @@ TEMPLATE_LOADERS = (
     'django_jinja.loaders.AppLoader',
 )
 
-DEFAULT_JINJA2_TEMPLATE_EXTENSION = '.j2'
+DEFAULT_JINJA2_TEMPLATE_INTERCEPT_RE = r'.*\.(j2|jinja)$'
 TEMPLATE_DEFAULT_EXTENSION = '.j2'
 
 TEMPLATE_CONTEXT_PROCESSORS = (

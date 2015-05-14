@@ -1,0 +1,38 @@
+{% extends "base.j2" %}
+
+{% block content %}
+<h2>Pay {{ receiver.first_name}} {{ receiver.last_name }}</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <form id="payment-form" class="form" role="form" method="post">
+            {% csrf_token %}
+            {{ form|bootstrap }}
+            <div class="form-group">
+                <input type="submit" class="btn btn-primary" value="Log a payment" />
+            </div>
+        </form>
+    </div>
+    <div class="col-md-6" style="padding-top: 1.75em">
+        <table class="table table-striped table-bordered">
+        <tbody>
+            <tr><td>First name</td><td>{{ receiver.first_name }}</td></tr>
+            <tr><td>Last name</td><td>{{ receiver.last_name }}</td></tr>
+            <tr><td>Email</td><td>{{ receiver.email }}</td></tr>
+        </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript">
+var paymentForm = $('#payment-form').get(0);
+
+$('#payment-form input[name=samples]').change(function () {
+    paymentForm.amount.value = this.value * 0.05;
+})
+$('#payment-form input[name=amount]').change(function () {
+    paymentForm.samples.value = parseInt(this.value / 0.05, 10);
+})
+</script>
+
+{% endblock %}
