@@ -74,9 +74,14 @@
         <div class="profile-picture">
             <div class="stats-label text-color">
                 <span class="font-extra-bold font-uppercase">
-                    {{ request.user_data.first_name }} {{ request.user_data.last_name }}
+                    {% if request.user_data %}
+                        {{ request.user_data.first_name }} {{ request.user_data.last_name }}
+                    {% else %}
+                        <a href="{{ legacy_app_url }}/default/user/login">Log in</a>
+                    {% endif %}
                 </span>
 
+                {% if request.user_data %}
                 <p>
                     <a href="{{ legacy_app_url }}/default/user/profile">
                         <small class="text-mited">Profile</small>
@@ -85,6 +90,7 @@
                         <small class="text-mited">Logout</small>
                     </a>
                 </p>
+                {% endif %}
             </div>
         </div>
 
