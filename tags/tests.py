@@ -8,11 +8,11 @@ def real_db(_django_cursor_wrapper):
 
 
 def test_search(client):
-    response = client.get('/')
+    response = client.get('/search/')
     assert response.status_code == 200
 
-    response = client.get('/?q=diabetes')
+    response = client.get('/search/?q=diabetes')
     assert response.status_code == 200
 
     dom = lxml.html.fromstring(response.content)
-    assert len(dom.cssselect('#data-table tr')) == 11
+    assert len(dom.cssselect('.search-result')) == 10
