@@ -7,7 +7,6 @@ from funcy import filter, project, memoize, without, group_by, first, imapcat, s
 from handy.db import db_execute, fetch_val, fetch_dict, fetch_dicts, fetch_col
 from handy.decorators import render_to, paginate
 
-from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -18,6 +17,7 @@ from django.utils import timezone
 
 from legacy.models import Sample, Tag, SeriesTag, SampleTag, AuthUser
 from core.tasks import update_stats, update_graph
+from core.utils import login_required
 from .models import ValidationJob, SerieValidation, SampleValidation
 from .tasks import calc_validation_stats
 
@@ -49,12 +49,10 @@ def search(request):
     }
 
 
+@login_required
 @render_to()
 def annotate(request):
     if request.method == 'POST':
-        if not request.user_data.get('id'):
-            return redirect(settings.LEGACY_APP_URL + '/default/user/login')
-
         if save_annotation(request):
             return redirect(reverse(annotate) + '?series_id=' + request.POST['series_id'])
         else:
@@ -130,12 +128,9 @@ def save_annotation(request):
 
 BLIND_FIELDS = {'id', 'sample_id', 'sample_geo_accession', 'sample_platform_id', 'platform_id'}
 
+@login_required
 @render_to('tags/annotate.j2')
 def validate(request):
-    # TODO: write @login_required
-    if not request.user_data.get('id'):
-        return redirect(settings.LEGACY_APP_URL + '/default/user/login')
-
     if request.method == 'POST':
         save_validation(request)
         return redirect(request.get_full_path())
@@ -230,10 +225,9 @@ def lock_validation_job(user_id):
     return job
 
 
+@login_required
 @render_to()
 def stats(request):
-    if not request.user_data.get('id'):
-        return redirect(settings.LEGACY_APP_URL + '/default/user/login')
     # HACK: hardcode my and Dexters ids
     if request.user_data['id'] not in (1, 24):
         raise Http404
