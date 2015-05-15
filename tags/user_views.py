@@ -12,7 +12,7 @@ from .models import UserStats, Payment
 
 
 @admin_required
-@render_to('tags/stats.j2')
+@render_to('users/stats.j2')
 def stats(request):
     return {
         'users': AuthUser.objects.select_related('stats').exclude(stats=None)
@@ -21,7 +21,7 @@ def stats(request):
 
 
 @admin_required
-@render_to('tags/pay.j2')
+@render_to('users/pay.j2')
 def pay(request):
     receiver = AuthUser.objects.select_related('stats').get(pk=request.GET['user_id'])
 
