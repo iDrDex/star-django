@@ -1,4 +1,9 @@
+from decimal import Decimal
 from django.db import models
+from handy.models import JSONField
+
+
+SAMPLE_REWARD = Decimal('0.05')
 
 
 class UserStats(models.Model):
@@ -25,6 +30,19 @@ class UserStats(models.Model):
     def samples_unpayed(self):
         return self.samples_to_pay_for - self.samples_payed
 
+    @property
+    def amount_unpayed(self):
+        return self.samples_unpayed * SAMPLE_REWARD
+
+
+class PaymentState(object):
+    PENDING, DONE, FAILED = 1, 2, 3
+    choices = (
+        (1, 'pending'),
+        (2, 'done'),
+        (3, 'failed'),
+    )
+
 
 class Payment(models.Model):
     receiver = models.ForeignKey('legacy.AuthUser', related_name='payments')
@@ -33,6 +51,8 @@ class Payment(models.Model):
     method = models.TextField()
     created_on = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('legacy.AuthUser')
+    state = models.IntegerField(choices=PaymentState.choices)
+    extra = JSONField(default={})
 
 
 class ValidationJob(models.Model):

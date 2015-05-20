@@ -10,6 +10,7 @@ urlpatterns = patterns('',  # noqa
     url(r'^validate/$', 'tags.views.validate', name='validate'),
 
     url(r'^stats/$', 'tags.user_views.stats', name='stats'),
+    url(r'^redeem/$', 'tags.user_views.redeem', name='redeem'),
     url(r'^pay/$', 'tags.user_views.pay', name='pay'),
 
     url(r'^admin/', include(admin.site.urls)),

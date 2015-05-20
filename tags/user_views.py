@@ -1,4 +1,3 @@
-from decimal import Decimal
 from handy.decorators import render_to
 
 from django.contrib import messages
@@ -6,9 +5,11 @@ from django.db import transaction
 from django.db.models import F
 from django.shortcuts import redirect
 
-from core.utils import admin_required
+from core.conf import redis_client
+from core.utils import admin_required, login_required
 from legacy.models import AuthUser
 from .models import UserStats, Payment
+from .tasks import redeem_samples
 
 
 @admin_required
@@ -17,6 +18,22 @@ def stats(request):
     return {
         'users': AuthUser.objects.select_related('stats').exclude(stats=None)
                                  .order_by('first_name', 'last_name')
+    }
+
+
+@login_required
+@render_to('users/redeem.j2')
+def redeem(request):
+    if request.method == 'POST':
+        # Mark redeem as in progress
+        redis_client.setex('redeem.samples:%d' % request.user_data['id'], 60, 'active')
+        redeem_samples.delay(request.user_data['id'])
+        messages.success(request, 'Ordered a Tango Card for you')
+        return redirect('redeem')
+
+    return {
+        'active': redis_client.get('redeem.samples:%d' % request.user_data['id']),
+        'stats': UserStats.objects.get(pk=request.user_data['id']),
     }
 
 
@@ -35,7 +52,7 @@ def pay(request):
         payment = Payment(
             receiver=receiver,
             samples=receiver.stats.samples_unpayed,
-            amount=receiver.stats.samples_unpayed * Decimal('0.05'),
+            amount=receiver.stats.amount_unpayed,
             method='Tango Card',
         )
         form = PaymentForm(instance=payment)

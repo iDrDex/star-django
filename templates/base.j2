@@ -82,10 +82,13 @@
                 </span>
 
                 {% if request.user_data %}
-                <p>
+                <p style="margin-top: 1em">
                     <a href="{{ legacy_app_url }}/default/user/profile">
                         <small class="text-mited">Profile</small>
                     </a>
+                    {# <a href="{{ url('redeem') }}">
+                        <small class="text-mited">Redeem</small>
+                    </a> #}
                     <a href="{{ legacy_app_url }}/default/user/logout">
                         <small class="text-mited">Logout</small>
                     </a>

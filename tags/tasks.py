@@ -1,8 +1,10 @@
 import logging
 from celery import shared_task
 from django.db import transaction
+from django.db.models import F
 
-from .models import SerieValidation, UserStats
+from core.conf import redis_client
+from .models import SerieValidation, UserStats, ValidationJob, Payment, PaymentState
 
 
 logger = logging.getLogger(__name__)
@@ -72,3 +74,64 @@ def _reschedule_validation(serie_validation):
         return
 
     ValidationJob.objects.create(series_tag=serie_validation.series_tag)
+
+
+from tango import place_order
+
+@shared_task(acks_late=True)
+def redeem_samples(receiver_id):
+    # We need to create a pending payment in a separate transaction to be safe from double card
+    # ordering. This way even if we fail at any moment later payment and new stats will persist
+    # and won't allow us to issue a new card for same work.
+    with transaction.atomic('legacy'):
+        stats = UserStats.objects.select_for_update().get(user_id=receiver_id)
+        # If 2 redeem attempts are tried simultaneously than first one will lock samples,
+        # and second one should just do nothing.
+        if not stats.samples_unpayed:
+            return
+
+        # Create pending payment
+        payment = Payment.objects.create(
+            receiver_id=receiver_id,
+            samples=stats.samples_unpayed,
+            amount=stats.amount_unpayed,
+            method='Tango Card API',
+            created_by_id=receiver_id,
+            state=PaymentState.PENDING,
+        )
+
+        # Update stats
+        stats.samples_payed += stats.samples_unpayed
+        stats.save()
+
+    with transaction.atomic('legacy'):
+        # Relock this so that nobody will alter or remove it concurrently
+        payment = Payment.objects.select_for_update().get(pk=payment.pk)
+        user = payment.receiver
+
+        try:
+            result = place_order(
+                name='%s %s' % (user.first_name, user.last_name),
+                email=user.email,
+                amount=payment.amount,
+            )
+        except Exception as e:
+            result = {
+                'success': False,
+                'exception_class': e.__class__.__name__,
+                'exception_args': getattr(e, 'args', ()),
+            }
+
+        # Update payment
+        payment.state = PaymentState.DONE if result['success'] else PaymentState.FAILED
+        payment.extra = result
+        payment.save()
+
+        # Restore samples stats as they were before payment lock,
+        # so that another attempt could be made.
+        if not result['success']:
+            UserStats.objects.filter(user_id=receiver_id) \
+                .update(samples_payed=F('samples_payed') - payment.samples)
+
+    # Remove in-progress flag
+    redis_client.delete('redeem.samples:%d' % receiver_id)

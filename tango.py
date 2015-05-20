@@ -18,18 +18,11 @@ MAX_AMOUNT = 500000
 CC_TOKEN = '30032544'
 
 
-class TangoError(Exception):
-    pass
-
-
 @retry(2, requests.ConnectionError)
 def make_request(method, url, data=None, silent=False):
     request_func = getattr(requests, method)
     r = request_func(API_URL + url, data=json.dumps(data), auth=(PLATFORM_NAME, PLATFORM_KEY))
-    result = r.json()
-    if not result['success'] and not silent:
-        raise TangoError(result['error_message'])
-    return result
+    return r.json()
 
 
 def create_account():
@@ -93,7 +86,7 @@ def place_order(name=None, email=None, amount=None):
             "email": email,
         },
         "sku": "TNGO-E-V-STD",
-        "amount": amount,
+        "amount": amount * 100,  # in cents
         "reward_message": "Thank you for annotating stargeo data.",
         "reward_subject": "Stargeo reward",
         "reward_from": "Stargeo"
