@@ -57,3 +57,18 @@ def calc_validation_stats(serie_validation_pk):
         author_stats, _ = UserStats.objects.select_for_update().get_or_create(user_id=author_id)
         author_stats.samples_to_pay_for += serie_validation.samples_total
         author_stats.save()
+
+    # Reschedule validation if not concordant
+    if not serie_validation.concordant:
+        _reschedule_validation(serie_validation)
+
+
+def _reschedule_validation(serie_validation):
+    failed = SerieValidation.objects.filter(series_tag=serie_validation.series_tag).count()
+    if failed >= 3:
+        # TODO: create user interface to see problematic series tags
+        logger.info('Failed validating %s serie tag %d times',
+                    serie_validation.series_tag_id, failed)
+        return
+
+    ValidationJob.objects.create(series_tag=serie_validation.series_tag)
