@@ -107,6 +107,8 @@ def redeem_samples(receiver_id):
     with transaction.atomic('legacy'):
         # Relock this so that nobody will alter or remove it concurrently
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
+        if payment.state != PaymentState.PENDING:
+            return
         user = payment.receiver
 
         try:
