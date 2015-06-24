@@ -136,13 +136,13 @@ import os.path
 import honcho.environ
 import dj_database_url
 
-def pull_db(dump='remote'):
+def pull_db(dump='app'):
     app_env = honcho.environ.parse(open('.env').read())
     remote_db = dj_database_url.parse(app_env['REAL_LEGACY_DATABASE_URL'])
     local_db = dj_database_url.parse(app_env['LEGACY_DATABASE_URL'])
 
     # Make and download database dump
-    if dump == 'remote':
+    if dump == 'direct':
         # Dump directly from remote database with local pg_dump
         print('Making database dump...')
         local('PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s > stargeo.sql'
@@ -154,7 +154,7 @@ def pull_db(dump='remote'):
         run('PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s > stargeo.sql'
                 % remote_db)
         print('Downloading dump...')
-        local('rsync -avz --progress stargeo:/home/ubuntu/stargeo.sql stargeo.sql')
+        local('rsync -avz --progress stargeo:/home/ubuntu/app/stargeo.sql stargeo.sql')
         run('rm stargeo.sql')
     elif dump == 'local':
         print('Using local dump...')
