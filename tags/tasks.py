@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models import F
 
 from core.conf import redis_client
-from .models import SerieValidation, UserStats, ValidationJob, Payment, PaymentState
+from .models import SerieValidation, UserStats, ValidationJob, Payment, PaymentState, SAMPLE_REWARD
 
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def _reschedule_validation(serie_validation):
 from tango import place_order
 
 @shared_task(acks_late=True)
-def redeem_samples(receiver_id):
+def redeem_samples(receiver_id=None, samples=None, method='Tango Card API', sender_id=None):
     # We need to create a pending payment in a separate transaction to be safe from double card
     # ordering. This way even if we fail at any moment later payment and new stats will persist
     # and won't allow us to issue a new card for same work.
@@ -87,21 +87,27 @@ def redeem_samples(receiver_id):
         stats = UserStats.objects.select_for_update().get(user_id=receiver_id)
         # If 2 redeem attempts are tried simultaneously than first one will lock samples,
         # and second one should just do nothing.
-        if not stats.samples_unpayed:
+        samples = samples or stats.samples_unpayed
+        if not samples:
+            logger.error('Nothing to redeem for user %d', receiver_id)
+            return
+        if samples > stats.samples_unpayed:
+            logger.error('Trying to redeem %d samples but user %d has only %d',
+                         samples, receiver_id, stats.samples_unpayed)
             return
 
         # Create pending payment
         payment = Payment.objects.create(
             receiver_id=receiver_id,
-            samples=stats.samples_unpayed,
-            amount=stats.amount_unpayed,
-            method='Tango Card API',
-            created_by_id=receiver_id,
+            samples=samples,
+            amount=samples * SAMPLE_REWARD,
+            method=method,
+            created_by_id=sender_id or receiver_id,
             state=PaymentState.PENDING,
         )
 
         # Update stats
-        stats.samples_payed += stats.samples_unpayed
+        stats.samples_payed += samples
         stats.save()
 
     with transaction.atomic('legacy'):

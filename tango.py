@@ -5,12 +5,12 @@ import requests
 from funcy import retry
 
 
-# API_URL = 'https://integration-api.tangocard.com/raas/v1/'
-API_URL = 'https://sandbox.tangocard.com/raas/v1/'
+API_URL = os.environ.get('TANGO_API_URL')
 PLATFORM_NAME, PLATFORM_KEY = os.environ.get('TANGO_AUTH').split(':')
 CUSTOMER = 'stargeo'
 IDENTIFIER = 'stargeo'
-EMAIL = 'suor.web@gmail.com'
+# EMAIL = 'suor.web@gmail.com'
+EMAIL = 'idrdex@gmail.com'
 
 MAX_AMOUNT = 500000
 
@@ -86,7 +86,7 @@ def place_order(name=None, email=None, amount=None):
             "email": email,
         },
         "sku": "TNGO-E-V-STD",
-        "amount": amount * 100,  # in cents
+        "amount": int(amount * 100),  # in cents
         "reward_message": "Thank you for annotating stargeo data.",
         "reward_subject": "Stargeo reward",
         "reward_from": "Stargeo"

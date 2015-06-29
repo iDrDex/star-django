@@ -1,14 +1,12 @@
 from handy.decorators import render_to
 
 from django.contrib import messages
-from django.db import transaction
-from django.db.models import F
 from django.shortcuts import redirect
 
 from core.conf import redis_client
 from core.utils import admin_required, login_required
 from legacy.models import AuthUser
-from .models import UserStats, Payment
+from .models import UserStats, Payment, SAMPLE_REWARD
 from .tasks import redeem_samples
 
 
@@ -45,7 +43,14 @@ def pay(request):
     if request.method == 'POST':
         form = PaymentForm(request.POST)
         if form.is_valid():
-            save_payment(request, form)
+            payment = form.save(commit=False)
+            redeem_samples.delay(
+                receiver_id=payment.receiver_id,
+                samples=payment.samples,
+                method=payment.method,
+                sender_id=request.user_data['id'],
+            )
+
             messages.success(request, 'Saved payment')
             return redirect('stats')
     else:
@@ -63,22 +68,15 @@ def pay(request):
     }
 
 
-@transaction.atomic
-def save_payment(request, form):
-    payment = form.save(commit=False)
-    payment.created_by_id = request.user_data['id']
-    payment.save()
-
-    UserStats.objects.filter(user_id=form.cleaned_data['receiver']) \
-        .update(samples_payed=F('samples_payed') + form.cleaned_data['samples'])
-
-
 # A form
 
 from django.forms import ModelForm, TextInput
 
 class PaymentForm(ModelForm):
     def clean(self):
+        # Keep this amount and samples in sync
+        self.cleaned_data['amount'] = self.cleaned_data['samples'] * SAMPLE_REWARD
+        # Check if there is not enough samples
         unpayed_samples = self.cleaned_data['receiver'].stats.samples_unpayed
         if unpayed_samples < self.cleaned_data['samples']:
             self.add_error('samples', 'User has only %d unpayed samples' % unpayed_samples)
