@@ -6,7 +6,7 @@ from fabric.contrib import django
 from fabric.colors import green, cyan, red, yellow
 
 
-__all__ = ('deploy', 'dirty_deploy', 'dirty_fast', 'shell',
+__all__ = ('deploy', 'rsync', 'dirty_deploy', 'dirty_fast', 'shell',
            'restart', 'manage', 'incoming_files', 'install_requirements', 'migrate',
            'pull_db')
 
@@ -102,6 +102,11 @@ def deploy():
 
     print(green('Reloading uWSGI...'))
     execute(restart)
+
+
+def rsync():
+    print(green('Uploading files...'))
+    local("rsync -avzL --progress --filter=':- .gitignore' . stargeo:/home/ubuntu/app")
 
 
 def dirty_deploy():
