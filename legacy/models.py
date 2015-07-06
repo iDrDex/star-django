@@ -55,6 +55,16 @@ class Series(models.Model):
         db_table = 'series'
 
 
+class SeriesAttribute(models.Model):
+    series = models.ForeignKey(Series, blank=True, null=True)
+    attribute_value = models.TextField(blank=True)
+    attribute_name = models.TextField(blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'series_attribute'
+
+
 class SeriesTag(models.Model):
     series = models.ForeignKey(Series, blank=True, null=True)
     platform = models.ForeignKey(Platform, blank=True, null=True)
@@ -79,10 +89,21 @@ class Sample(models.Model):
     series = models.ForeignKey('Series', blank=True, null=True)
     platform = models.ForeignKey(Platform, blank=True, null=True)
     gsm_name = models.TextField(blank=True)
+    deleted = models.CharField(max_length=1, blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'sample'
+
+
+class SampleAttribute(models.Model):
+    sample = models.ForeignKey(Sample, blank=True, null=True)
+    attribute_value = models.TextField(blank=True)
+    attribute_name = models.TextField(blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'sample_attribute'
 
 
 class SampleTag(models.Model):

@@ -13,3 +13,7 @@ django-migrations-plus
 celery==3.1.17
 tqdm==1.0
 requests==2.7.0
+ftptool==0.7.1
+cacheops=2.3.2
+gzip-reader==0.1
+pandas==0.15.2
