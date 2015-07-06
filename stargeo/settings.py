@@ -141,6 +141,15 @@ JINJA2_CONSTANTS = {
 }
 
 
+# Cacheops settings
+CACHEOPS_REDIS = {
+    'host': 'localhost',  # redis-server is on same machine
+    'port': 6379,         # default redis port
+    'db': 1,              # SELECT non-default redis database
+    'socket_timeout': 3,  # connection timeout in seconds, optional
+}
+
+
 # Logging settings
 ADMINS = (
     ('Alexander', 'suor.web@gmail.com'),
