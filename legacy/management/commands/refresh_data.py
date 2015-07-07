@@ -54,6 +54,8 @@ class Command(BaseCommand):
         # Need to join since queue.empty() is vulnerable to races
         queue.join()
 
+        # TODO: refresh materialized views
+
 
 def load_data(header):
     print colored('Found %d data lines' % len(header), 'cyan')
