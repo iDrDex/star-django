@@ -112,6 +112,9 @@
             <li{% if request.path == '/stats/' %} class="active"{% endif %}>
                 <a href="/stats/"> <span class="nav-label">Statistics</span> </a>
             </li>
+            <li{% if request.path == '/accounting/' %} class="active"{% endif %}>
+                <a href="/accounting/"> <span class="nav-label">Accounting</span> </a>
+            </li>
             {% endif %}
         </ul>
     </div>

@@ -4,7 +4,7 @@ django-jinja==1.4.1
 django-jinja-bootstrap-form==4.0.3
 funcy==1.4
 gunicorn==19.2.1
-handy==0.4
+handy==0.5.1
 honcho==0.6.4
 Jinja2==2.7.3
 psycopg2==2.6

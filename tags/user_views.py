@@ -1,4 +1,4 @@
-from handy.decorators import render_to
+from handy.decorators import render_to, paginate, render_to_json
 
 from django.contrib import messages
 from django.shortcuts import redirect
@@ -6,6 +6,7 @@ from django.shortcuts import redirect
 from core.conf import redis_client
 from core.utils import admin_required, login_required
 from legacy.models import AuthUser
+import tango
 from .models import UserStats, Payment, SAMPLE_REWARD
 from .tasks import redeem_samples
 
@@ -17,6 +18,22 @@ def stats(request):
         'users': AuthUser.objects.select_related('stats').exclude(stats=None)
                                  .order_by('first_name', 'last_name')
     }
+
+
+@admin_required
+@render_to('users/accounting.j2')
+@paginate('payments', 10)
+def accounting(request):
+    return {
+        'payments': Payment.objects.order_by('-created_on')
+                           .select_related('receiver', 'created_by')
+    }
+
+
+@render_to_json()
+@admin_required
+def account_info(request):
+    return tango.account_info()
 
 
 @login_required
