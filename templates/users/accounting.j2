@@ -18,7 +18,9 @@ $.ajax('/account_info/', {
 
       var labels = ['available_balance', 'customer', 'identifier', 'email'];
       $("#account-info").html(labels.map(function (label) {
-          return '<b>' + label + ':</b> ' + data.account[label];
+          var value = data.account[label];
+          return '<b>' + label + ':</b> '
+                 + (label == 'available_balance' ? '$' + value / 100 : value);
       }).join(', '));
     },
     error: infoError
