@@ -3,4 +3,4 @@
 .env.ec2
 bower_components
 .ipynb_checkpoints/
-stargeo.sql
+stargeo.sql*
