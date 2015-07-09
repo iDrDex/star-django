@@ -54,6 +54,10 @@ class Payment(models.Model):
     state = models.IntegerField(choices=PaymentState.choices)
     extra = JSONField(default={})
 
+    @property
+    def failed(self):
+        return self.state == PaymentState.FAILED
+
 
 class ValidationJob(models.Model):
     series_tag = models.ForeignKey('legacy.SeriesTag', on_delete=models.CASCADE)

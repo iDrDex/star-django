@@ -39,7 +39,6 @@ $.ajax('/account_info/', {
         <th class="text-right">Samples</th>
         <th class="text-right">Sum</th>
         <th class="text-right">State</th>
-        <th class="text-right">Success</th>
       </tr>
     </thead>
     <tbody>
@@ -51,7 +50,6 @@ $.ajax('/account_info/', {
           <td class="text-right">{{ payment.samples }}</td>
           <td class="text-right">${{ payment.amount }}</td>
           <td class="text-right">{{ payment.get_state_display() }}</td>
-          <td class="text-right">{{ payment.extra.success }}</td>
         </tr>
       {% endfor %}
     </tbody>

@@ -8,7 +8,7 @@ from core.utils import admin_required, login_required
 from legacy.models import AuthUser
 import tango
 from .models import UserStats, Payment, SAMPLE_REWARD
-from .tasks import redeem_samples
+from .tasks import redeem_samples, donate_samples
 
 
 @admin_required
@@ -40,15 +40,24 @@ def account_info(request):
 @render_to('users/redeem.j2')
 def redeem(request):
     if request.method == 'POST':
-        # Mark redeem as in progress
-        redis_client.setex('redeem.samples:%d' % request.user_data['id'], 60, 'active')
-        redeem_samples.delay(request.user_data['id'])
-        messages.success(request, 'Ordered a Tango Card for you')
-        return redirect('redeem')
+        if 'donate' in request.POST:
+            donate_samples(request.user_data['id'])
+            messages.success(request, 'Thank you very mush for your support')
+            return redirect('redeem')
+        else:
+            # Mark redeem as in progress
+            redis_client.setex('redeem.samples:%d' % request.user_data['id'], 60, 'active')
+            redeem_samples.delay(request.user_data['id'])
+            messages.success(request, 'Ordered a Tango Card for you')
+            return redirect('redeem')
+
+    last_payment = Payment.objects.filter(receiver_id=request.user_data['id']) \
+                          .order_by('created_on').last()
 
     return {
         'active': redis_client.get('redeem.samples:%d' % request.user_data['id']),
         'stats': UserStats.objects.get(pk=request.user_data['id']),
+        'last_payment': last_payment
     }
 
 

@@ -143,3 +143,25 @@ def redeem_samples(receiver_id=None, samples=None, method='Tango Card API', send
 
     # Remove in-progress flag
     redis_client.delete('redeem.samples:%d' % receiver_id)
+
+
+@transaction.atomic('legacy')
+def donate_samples(user_id):
+    stats = UserStats.objects.select_for_update().get(user_id=user_id)
+    samples = stats.samples_unpayed
+
+    if not samples:
+        return
+
+    # Create payment to log all operations
+    Payment.objects.create(
+        receiver_id=user_id,
+        samples=samples,
+        amount=samples * SAMPLE_REWARD,
+        method='Donate',
+        created_by_id=user_id,
+        state=PaymentState.DONE,
+    )
+
+    stats.samples_payed += samples
+    stats.save()

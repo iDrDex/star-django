@@ -1,18 +1,29 @@
 {% extends "base.j2" %}
 
 {% block content %}
+{% if not active and last_payment and last_payment.failed %}
+    <div class="alert alert-danger">
+        <p>For whatever reason we failed to issue a Tango Card for you, this could be some temporary malfunction, so please try once more in a few minutes. In case that doesn't help please contact us.</p>
+        <p>We are sorry for this inconvinience.</p>
+    </div>
+{% endif %}
+
 <h2>Redeem</h2>
 
 {% if active %}
     <p>Ordering Tango Card for you right now. Wait a bit and check your email.</p>
 {% else %}
+
     <p>You have <b>{{ stats.samples_unpayed }}</b> new samples,
-       which amounts to <b>${{ stats.amount_unpayed }}</b> reward.</p>
+       which amounts to <b>${{ stats.amount_unpayed }}</b> reward.
+       You can either redeem it or donate your effort.
+    </p>
 
     {% if stats.samples_unpayed %}
         <form class="form" method="post">
             {% csrf_token %}
-            <button type="submit" class="btn btn-primary">Redeem</button>
+            <button name="redeem" type="submit" class="btn btn-primary">Redeem</button>
+            <button name="donate" type="submit" class="btn btn-primary">Donate</button>
         </form>
     {% else %}
         <p>Nothing to redeem now.</p>
