@@ -20,6 +20,8 @@ from django.db import transaction
 from legacy.models import Series, SeriesAttribute, Platform, Sample, SampleAttribute
 
 
+# TODO: verbosity levels
+
 DEFAULT_NUMBER_OF_THREADS = 20
 SERIES_MATRIX_URL = urlparse.urlparse('ftp://ftp.ncbi.nih.gov/geo/series/')
 SOCKET_TIMEOUT = 20
