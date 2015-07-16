@@ -18,3 +18,7 @@ django-cacheops==2.3.2
 gzip-reader==0.1
 pandas==0.15.2
 termcolor==1.1.0
+
+numpy==1.9.1
+numpexpr==2.4.3
+rpy2==2.5.6
