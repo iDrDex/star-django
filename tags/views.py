@@ -79,7 +79,6 @@ def annotate(request):
     }
 
 
-@transaction.atomic('legacy')
 def save_annotation(request):
     user_id = request.user_data['id']
 
@@ -90,33 +89,35 @@ def save_annotation(request):
     regex = request.POST['regex']
     values = dict(json.loads(request.POST['values']))
 
-    # Group samples by platform
-    sample_to_platform = dict(Sample.objects.filter(id__in=values).values_list('id', 'platform_id'))
-    groups = group_by(lambda (id, _): sample_to_platform[id], values.items())
+    with transaction.atomic('legacy'):
+        # Group samples by platform
+        sample_to_platform = dict(Sample.objects.filter(id__in=values)
+                                        .values_list('id', 'platform_id'))
+        groups = group_by(lambda (id, _): sample_to_platform[id], values.items())
 
-    old_annotation = first(SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id))
-    if old_annotation:
-        messages.error(request, 'Serie %s is already annotated with tag %s'
-                       % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
-        return False
+        old_annotation = first(SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id))
+        if old_annotation:
+            messages.error(request, 'Serie %s is already annotated with tag %s'
+                           % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
+            return False
 
-    # Save all annotations and used regexes
-    for platform_id, annotations in groups.items():
-        # Do not allow for same user to annotate same serie twice
-        series_tag, created = SeriesTag.objects.get_or_create(
-            series_id=series_id, platform_id=platform_id, tag_id=tag_id, created_by_id=user_id,
-            defaults=dict(header=column, regex=regex, modified_by_id=user_id)
-        )
+        # Save all annotations and used regexes
+        for platform_id, annotations in groups.items():
+            # Do not allow for same user to annotate same serie twice
+            series_tag, created = SeriesTag.objects.get_or_create(
+                series_id=series_id, platform_id=platform_id, tag_id=tag_id, created_by_id=user_id,
+                defaults=dict(header=column, regex=regex, modified_by_id=user_id)
+            )
 
-        # Create all sample tags
-        SampleTag.objects.bulk_create([
-            SampleTag(sample_id=sample_id, series_tag=series_tag, annotation=annotation,
-                      created_by_id=user_id, modified_by_id=user_id)
-            for sample_id, annotation in annotations
-        ])
+            # Create all sample tags
+            SampleTag.objects.bulk_create([
+                SampleTag(sample_id=sample_id, series_tag=series_tag, annotation=annotation,
+                          created_by_id=user_id, modified_by_id=user_id)
+                for sample_id, annotation in annotations
+            ])
 
-        # Create validation job
-        ValidationJob.objects.create(series_tag=series_tag)
+            # Create validation job
+            ValidationJob.objects.create(series_tag=series_tag)
 
     messages.success(request, 'Saved annotations')
 
@@ -153,7 +154,6 @@ def validate(request):
         'samples': samples,
     }
 
-@transaction.atomic('legacy')
 def save_validation(request):
     # Do not check input, just crash for now
     user_id = request.user_data['id']
@@ -162,37 +162,38 @@ def save_validation(request):
     regex = request.POST['regex']
     values = dict(json.loads(request.POST['values']))
 
-    # Make database lock on job in queue
-    try:
-        job = ValidationJob.objects.select_for_update().get(id=job_id, locked_by=user_id)
-    except ValidationJob.DoesNotExist:
-        # TODO: fast-acquire lock if available
-        messages.error(request, 'Validation task timed out. Someone else could have done it.')
-        return
+    with transaction.atomic('legacy'):
+        # Make database lock on job in queue
+        try:
+            job = ValidationJob.objects.select_for_update().get(id=job_id, locked_by=user_id)
+        except ValidationJob.DoesNotExist:
+            # TODO: fast-acquire lock if available
+            messages.error(request, 'Validation task timed out. Someone else could have done it.')
+            return
 
-    # Save validation with used column and regex
-    st = job.series_tag
-    serie_validation, created = SerieValidation.objects.get_or_create(
-        series_tag_id=st.id, created_by_id=user_id,
-        defaults=dict(
-            column=column, regex=regex,
-            series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id
+        # Save validation with used column and regex
+        st = job.series_tag
+        serie_validation, created = SerieValidation.objects.get_or_create(
+            series_tag_id=st.id, created_by_id=user_id,
+            defaults=dict(
+                column=column, regex=regex,
+                series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id
+            )
         )
-    )
-    # Do not allow user validate same serie, same platform for same tag twice
-    if not created:
-        messages.error(request, 'You had already validated this annotation')
-        return
+        # Do not allow user validate same serie, same platform for same tag twice
+        if not created:
+            messages.error(request, 'You had already validated this annotation')
+            return
 
-    # Create all sample validations
-    SampleValidation.objects.bulk_create([
-        SampleValidation(sample_id=sample_id, serie_validation=serie_validation,
-                         annotation=annotation, created_by_id=user_id)
-        for sample_id, annotation in values.items()
-    ])
+        # Create all sample validations
+        SampleValidation.objects.bulk_create([
+            SampleValidation(sample_id=sample_id, serie_validation=serie_validation,
+                             annotation=annotation, created_by_id=user_id)
+            for sample_id, annotation in values.items()
+        ])
 
-    # Remove validation job from queue
-    job.delete()
+        # Remove validation job from queue
+        job.delete()
 
     message = 'Saved {} validations for {}'.format(len(values), serie_validation.tag.tag_name)
     messages.success(request, message)
