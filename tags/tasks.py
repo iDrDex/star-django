@@ -1,10 +1,14 @@
+from collections import defaultdict
 import logging
+
+from funcy import group_by, cat, distinct
 from celery import shared_task
 from django.db import transaction
 from django.db.models import F
 
 from core.conf import redis_client
-from .models import SerieValidation, UserStats, ValidationJob, Payment, PaymentState, SAMPLE_REWARD
+from .models import (SerieValidation, SampleValidation,
+                     UserStats, ValidationJob, Payment, PaymentState, SAMPLE_REWARD)
 
 
 logger = logging.getLogger(__name__)
@@ -17,28 +21,73 @@ def calc_validation_stats(serie_validation_pk):
     # Guard from double update, so that user stats won't be messed up
     if serie_validation.samples_total is not None:
         return
+    series_tag = serie_validation.series_tag
 
+    # Compare to annotation
     sample_validations = serie_validation.sample_validations.all()
-    tags_by_sample = {obj.sample_id: obj for obj in serie_validation.series_tag.sample_tags.all()}
+    sample_annotations = series_tag.sample_tags.all()
 
-    # Check if samples set is the same
-    if set(tags_by_sample) != set(sv.sample_id for sv in sample_validations):
-        logger.error('Samples sets differ for serie validation %s and its annotation',
-                     serie_validation_pk)
-        return
+    assert set(r.sample_id for r in sample_validations) \
+        == set(r.sample_id for r in sample_annotations), \
+        "Sample sets mismatch for validation %d" % serie_validation_pk
+
+    _fill_concordancy(sample_validations, sample_annotations)
+
+    serie_validation.samples_total = len(sample_validations)
+    serie_validation.samples_concordant = sum(s.concordant for s in sample_validations)
+    serie_validation.save()
+
+    if serie_validation.concordant:
+        earlier_validations = series_tag.validations.filter(pk__lt=serie_validation_pk)
+        series_tag.agreed = earlier_validations.count() + 1
+        series_tag.save()
+
+    # Compare to other validations
+    if not serie_validation.concordant:
+        earlier_validations = series_tag.validations.filter(pk__lt=serie_validation_pk)
+        earlier_sample_validations = group_by(
+            lambda v: v.serie_validation_id,
+            SampleValidation.objects.all(serie_validation__in=earlier_validations)
+        )
+        for validation in earlier_validations:
+            if is_samples_concordant(earlier_sample_validations[validation.pk], sample_validations):
+                series_tag.agreed = len(earlier_validations) + 1
+                series_tag.save()
+                serie_validation.agrees_with = validation
+                serie_validation.save()
+                # TODO: generate a new SeriesTag from matching validations
+                _generate_agreement_annotation(series_tag, serie_validation)
+                break
+        else:
+            # Calculate fleiss kappa for all existing annotations/validations
+            annotation_sets = [sample_annotations, sample_validations] \
+                + earlier_sample_validations.values()
+            series_tag.fleiss_kappa = annotations_similarity(annotation_sets)
+            series_tag.save()
+
+    _update_user_stats(serie_validation)  # including payment ones
+
+    # Reschedule validation if no agreement found
+    if not series_tag.agreed:
+        # Schedule revalidations with priority < 0, that's what new validations have,
+        # to phase out garbage earlier
+        _reschedule_validation(serie_validation, priority=series_tag.fleiss_kappa - 1)
+
+
+def _fill_concordancy(sample_validations, reference):
+    tags_by_sample = {obj.sample_id: obj for obj in reference}
 
     for sv in sample_validations:
         sample_tag = tags_by_sample[sv.sample_id]
         sv.concordant = sv.annotation == (sample_tag.annotation or '')
         sv.save()
 
-    serie_validation.samples_total = len(sample_validations)
-    serie_validation.samples_concordant = sum(s.concordant for s in sample_validations)
-    if sample_validations:
-        serie_validation.samples_concordancy \
-            = float(serie_validation.samples_concordant) / serie_validation.samples_total
-    serie_validation.save()
 
+def _generate_agreement_annotation(original_series_tag, serie_validation):
+    pass
+
+
+def _update_user_stats(serie_validation):
     # Update validating user stats
     stats, _ = UserStats.objects.select_for_update() \
         .get_or_create(user_id=serie_validation.created_by_id)
@@ -65,15 +114,35 @@ def calc_validation_stats(serie_validation_pk):
         _reschedule_validation(serie_validation)
 
 
-def _reschedule_validation(serie_validation):
+def _reschedule_validation(serie_validation, priority=None):
     failed = SerieValidation.objects.filter(series_tag=serie_validation.series_tag).count()
-    if failed >= 3:
+    if failed >= 5:
         # TODO: create user interface to see problematic series tags
         logger.info('Failed validating %s serie tag %d times',
                     serie_validation.series_tag_id, failed)
         return
 
-    ValidationJob.objects.create(series_tag=serie_validation.series_tag)
+    ValidationJob.objects.create(series_tag=serie_validation.series_tag, priority=priority)
+
+
+def is_samples_concordant(sample_annos1, sample_annos2):
+    ref = {obj.sample_id: obj for obj in sample_annos1}
+    return all((ref[v.sample_id].annotation or '') == (v.annotation or '')
+               for v in sample_annos2)
+
+
+def annotations_similarity(*sample_sets):
+    from statsmodels.stats.inter_rater import fleiss_kappa
+
+    all_samples_annos = cat(sample_sets)
+    categories = distinct(sv.annotation or '' for sv in all_samples_annos)
+    category_index = {c: i for i, c in enumerate(categories)}
+
+    stats = defaultdict(lambda: [0] * len(categories))
+    for sv in all_samples_annos:
+        stats[sv.sample_id][category_index[sv.annotation or '']] += 1
+
+    return fleiss_kappa(stats.values())
 
 
 from tango import place_order

@@ -63,6 +63,8 @@ class ValidationJob(models.Model):
     series_tag = models.ForeignKey('legacy.SeriesTag', on_delete=models.CASCADE)
     locked_on = models.DateTimeField(blank=True, null=True)
     locked_by = models.ForeignKey('legacy.AuthUser', blank=True, null=True)
+    # generation = models.IntegerField(default=1)
+    priority = models.FloatField(default=0)
 
     class Meta:
         db_table = 'validation_job'
@@ -82,7 +84,10 @@ class SerieValidation(models.Model):
     # Calculated fields
     samples_total = models.IntegerField(null=True)
     samples_concordant = models.IntegerField(null=True)
-    samples_concordancy = models.FloatField(null=True)
+    # # NOTE: not really used
+    # samples_concordancy = models.FloatField(null=True)
+
+    agrees_with = models.ForeignKey('self', blank=True, null=True, on_delete=models.SET_NULL)
 
     class Meta:
         db_table = 'series_validation'
