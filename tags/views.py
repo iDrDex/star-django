@@ -213,7 +213,7 @@ def lock_validation_job(user_id):
     job = ValidationJob.objects.filter(lock_cond)                            \
                        .exclude(series_tag__created_by=user_id)              \
                        .exclude(series_tag__validations__created_by=user_id) \
-                       .select_for_update().earliest('?')
+                       .select_for_update().earliest('priority')
     job.locked_by_id = user_id
     job.locked_on = timezone.now()
     job.save()
