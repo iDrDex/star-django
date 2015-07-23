@@ -150,6 +150,8 @@ CACHEOPS_REDIS = {
 }
 
 
+CELERY_SEND_TASK_ERROR_EMAILS = True
+
 # Logging settings
 ADMINS = (
     ('Alexander', 'suor.web@gmail.com'),
