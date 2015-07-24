@@ -80,6 +80,9 @@ class SeriesTag(models.Model):
     modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
+    agreed = models.IntegerField(blank=True, null=True)
+    fleiss_kappa = models.FloatField(blank=True, null=True)
+
     class Meta:
         managed = False
         db_table = 'series_tag'

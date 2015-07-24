@@ -27,9 +27,14 @@ def calc_validation_stats(serie_validation_pk):
     sample_validations = serie_validation.sample_validations.all()
     sample_annotations = series_tag.sample_tags.all()
 
-    assert set(r.sample_id for r in sample_validations) \
-        == set(r.sample_id for r in sample_annotations), \
-        "Sample sets mismatch for validation %d" % serie_validation_pk
+    if set(r.sample_id for r in sample_validations) \
+            != set(r.sample_id for r in sample_annotations):
+        logger.error("Sample sets mismatch for validation %d" % serie_validation_pk)
+        # It's either bug when making annotation or samples set really changed
+        series_tag.obsolete = 'T'  # web2py messy booleans
+        series_tag.save()
+        # TODO: notify annotation author to redo it
+        return
 
     _fill_concordancy(sample_validations, sample_annotations)
 
@@ -47,7 +52,7 @@ def calc_validation_stats(serie_validation_pk):
         earlier_validations = series_tag.validations.filter(pk__lt=serie_validation_pk)
         earlier_sample_validations = group_by(
             lambda v: v.serie_validation_id,
-            SampleValidation.objects.all(serie_validation__in=earlier_validations)
+            SampleValidation.objects.filter(serie_validation__in=earlier_validations)
         )
         for validation in earlier_validations:
             if is_samples_concordant(earlier_sample_validations[validation.pk], sample_validations):
@@ -135,7 +140,7 @@ def is_samples_concordant(sample_annos1, sample_annos2):
                for v in sample_annos2)
 
 
-def annotations_similarity(*sample_sets):
+def annotations_similarity(sample_sets):
     from statsmodels.stats.inter_rater import fleiss_kappa
 
     all_samples_annos = cat(sample_sets)
