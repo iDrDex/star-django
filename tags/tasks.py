@@ -88,9 +88,12 @@ def _generate_agreement_annotation(original_series_tag, serie_validation):
 
 
 def _update_user_stats(serie_validation):
+    def lock_author_stats(work):
+        stats, _ = UserStats.objects.select_for_update().get_or_create(user_id=work.created_by_id)
+        return stats
+
     # Update validating user stats
-    stats, _ = UserStats.objects.select_for_update() \
-        .get_or_create(user_id=serie_validation.created_by_id)
+    stats = lock_author_stats(serie_validation)
     stats.serie_validations += 1
     stats.sample_validations += serie_validation.samples_total
     if serie_validation.concordant:
@@ -98,20 +101,21 @@ def _update_user_stats(serie_validation):
     stats.sample_validations_concordant += serie_validation.samples_concordant
 
     # Pay for all samples, but only if entire serie is concordant
-    if serie_validation.concordant:
+    if serie_validation.concordant or serie_validation.agrees_with:
         stats.samples_to_pay_for += serie_validation.samples_total
     stats.save()
 
     # Update annotation author payment stats
     if serie_validation.concordant:
-        author_id = serie_validation.series_tag.created_by_id
-        author_stats, _ = UserStats.objects.select_for_update().get_or_create(user_id=author_id)
+        author_stats = lock_author_stats(serie_validation.series_tag)
         author_stats.samples_to_pay_for += serie_validation.samples_total
         author_stats.save()
 
-    # Reschedule validation if not concordant
-    if not serie_validation.concordant:
-        _reschedule_validation(serie_validation)
+    # Update the author of earlier matching validation
+    if serie_validation.agrees_with:
+        author_stats = lock_author_stats(serie_validation.agrees_with)
+        author_stats.samples_to_pay_for += serie_validation.samples_total
+        author_stats.save()
 
 
 def _reschedule_validation(serie_validation, priority=None):
