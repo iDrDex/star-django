@@ -16,6 +16,7 @@ from termcolor import colored, cprint
 import pandas as pd
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models import Q
 
 from legacy.models import Series, SeriesAttribute, Platform, Sample, SampleAttribute
 
@@ -115,6 +116,7 @@ def insert_or_update_data(series_df, samples_df):
     # mark disappeared samples as deleted.
     if not created:
         old_samples = Sample.objects.filter(series=series, platform=platform) \
+                                    .filter(Q(deleted=None) | Q(deleted='F')) \
                                     .values_list('gsm_name', flat=True)
         dead_samples = set(old_samples) - set(samples_df.index)
         if dead_samples:
