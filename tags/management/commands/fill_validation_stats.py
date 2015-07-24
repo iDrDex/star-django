@@ -19,6 +19,12 @@ class Command(BaseCommand):
             default=False,
             help='Delete old stats before starting'
         ),
+        make_option(
+            '--recalc',
+            action='store_true',
+            dest='recalc',
+            default=False,
+        ),
     )
 
     def handle(self, *args, **options):
@@ -39,7 +45,8 @@ class Command(BaseCommand):
             # Delete cheat validations
             SerieValidation.objects.filter(series_tag__created_by=F('created_by')).delete()
 
-        pks = SerieValidation.objects.filter(samples_total=None).values_list('pk', flat=True)
-        for pk in tqdm(pks):
-            # print 'VALIDATION PK', pk
-            calc_validation_stats(pk)
+        qs = SerieValidation.objects.values_list('pk', 'samples_total')
+        if not options['recalc']:
+            qs = qs.filter(samples_total=None)
+        for pk, samples_total in tqdm(qs):
+            calc_validation_stats(pk, recalc=samples_total is not None)

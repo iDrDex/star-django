@@ -16,12 +16,14 @@ logger = logging.getLogger(__name__)
 
 @shared_task(acks_late=True)
 @transaction.atomic('legacy')
-def calc_validation_stats(serie_validation_pk):
+def calc_validation_stats(serie_validation_pk, recalc=False):
     serie_validation = SerieValidation.objects.select_for_update().get(pk=serie_validation_pk)
     # Guard from double update, so that user stats won't be messed up
-    if serie_validation.samples_total is not None:
+    if not recalc and serie_validation.samples_total is not None:
         return
     series_tag = serie_validation.series_tag
+    if not series_tag:
+        return
 
     # Compare to annotation
     sample_validations = serie_validation.sample_validations.all()
@@ -70,7 +72,8 @@ def calc_validation_stats(serie_validation_pk):
             series_tag.fleiss_kappa = annotations_similarity(annotation_sets)
             series_tag.save()
 
-    _update_user_stats(serie_validation)  # including payment ones
+    if not recalc:
+        _update_user_stats(serie_validation)  # including payment ones
 
     # Reschedule validation if no agreement found
     if not series_tag.agreed:
