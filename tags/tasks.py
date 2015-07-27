@@ -76,7 +76,7 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
         _update_user_stats(serie_validation)  # including payment ones
 
     # Reschedule validation if no agreement found
-    if not series_tag.agreed:
+    if not series_tag.agreed and not recalc:
         # Schedule revalidations with priority < 0, that's what new validations have,
         # to phase out garbage earlier
         _reschedule_validation(serie_validation, priority=series_tag.fleiss_kappa - 1)
