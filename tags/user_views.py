@@ -7,8 +7,8 @@ from core.conf import redis_client
 from core.utils import admin_required, login_required
 from legacy.models import AuthUser
 import tango
-from .models import UserStats, Payment, SAMPLE_REWARD
-from .tasks import redeem_samples, donate_samples
+from .models import UserStats, Payment
+from .tasks import redeem_earnings, donate_earnings
 
 
 @admin_required
@@ -41,14 +41,14 @@ def account_info(request):
 def redeem(request):
     if request.method == 'POST':
         if 'donate' in request.POST:
-            donate_samples(request.user_data['id'])
+            donate_earnings(request.user_data['id'])
             messages.success(request, 'Thank you very mush for your support')
             return redirect('redeem')
         else:
             # Mark redeem as in progress
-            redis_client.setex('redeem.samples:%d' % request.user_data['id'], 60, 'active')
-            redeem_samples.delay(request.user_data['id'])
-            messages.success(request, 'Ordered a Tango Card for you')
+            redis_client.setex('redeem:%d' % request.user_data['id'], 60, 'active')
+            redeem_earnings.delay(request.user_data['id'])
+            messages.success(request, 'Ordering a Tango Card for you')
             return redirect('redeem')
 
     last_payment = Payment.objects.filter(receiver_id=request.user_data['id']) \
@@ -70,20 +70,18 @@ def pay(request):
         form = PaymentForm(request.POST)
         if form.is_valid():
             payment = form.save(commit=False)
-            redeem_samples.delay(
+            redeem_earnings.delay(
                 receiver_id=payment.receiver_id,
-                samples=payment.samples,
+                amount=payment.amount,
                 method=payment.method,
                 sender_id=request.user_data['id'],
             )
-
-            messages.success(request, 'Saved payment')
+            messages.success(request, 'Ordering Tango card')
             return redirect('stats')
     else:
         payment = Payment(
             receiver=receiver,
-            samples=receiver.stats.samples_unpayed,
-            amount=receiver.stats.amount_unpayed,
+            amount=receiver.stats.unpayed,
             method='Tango Card',
         )
         form = PaymentForm(instance=payment)
@@ -100,14 +98,12 @@ from django.forms import ModelForm, TextInput
 
 class PaymentForm(ModelForm):
     def clean(self):
-        # Keep this amount and samples in sync
-        self.cleaned_data['amount'] = self.cleaned_data['samples'] * SAMPLE_REWARD
-        # Check if there is not enough samples
-        unpayed_samples = self.cleaned_data['receiver'].stats.samples_unpayed
-        if unpayed_samples < self.cleaned_data['samples']:
-            self.add_error('samples', 'User has only %d unpayed samples' % unpayed_samples)
+        # Check if there is not enough unpayed reward
+        unpayed = self.cleaned_data['receiver'].stats.unpayed
+        if unpayed < self.cleaned_data['amount']:
+            self.add_error('amount', 'User has only %s unpayed reward' % unpayed)
 
     class Meta:
         model = Payment
-        fields = ['receiver', 'samples', 'amount', 'method']
+        fields = ['receiver', 'amount', 'method']
         widgets = {'method': TextInput}

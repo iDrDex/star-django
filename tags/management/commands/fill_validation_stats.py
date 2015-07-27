@@ -30,6 +30,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if options['full']:
+            raise NotImplementedError('Not updated since earnings scheme change')
+
             SerieValidation.objects.update(
                 samples_total=None,
                 samples_concordant=None,

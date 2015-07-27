@@ -3,7 +3,8 @@ from django.db import models
 from handy.models import JSONField
 
 
-SAMPLE_REWARD = Decimal('0.05')
+ANNOTATION_REWARD = Decimal('0.05')
+VALIDATION_REWARD = Decimal('0.03')
 
 
 class UserStats(models.Model):
@@ -16,8 +17,13 @@ class UserStats(models.Model):
     serie_validations_concordant = models.IntegerField(default=0)
     sample_validations_concordant = models.IntegerField(default=0)
 
-    samples_to_pay_for = models.IntegerField(default=0)
-    samples_payed = models.IntegerField(default=0)
+    # Purely stats
+    earned_sample_annotations = models.IntegerField(default=0)
+    earned_sample_validations = models.IntegerField(default=0)
+
+    # Used for payments
+    earned = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    payed = models.DecimalField(max_digits=8, decimal_places=2, default=0)
 
     @property
     def serie_validation_concordancy(self):
@@ -27,12 +33,16 @@ class UserStats(models.Model):
             return None
 
     @property
-    def samples_unpayed(self):
-        return self.samples_to_pay_for - self.samples_payed
+    def unpayed(self):
+        return self.earned - self.payed
 
-    @property
-    def amount_unpayed(self):
-        return self.samples_unpayed * SAMPLE_REWARD
+    def earn_annotations(self, count):
+        self.earned_sample_annotations += count
+        self.earned += ANNOTATION_REWARD * count
+
+    def earn_validations(self, count):
+        self.earned_sample_validations += count
+        self.earned += VALIDATION_REWARD * count
 
 
 class PaymentState(object):
@@ -46,7 +56,6 @@ class PaymentState(object):
 
 class Payment(models.Model):
     receiver = models.ForeignKey('legacy.AuthUser', related_name='payments')
-    samples = models.IntegerField()
     amount = models.DecimalField(max_digits=8, decimal_places=2)
     method = models.TextField()
     created_on = models.DateTimeField(auto_now_add=True)

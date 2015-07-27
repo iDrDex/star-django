@@ -14,12 +14,11 @@
     <p>Ordering Tango Card for you right now. Wait a bit and check your email.</p>
 {% else %}
 
-    <p>You have <b>{{ stats.samples_unpayed }}</b> new samples,
-       which amounts to <b>${{ stats.amount_unpayed }}</b> reward.
+    <p>You have earned <b>${{ stats.unpayed }}</b> reward.
        You can either redeem it or donate your effort.
     </p>
 
-    {% if stats.samples_unpayed %}
+    {% if stats.unpayed %}
         <form class="form" method="post">
             {% csrf_token %}
             <button name="redeem" type="submit" class="btn btn-primary">Redeem</button>

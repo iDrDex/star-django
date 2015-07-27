@@ -24,15 +24,4 @@
     </div>
 </div>
 
-<script type="text/javascript">
-var paymentForm = $('#payment-form').get(0);
-
-$('#payment-form input[name=samples]').change(function () {
-    paymentForm.amount.value = this.value * 0.05;
-})
-$('#payment-form input[name=amount]').change(function () {
-    paymentForm.samples.value = parseInt(this.value / 0.05, 10);
-})
-</script>
-
 {% endblock %}

@@ -8,7 +8,7 @@ from django.db.models import F
 
 from core.conf import redis_client
 from .models import (SerieValidation, SampleValidation,
-                     UserStats, ValidationJob, Payment, PaymentState, SAMPLE_REWARD)
+                     UserStats, ValidationJob, Payment, PaymentState)
 
 
 logger = logging.getLogger(__name__)
@@ -110,19 +110,19 @@ def _update_user_stats(serie_validation):
 
     # Pay for all samples, but only if entire serie is concordant
     if serie_validation.concordant or serie_validation.agrees_with:
-        stats.samples_to_pay_for += serie_validation.samples_total
+        stats.earn_validations(serie_validation.samples_total)
     stats.save()
 
     # Update annotation author payment stats
     if serie_validation.concordant:
         author_stats = lock_author_stats(serie_validation.series_tag)
-        author_stats.samples_to_pay_for += serie_validation.samples_total
+        author_stats.earn_annotations(serie_validation.samples_total)
         author_stats.save()
 
     # Update the author of earlier matching validation
     if serie_validation.agrees_with:
         author_stats = lock_author_stats(serie_validation.agrees_with)
-        author_stats.samples_to_pay_for += serie_validation.samples_total
+        author_stats.earn_validations(serie_validation.samples_total)
         author_stats.save()
 
 
@@ -160,7 +160,7 @@ def annotations_similarity(sample_sets):
 from tango import place_order
 
 @shared_task(acks_late=True)
-def redeem_samples(receiver_id=None, samples=None, method='Tango Card API', sender_id=None):
+def redeem_earnings(receiver_id=None, amount=None, method='Tango Card API', sender_id=None):
     # We need to create a pending payment in a separate transaction to be safe from double card
     # ordering. This way even if we fail at any moment later payment and new stats will persist
     # and won't allow us to issue a new card for same work.
@@ -168,27 +168,26 @@ def redeem_samples(receiver_id=None, samples=None, method='Tango Card API', send
         stats = UserStats.objects.select_for_update().get(user_id=receiver_id)
         # If 2 redeem attempts are tried simultaneously than first one will lock samples,
         # and second one should just do nothing.
-        samples = samples or stats.samples_unpayed
-        if not samples:
+        amount = amount or stats.unpayed
+        if not amount:
             logger.error('Nothing to redeem for user %d', receiver_id)
             return
-        if samples > stats.samples_unpayed:
-            logger.error('Trying to redeem %d samples but user %d has only %d',
-                         samples, receiver_id, stats.samples_unpayed)
+        if amount > stats.unpayed:
+            logger.error('Trying to redeem %s but user %d has only %s',
+                         amount, receiver_id, stats.unpayed)
             return
 
         # Create pending payment
         payment = Payment.objects.create(
             receiver_id=receiver_id,
-            samples=samples,
-            amount=samples * SAMPLE_REWARD,
+            amount=amount,
             method=method,
             created_by_id=sender_id or receiver_id,
             state=PaymentState.PENDING,
         )
 
         # Update stats
-        stats.samples_payed += samples
+        stats.payed += amount
         stats.save()
 
     with transaction.atomic('legacy'):
@@ -220,29 +219,28 @@ def redeem_samples(receiver_id=None, samples=None, method='Tango Card API', send
         # so that another attempt could be made.
         if not result['success']:
             UserStats.objects.filter(user_id=receiver_id) \
-                .update(samples_payed=F('samples_payed') - payment.samples)
+                .update(payed=F('payed') - payment.amount)
 
     # Remove in-progress flag
-    redis_client.delete('redeem.samples:%d' % receiver_id)
+    redis_client.delete('redeem:%d' % receiver_id)
 
 
 @transaction.atomic('legacy')
-def donate_samples(user_id):
+def donate_earnings(user_id):
     stats = UserStats.objects.select_for_update().get(user_id=user_id)
-    samples = stats.samples_unpayed
+    amount = stats.unpayed
 
-    if not samples:
+    if not amount:
         return
 
     # Create payment to log all operations
     Payment.objects.create(
         receiver_id=user_id,
-        samples=samples,
-        amount=samples * SAMPLE_REWARD,
+        amount=amount,
         method='Donate',
         created_by_id=user_id,
         state=PaymentState.DONE,
     )
 
-    stats.samples_payed += samples
+    stats.payed += amount
     stats.save()

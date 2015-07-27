@@ -36,7 +36,6 @@ $.ajax('/account_info/', {
         <th>Date</th>
         <th>Receiver</th>
         <th>Method</th>
-        <th class="text-right">Samples</th>
         <th class="text-right">Sum</th>
         <th class="text-right">State</th>
       </tr>
@@ -47,7 +46,6 @@ $.ajax('/account_info/', {
           <td>{{ payment.created_on }}</td>
           <td>{{ payment.receiver.first_name }} {{ payment.receiver.last_name }}</td>
           <td>{{ payment.method }}</td>
-          <td class="text-right">{{ payment.samples }}</td>
           <td class="text-right">${{ payment.amount }}</td>
           <td class="text-right">{{ payment.get_state_display() }}</td>
         </tr>
