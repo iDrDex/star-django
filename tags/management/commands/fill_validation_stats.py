@@ -49,7 +49,7 @@ class Command(BaseCommand):
         if options['recalc']:
             SeriesTag.objects.all().update(agreed=None, fleiss_kappa=None)
 
-        print '> Calculating serie validation stats...'
+        print '> Calculating serie validation stats...'  # noqa
         qs = SerieValidation.objects.values_list('pk', 'samples_total').order_by('created_on')
         if not options['recalc']:
             qs = qs.filter(samples_total=None)
@@ -58,7 +58,7 @@ class Command(BaseCommand):
             calc_validation_stats(pk, recalc=samples_total is not None)
 
         if options['recalc']:
-            print '> Creating validation jobs...'
+            print '> Creating validation jobs...'  # noqa
             ValidationJob.objects.all().delete()
             for st in SeriesTag.objects.filter(agreed=None).iterator():
                 priority = st.fleiss_kappa - 1 if st.fleiss_kappa else 0
