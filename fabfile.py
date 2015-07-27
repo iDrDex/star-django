@@ -100,6 +100,9 @@ def deploy():
         print(green('Installing new crontab...'))
         execute(install_crontab)
 
+    print(green('Restarting celery...'))
+    sudo('supervisorctl restart celery')
+
     print(green('Reloading uWSGI...'))
     execute(restart)
 
@@ -122,9 +125,8 @@ def dirty_deploy():
     print(green('Collecting static files...'))
     execute(collect_static)
 
-    # Restart with supervisor is broken for now
-    # print(green('Restarting celery...'))
-    # sudo('supervisorctl restart celery')
+    print(green('Restarting celery...'))
+    sudo('supervisorctl restart celery')
 
     print(green('Reloading uWSGI...'))
     execute(restart)
