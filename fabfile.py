@@ -15,7 +15,6 @@ django.project('stargeo')
 env.cwd = '/home/ubuntu/app'
 env.use_ssh_config = True
 env.hosts = ['stargeo']
-# env.shell = 'DJANGO_SETTINGS_MODULE=threatmonitor.settings.production /bin/bash -l -O extglob -c'
 activate = lambda: prefix('source ~/venv/bin/activate')
 
 
@@ -34,6 +33,10 @@ class FileSet(frozenset):
 
 
 def restart():
+    print(green('Restarting celery...'))
+    sudo('supervisorctl restart celery')
+
+    print(green('Reloading uWSGI...'))
     run('touch uwsgi-reload')
 
 
@@ -100,10 +103,6 @@ def deploy():
         print(green('Installing new crontab...'))
         execute(install_crontab)
 
-    print(green('Restarting celery...'))
-    sudo('supervisorctl restart celery')
-
-    print(green('Reloading uWSGI...'))
     execute(restart)
 
 
@@ -113,8 +112,7 @@ def rsync():
 
 
 def dirty_deploy():
-    print(green('Uploading files...'))
-    local("rsync -avzL --progress --filter=':- .gitignore' . stargeo:/home/ubuntu/app")
+    execute(rsync)
 
     print(green('Installing required Python libraries...'))
     execute(install_requirements)
@@ -125,19 +123,15 @@ def dirty_deploy():
     print(green('Collecting static files...'))
     execute(collect_static)
 
-    print(green('Restarting celery...'))
-    sudo('supervisorctl restart celery')
-
-    print(green('Reloading uWSGI...'))
     execute(restart)
 
 
 def dirty_fast():
-    print(green('Uploading files...'))
-    local("rsync -avzL --progress --filter=':- .gitignore' . stargeo:/home/ubuntu/app")
+    execute(rsync)
 
+    # Not restarting celery, make `fab restart` if you do want that
     print(green('Reloading uWSGI...'))
-    execute(restart)
+    run('touch uwsgi-reload')
 
 
 import os.path
