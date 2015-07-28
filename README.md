@@ -53,6 +53,7 @@ Here are steps to make local deployment of this app in order to tinker it.
     ./manage.py createsuperuser
     ```
 
+
 5. Run it and have fun:
 
     ```bash
@@ -62,6 +63,22 @@ Here are steps to make local deployment of this app in order to tinker it.
     Go to `http://localhost:5000/` to see the app
     or to `http://localhost:5000/admin/` to see admin panel.
 
+    To debug background tasks you'll need to start celery:
+
+    ```bash
+    honcho start celery
+    ```
+
+    NOTE: it doesn't autorestart, you'll need to do that manually.
+
+    To run both development web-server and celery in single terminal and autorestart both do:
+
+    ```bash
+    # .. install node.js and npm somehow
+    npm install -g nodemon
+
+    nodemon -x 'honcho start' -e py
+    ```
 
 [geo]: http://www.ncbi.nlm.nih.gov/geo/
 [virtualenv]: https://virtualenv.pypa.io/en/latest/
