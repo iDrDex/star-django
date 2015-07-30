@@ -62,7 +62,7 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
             if v.created_by_id != serie_validation.created_by_id
             and is_samples_concordant(earlier_sample_validations[v.pk], sample_validations)
         )
-    if serie_validation.agrees_with and not recalc:
+    if not serie_validation.on_demand and serie_validation.agrees_with and not recalc:
         _generate_agreement_annotation(series_tag, serie_validation)
 
     # NOTE: this includes kappas against your prev validations
@@ -76,7 +76,8 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
     annotation_sets = [sample_annotations, sample_validations] \
         + earlier_sample_validations.values()
     series_tag.fleiss_kappa = _fleiss_kappa(annotation_sets)
-    if serie_validation.concordant or serie_validation.agrees_with:
+    if not serie_validation.on_demand \
+            and (serie_validation.concordant or serie_validation.agrees_with):
         series_tag.agreed = earlier_validations.count() + 1
     series_tag.save()
 
@@ -135,7 +136,8 @@ def _update_user_stats(serie_validation):
 
 
 def _reschedule_validation(serie_validation, priority=None):
-    failed = SerieValidation.objects.filter(series_tag=serie_validation.series_tag).count()
+    failed = SerieValidation.objects \
+        .filter(series_tag=serie_validation.series_tag, on_demand=False).count()
     if failed >= 5:
         # TODO: create user interface to see problematic series tags
         logger.info('Failed validating %s serie tag %d times',
