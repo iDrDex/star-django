@@ -1,7 +1,10 @@
+from operator import attrgetter
 from collections import defaultdict
 import logging
 
-from funcy import group_by, cat, distinct
+import numpy as np
+from statsmodels.stats.inter_rater import fleiss_kappa, cohens_kappa
+from funcy import group_by, cat, distinct, first, chain
 from celery import shared_task
 from django.db import transaction
 from django.db.models import F
@@ -40,43 +43,48 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
 
     _fill_concordancy(sample_validations, sample_annotations)
 
+    # Fill serie validation stats
     serie_validation.samples_total = len(sample_validations)
     serie_validation.samples_concordant = sum(s.concordant for s in sample_validations)
-    serie_validation.save()
-
-    if serie_validation.concordant:
-        earlier_validations = series_tag.validations.filter(pk__lt=serie_validation_pk)
-        series_tag.agreed = earlier_validations.count() + 1
-        series_tag.save()
+    serie_validation.annotation_kappa = _cohens_kappa(sample_validations, sample_annotations)
 
     # Compare to other validations
-    if not serie_validation.concordant:
-        earlier_validations = series_tag.validations.filter(pk__lt=serie_validation_pk)
-        earlier_sample_validations = group_by(
-            lambda v: v.serie_validation_id,
-            SampleValidation.objects.filter(serie_validation__in=earlier_validations)
-        )
-        for validation in earlier_validations:
-            if is_samples_concordant(earlier_sample_validations[validation.pk], sample_validations):
-                series_tag.agreed = len(earlier_validations) + 1
-                series_tag.save()
-                serie_validation.agrees_with = validation
-                serie_validation.save()
-                # TODO: generate a new SeriesTag from matching validations
-                _generate_agreement_annotation(series_tag, serie_validation)
-                break
-        else:
-            # Calculate fleiss kappa for all existing annotations/validations
-            annotation_sets = [sample_annotations, sample_validations] \
-                + earlier_sample_validations.values()
-            series_tag.fleiss_kappa = annotations_similarity(annotation_sets)
-            series_tag.save()
+    earlier_validations = series_tag.validations.filter(pk__lt=serie_validation_pk) \
+                                    .order_by('pk')
+    earlier_sample_validations = group_by(
+        lambda v: v.serie_validation_id,
+        SampleValidation.objects.filter(serie_validation__in=earlier_validations)
+    )
 
-    if not recalc:
+    if not serie_validation.concordant:
+        serie_validation.agrees_with = first(
+            v for v in earlier_validations
+            if v.created_by_id != serie_validation.created_by_id
+            and is_samples_concordant(earlier_sample_validations[v.pk], sample_validations)
+        )
+    if serie_validation.agrees_with and not recalc:
+        _generate_agreement_annotation(series_tag, serie_validation)
+
+    # NOTE: this includes kappas against your prev validations
+    serie_validation.best_kappa = max(chain(
+        [serie_validation.annotation_kappa],
+        (_cohens_kappa(sample_validations, sv) for sv in earlier_sample_validations.values())
+    ))
+    serie_validation.save()
+
+    # Calculate fleiss kappa for all existing annotations/validations
+    annotation_sets = [sample_annotations, sample_validations] \
+        + earlier_sample_validations.values()
+    series_tag.fleiss_kappa = _fleiss_kappa(annotation_sets)
+    if serie_validation.concordant or serie_validation.agrees_with:
+        series_tag.agreed = earlier_validations.count() + 1
+    series_tag.save()
+
+    if not recalc and not serie_validation.on_demand:
         _update_user_stats(serie_validation)  # including payment ones
 
     # Reschedule validation if no agreement found
-    if not series_tag.agreed and not recalc:
+    if not series_tag.agreed and not recalc and not serie_validation.on_demand:
         # Schedule revalidations with priority < 0, that's what new validations have,
         # to phase out garbage earlier
         _reschedule_validation(serie_validation, priority=series_tag.fleiss_kappa - 1)
@@ -143,9 +151,7 @@ def is_samples_concordant(sample_annos1, sample_annos2):
                for v in sample_annos2)
 
 
-def annotations_similarity(sample_sets):
-    from statsmodels.stats.inter_rater import fleiss_kappa
-
+def _fleiss_kappa(sample_sets):
     all_samples_annos = cat(sample_sets)
     categories = distinct(sv.annotation or '' for sv in all_samples_annos)
     category_index = {c: i for i, c in enumerate(categories)}
@@ -155,6 +161,20 @@ def annotations_similarity(sample_sets):
         stats[sv.sample_id][category_index[sv.annotation or '']] += 1
 
     return fleiss_kappa(stats.values())
+
+def _cohens_kappa(annos1, annos2):
+    assert set(s.sample_id for s in annos1) == set(s.sample_id for s in annos2)
+
+    categories = distinct(sv.annotation or '' for sv in chain(annos1, annos2))
+    category_index = {c: i for i, c in enumerate(categories)}
+
+    table = np.zeros((len(categories), len(categories)))
+    annos1 = sorted(annos1, key=attrgetter('sample_id'))
+    annos2 = sorted(annos2, key=attrgetter('sample_id'))
+    for sv1, sv2 in zip(annos1, annos2):
+        table[category_index[sv1.annotation or ''], category_index[sv2.annotation or '']] += 1
+
+    return cohens_kappa(table, return_results=False)
 
 
 from tango import place_order

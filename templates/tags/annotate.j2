@@ -1,36 +1,57 @@
 {% extends "base.j2" %}
 
+{% set page_title = 'Annotate' if request.resolver_match.url_name == 'annotate' else
+                    'Validate' if request.resolver_match.url_name == 'validate' else
+                    'Validate On Demand' %}
+
 {% block content %}
-{% if not job %}
-  <h2>Tagging "{{ serie.series_title }}" <small>{{ serie.gse_name }}</small></h2>
+{% if serie %}
+    <h4 style="margin-top: 0">{{ serie.series_title }} <small>{{ serie.gse_name }}</small></h4>
     {% if done_tags %}
     <p>Tags done:
         {%- for tag in done_tags %}
-        <span class="label label-success">{{ tag.tag_name }}</span>
+        <a href="{{ url('on_demand_validate') }}?series_id={{ serie.series_id }}&amp;tag_id={{ tag.id }}" class="label label-success">{{ tag.tag_name }}</a>
         {% endfor %}
     </p>
     {% endif %}
 
-    <p id="less-desc">
+    <p id="less-desc" class="desc">
         {{ serie.series_summary|truncate(150, True) }}
-        <a href="javascript:$('#more-desc').show();$('#less-desc').hide()">More</a>
+        <a href="#">More</a>
     </p>
-    <div id="more-desc" style="display: none">
+    <div id="more-desc" class="desc" style="display: none">
         <p>{{ serie.series_summary }}
-        <p>Overall design: {{ serie.series_overall_design }}</p>
-        <p><a href="javascript:$('#more-desc').hide();$('#less-desc').show()">Less</a></p>
+        <p><b>Overall design:</b> {{ serie.series_overall_design }}</p>
+        <p><a href="#">Less</a> <small>(click anywhere in description)</small></p>
     </div>
-{% else %}
-  <h2>
-    Validating {{ tag.tag_name }}
-    <small>({{ tag.description or 'no description' }})</small>
-  </h2>
+
+    <style type="text/css">
+      .desc {
+        color: #909295;
+        font-size: 12px;
+      }
+    </style>
+    <script>
+      $('#less-desc').click(function () { $('#more-desc').show();$('#less-desc').hide() });
+      $('#more-desc').click(function () { $('#more-desc').hide();$('#less-desc').show() });
+    </script>
+{% endif %}
+{% if tag %}
+  <p>
+     <b>Tag:</b>&nbsp; <span class="label label-success">{{ tag.tag_name }}</span>&nbsp;
+     ({{ tag.description or 'no description' }}).
+  </p>
 {% endif %}
 
 <div id="tag-form-placeholder"></div>
 <form method="post" class="form-inline well" id="tag-form">
   {% csrf_token %}
-  <input type="hidden" name="series_id" value="{{ serie.series_id }}">
+  {% if serie %}
+    <input type="hidden" name="series_id" value="{{ serie.series_id }}">
+  {% endif %}
+  {% if series_tag %}
+    <input type="hidden" name="series_tag_id" value="{{ series_tag.id }}">
+  {% endif %}
   <input type="hidden" name="values" value="">
   {% if job %}
     <input type="hidden" name="job_id" value="{{ job.id }}">
@@ -130,18 +151,20 @@ var columns = {{ columns|json|safe }};
 var samples = {{ samples|json|safe }};
 
 {% if tags %}
-var tags = {{ tags|json|safe }};
-var tagNames = _.object(tags.map(function (tag) {
-  return [tag.id, tag.tag_name]
-}));
+  var tags = {{ tags|json|safe }};
+  var tagNames = _.object(tags.map(function (tag) {
+    return [tag.id, tag.tag_name]
+  }));
 {% else %}
-var tagNames = {{ {tag.id: tag.tag_name}|json|safe }};
+  var tagNames = {{ {tag.id: tag.tag_name}|json|safe }};
 {% endif %}
 </script>
 <script type="text/javascript" src="{{ static('annotate.js') }}"></script>
+
 {% if tag %}
-<script type="text/javascript">
-state.tag = {{ tag.id }};
-</script>
+  <script type="text/javascript">
+  state.tag = {{ tag.id }};
+  </script>
 {% endif %}
+
 {% endblock %}

@@ -63,6 +63,7 @@
                     {%- if serie_tags[serie.series_id] -%}
                         , Tags done:
                         {%- for tag in serie_tags[serie.series_id] %}
+                        {# TODO: link to on demand validation #}
                         <span class="label label-success">{{ tag }}</span>
                         {% endfor %}
                     {% endif %}

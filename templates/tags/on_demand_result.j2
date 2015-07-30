@@ -1,0 +1,28 @@
+{% extends "base.j2" %}
+
+{% set page_title = 'On Demand Validation Result' %}
+
+{% block content %}
+    <p id="validation-info">Calculating stats...</p>
+
+    <script type="text/javascript">
+        function loadData() {
+            $.getJSON('', function (data) {
+                console.log(data)
+                if (data.annotation_kappa === null) {
+                    setTimeout(loadData, 1000);
+                    return;
+                }
+
+                var template = _.template(
+                    '<table class="table table-striped" style="width:auto">'
+                  + '<tr><th>Original annotation kappa</th><td>${annotation_kappa}</td></tr>'
+                  + '<tr><th>Best kappa</th><td>${best_kappa}</td></tr>'
+                  + '</table>'
+                )
+                $('#validation-info').html(template(data));
+            })
+        }
+        $(loadData);
+    </script>
+{% endblock %}

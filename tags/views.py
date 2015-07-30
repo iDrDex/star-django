@@ -3,7 +3,7 @@ import json
 from datetime import timedelta
 from collections import defaultdict
 
-from funcy import filter, project, memoize, without, group_by, first, imapcat, str_join
+from funcy import filter, project, memoize, without, group_by, first, imapcat, str_join, select_keys
 from handy.db import db_execute, fetch_val, fetch_dict, fetch_dicts, fetch_col
 from handy.decorators import render_to, paginate
 
@@ -11,13 +11,13 @@ from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Q
-from django.http import Http404
-from django.shortcuts import redirect
+from django.http import Http404, JsonResponse
+from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
 from legacy.models import Sample, Tag, SeriesTag, SampleTag, AuthUser
 from core.tasks import update_stats, update_graph
-from core.utils import login_required
+from core.utils import login_required, admin_required
 from .models import ValidationJob, SerieValidation, SampleValidation
 from .tasks import calc_validation_stats
 
@@ -53,10 +53,7 @@ def search(request):
 @render_to()
 def annotate(request):
     if request.method == 'POST':
-        if save_annotation(request):
-            return redirect(reverse(annotate) + '?series_id=' + request.POST['series_id'])
-        else:
-            return redirect(request.get_full_path())
+        return save_annotation(request)
 
     series_id = request.GET.get('series_id')
     if not series_id:
@@ -99,7 +96,7 @@ def save_annotation(request):
         if old_annotation:
             messages.error(request, 'Serie %s is already annotated with tag %s'
                            % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
-            return False
+            return redirect(request.get_full_path())
 
         # Save all annotations and used regexes
         for platform_id, annotations in groups.items():
@@ -124,7 +121,7 @@ def save_annotation(request):
     update_stats.delay()
     update_graph.delay()
 
-    return True
+    return redirect(reverse(annotate) + '?series_id=' + series_id)
 
 
 BLIND_FIELDS = {'id', 'sample_id', 'sample_geo_accession', 'sample_platform_id', 'platform_id'}
@@ -133,22 +130,19 @@ BLIND_FIELDS = {'id', 'sample_id', 'sample_geo_accession', 'sample_platform_id',
 @render_to('tags/annotate.j2')
 def validate(request):
     if request.method == 'POST':
-        save_validation(request)
-        return redirect(request.get_full_path())
+        return save_validation(request)
 
     try:
         job = lock_validation_job(request.user_data['id'])
     except ValidationJob.DoesNotExist:
         return {'TEMPLATE': 'tags/nothing_to_validate.j2'}
 
-    serie = job.series_tag.series
     tag = job.series_tag.tag
     samples, columns = fetch_annotation_data(
         job.series_tag.series_id, platform_id=job.series_tag.platform_id, blind=BLIND_FIELDS)
 
     return {
         'job': job,
-        'serie': serie,
         'tag': tag,
         'columns': columns,
         'samples': samples,
@@ -202,6 +196,8 @@ def save_validation(request):
     update_stats.delay()
     update_graph.delay()
 
+    return redirect(request.get_full_path())
+
 
 @transaction.atomic('legacy')
 def lock_validation_job(user_id):
@@ -227,12 +223,89 @@ def lock_validation_job(user_id):
 
 
 @login_required
-@render_to()
-def stats(request):
-    # HACK: hardcode my and Dexters ids
-    if request.user_data['id'] not in (1, 24):
+@render_to('tags/annotate.j2')
+def on_demand_validate(request):
+    if request.method == 'POST':
+        return save_on_demand_validation(request)
+
+    series_tag_id = request.GET.get('series_tag_id')
+    if series_tag_id:
+        series_tag = get_object_or_404(SeriesTag, id=series_tag_id)
+        series_id = series_tag.series_id
+    else:
+        # Guess or select actual annotation
+        series_id = request.GET['series_id']
+        tag_id = request.GET['tag_id']
+
+        series_tags = SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id) \
+                               .select_related('series', 'platform', 'tag')
+        if len(series_tags) > 1:
+            return render(request, 'tags/select_to_validate.j2', {'series_tags': series_tags})
+        else:
+            series_tag = series_tags[0]
+
+    serie = fetch_serie(series_id)
+    tag = series_tag.tag
+    samples, columns = fetch_annotation_data(series_id, series_tag.platform_id)
+
+    return {
+        'series_tag': series_tag,
+        'serie': serie,
+        'tag': tag,
+        'columns': columns,
+        'samples': samples,
+    }
+
+def save_on_demand_validation(request):
+    user_id = request.user_data['id']
+    series_tag_id = request.POST['series_tag_id']
+    column = request.POST['column']
+    regex = request.POST['regex']
+    values = dict(json.loads(request.POST['values']))
+
+    with transaction.atomic('legacy'):
+        # Save validation with used column and regex
+        st = SeriesTag.objects.get(pk=series_tag_id)
+        serie_validation = SerieValidation.objects.create(
+            series_tag_id=st.id, created_by_id=user_id,
+            column=column, regex=regex,
+            series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id,
+            on_demand=True
+        )
+
+        # Create all sample validations
+        SampleValidation.objects.bulk_create([
+            SampleValidation(sample_id=sample_id, serie_validation=serie_validation,
+                             annotation=annotation, created_by_id=user_id)
+            for sample_id, annotation in values.items()
+        ])
+
+    message = 'Saved {} validations for {}, tagged {}'.format(
+        len(values), st.series.gse_name, st.tag.tag_name)
+    messages.success(request, message)
+
+    calc_validation_stats.delay(serie_validation.pk)
+    update_stats.delay()
+    update_graph.delay()
+
+    return redirect(on_demand_result, serie_validation.id)
+
+@login_required
+def on_demand_result(request, serie_validation_id):
+    serie_validation = get_object_or_404(SerieValidation, id=serie_validation_id)
+    if serie_validation.created_by_id != request.user_data['id']:
         raise Http404
 
+    if request.is_ajax():
+        data = select_keys(r'kappa', serie_validation.__dict__)
+        return JsonResponse(data)
+
+    return render(request, 'tags/on_demand_result.j2', {'serie_validation': serie_validation})
+
+
+@admin_required
+@render_to()
+def stats(request):
     return {
         'users': AuthUser.objects.select_related('stats').exclude(stats=None)
                                  .order_by('first_name', 'last_name')
@@ -252,6 +325,7 @@ def remove_constant_fields(rows):
         if rows[0][key] != value
     }
     return [project(row, varying) for row in rows]
+
 
 # Data fetching utils
 

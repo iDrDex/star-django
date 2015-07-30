@@ -89,12 +89,13 @@ class SerieValidation(models.Model):
     regex = models.CharField(max_length=512, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('legacy.AuthUser')
+    on_demand = models.BooleanField(default=False)
 
     # Calculated fields
     samples_total = models.IntegerField(null=True)
     samples_concordant = models.IntegerField(null=True)
-    # # NOTE: not really used
-    # samples_concordancy = models.FloatField(null=True)
+    annotation_kappa = models.FloatField(blank=True, null=True)
+    best_kappa = models.FloatField(blank=True, null=True)
 
     agrees_with = models.ForeignKey('self', blank=True, null=True, on_delete=models.SET_NULL)
 

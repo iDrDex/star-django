@@ -122,6 +122,16 @@
 
 <!-- Main Wrapper -->
 <div id="wrapper">
+    {% if page_title %}
+        <div class="normalheader">
+            <div class="hpanel">
+                <div class="panel-body">
+                    <h2 class="font-light" style="margin-bottom: 0">{{ page_title }}</h2>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     <div class="content">
     {% if messages %}
       {% for message in messages %}
