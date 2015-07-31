@@ -2,8 +2,9 @@ import re
 import json
 from datetime import timedelta
 from collections import defaultdict
+from operator import itemgetter
 
-from funcy import filter, project, memoize, without, group_by, first, imapcat, str_join, select_keys
+from funcy import *  # noqa
 from handy.db import db_execute, fetch_val, fetch_dict, fetch_dicts, fetch_col
 from handy.decorators import render_to, paginate
 
@@ -32,10 +33,10 @@ def search(request):
     if q:
         qs = search_series_qs(q)
         series_ids = qs.values_list('series_id', flat=True)
-        tags = set(imapcat(lambda s: serie_tags.get(s, ()), series_ids))
+        tags = distinct(imapcat(serie_tags, series_ids), key=itemgetter('id'))
 
         if exclude_tags:
-            exclude_series = set(imapcat(lambda t: tag_series.get(t, ()), exclude_tags))
+            exclude_series = join(tag_series[int(t)] for t in exclude_tags)
             qs = qs.where('series_id not in (%s)' % str_join(',', exclude_series))
     else:
         qs = None
@@ -351,13 +352,13 @@ def search_series_qs(query_string):
 
 
 def series_tags_data():
-    pairs = SeriesTag.objects.values_list('series_id', 'tag__tag_name').distinct()
+    pairs = SeriesTag.objects.values_list('series_id', 'tag_id', 'tag__tag_name').distinct()
 
     serie_tags = defaultdict(list)
-    tag_series = defaultdict(list)
-    for serie, tag in pairs:
-        serie_tags[serie].append(tag)
-        tag_series[tag].append(serie)
+    tag_series = defaultdict(set)
+    for serie_id, tag_id, tag_name in pairs:
+        serie_tags[serie_id].append({'id': tag_id, 'name': tag_name})
+        tag_series[tag_id].add(serie_id)
 
     return serie_tags, tag_series
 

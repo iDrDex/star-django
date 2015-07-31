@@ -17,11 +17,11 @@
                 {% if tags %}
                     <div class="input-group" style="margin-top: 1em">
                         <label class="control-label" style="padding-left: 0; font-weight: bold">Exclude:</label> &nbsp;
-                        {% for tag in tags|sort %}
+                        {% for tag in tags|sort(attribute='name') %}
                         <label class="checkbox-inline">
-                            <input type="checkbox" name="exclude_tags" value="{{ tag }}"
-                                {%- if tag in request.GET.getlist('exclude_tags') %} checked{% endif -%}
-                            >{{ tag }}
+                            <input type="checkbox" name="exclude_tags" value="{{ tag.id }}"
+                                {%- if tag.id|string in request.GET.getlist('exclude_tags') %} checked{% endif -%}
+                            >{{ tag.name }}
                         </label>
                         {% endfor %}
                     </div>
@@ -64,7 +64,7 @@
                         , Tags done:
                         {%- for tag in serie_tags[serie.series_id] %}
                         {# TODO: link to on demand validation #}
-                        <span class="label label-success">{{ tag }}</span>
+                        <span class="label label-success">{{ tag.name }}</span>
                         {% endfor %}
                     {% endif %}
                 </p>
