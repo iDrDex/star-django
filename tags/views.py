@@ -144,6 +144,7 @@ def validate(request):
 
     return {
         'job': job,
+        'serie': fetch_serie(job.series_tag.series_id),
         'tag': tag,
         'columns': columns,
         'samples': samples,
