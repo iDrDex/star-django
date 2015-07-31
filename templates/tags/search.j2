@@ -80,17 +80,17 @@
     <div class="panel-footer">
         <div class="btn-group">
             {% if page.has_previous() %}
-                <a href="/search/?q={{ request.GET.q }}&amp;p={{ page.previous_page_number() }}" class="btn btn-default">
+                <a href="{{ replace_get(p=page.previous_page_number()) }}" class="btn btn-default">
                     <i class="fa fa-chevron-left"></i>
                 </a>
             {% endif %}
 
             {% for p in page.paginator.page_range %}
-                <a href="/search/?q={{ request.GET.q }}&amp;p={{ p }}" class="btn btn-default{% if p == page.number %} active{% endif %}">{{ p }}</a>
+                <a href="{{ replace_get(p=p) }}" class="btn btn-default{% if p == page.number %} active{% endif %}">{{ p }}</a>
             {% endfor %}
 
             {% if page.has_next() %}
-              <a href="/search/?q={{ request.GET.q }}&amp;p={{ page.next_page_number() }}" class="btn btn-default">
+              <a href="{{ replace_get(p=page.next_page_number()) }}" class="btn btn-default">
                 <i class="fa fa-chevron-right"></i>
               </a>
             </li>
@@ -99,38 +99,7 @@
     </div>
     {% endif %}
 </div>
-
-
 {% endif %}
 
-
-{#  {% if series %}
-<div class="table-responsive" sstyle="margin-top: 1em">
-  <table class="table table-striped table-bordered" id="data-table">
-    <thead>
-      <tr>
-        <th></th>
-        {% for col in columns %}
-          <th class="col-{{ col }}">{{ col }}</th>
-        {% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for serie in series %}
-      <tr>
-        <td><a class="btn btn-primary btn-sm" href="{{ url('annotate') }}?series_id={{ serie.series_id }}">Tag</a></td>
-        {% for col in columns %}
-          <td class="col-{{ col }}">{{ serie[col]|string|truncate(70, True) }}</td>
-        {% endfor %}
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
- #}
-
-
-
- {% endblock %}
+{% endblock %}
 
