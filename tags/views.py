@@ -179,7 +179,7 @@ def save_validation(request):
         # Do not allow user validate same serie, same platform for same tag twice
         if not created:
             messages.error(request, 'You had already validated this annotation')
-            return
+            return redirect(request.get_full_path())
 
         # Create all sample validations
         SampleValidation.objects.bulk_create([
