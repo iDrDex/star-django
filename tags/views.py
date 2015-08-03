@@ -16,9 +16,9 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
-from legacy.models import Sample, Tag, SeriesTag, SampleTag, AuthUser
+from legacy.models import Sample, Tag, SeriesTag, SampleTag
 from core.tasks import update_stats, update_graph
-from core.utils import login_required, admin_required
+from core.utils import login_required
 from .models import ValidationJob, SerieValidation, SampleValidation
 from .tasks import calc_validation_stats
 
@@ -303,15 +303,6 @@ def on_demand_result(request, serie_validation_id):
         return JsonResponse(data)
 
     return render(request, 'tags/on_demand_result.j2', {'serie_validation': serie_validation})
-
-
-@admin_required
-@render_to()
-def stats(request):
-    return {
-        'users': AuthUser.objects.select_related('stats').exclude(stats=None)
-                                 .order_by('first_name', 'last_name')
-    }
 
 
 # Data utils
