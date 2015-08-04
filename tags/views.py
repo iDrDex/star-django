@@ -80,10 +80,11 @@ def save_tag(tag):
     old_tag = Tag.objects.select_for_update().get(pk=tag.pk)
     tag.save()
 
-    SampleTag.objects.filter(series_tag__tag=tag, annotation=old_tag.tag_name) \
-             .update(annotation=tag.tag_name)
-    SampleValidation.objects.filter(serie_validation__tag=tag, annotation=old_tag.tag_name) \
-                    .update(annotation=tag.tag_name)
+    if tag.tag_name != old_tag.tag_name:
+        SampleTag.objects.filter(series_tag__tag=tag, annotation=old_tag.tag_name) \
+                 .update(annotation=tag.tag_name)
+        SampleValidation.objects.filter(serie_validation__tag=tag, annotation=old_tag.tag_name) \
+                        .update(annotation=tag.tag_name)
 
 
 from django.forms import ModelForm
