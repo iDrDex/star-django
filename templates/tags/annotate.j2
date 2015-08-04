@@ -24,19 +24,19 @@
     <div id="more-desc" class="desc" style="display: none">
         <p>{{ serie.series_summary }}
         <p><b>Overall design:</b> {{ serie.series_overall_design }}</p>
-        <p><a href="#">Less</a> <small>(click anywhere in description)</small></p>
+        <p><a href="#">Less</a></p>
     </div>
 
     <style type="text/css">
       .desc {
         color: #909295;
         font-size: 12px;
-        cursor: pointer;
       }
+      #less-desc {cursor: pointer;}
     </style>
     <script>
       $('#less-desc').click(function () { $('#more-desc').show();$('#less-desc').hide() });
-      $('#more-desc').click(function () { $('#more-desc').hide();$('#less-desc').show() });
+      $('#more-desc a').click(function () { $('#more-desc').hide();$('#less-desc').show() });
     </script>
 {% endif %}
 {% if tag %}
