@@ -1,0 +1,26 @@
+{% extends "base.j2" %}
+
+{# {% set page_title = 'Tag Control' %} #}
+
+{% block content %}
+    <div class="row toc">
+    {% for col in tags|index('tag_name')|slice(2) %}
+        <div class="col-md-6">
+            {% for key, group in col %}
+            <div class="row">
+                <div class="col-sm-1"><h2>{{ key }}</h2></div>
+                <div class="col-sm-11 toc-items">
+                    {%- for tag in group %}
+                        <a href="{{ url('tag', tag.id) }}" class="label label-success">{{ tag.tag_name }}</a>&nbsp;
+                    {%- endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+    </div>
+    <style type="text/css">
+        .toc h2 {margin: 0}
+        .toc-items {line-height: 190%; margin-bottom: 1.35em}
+    </style>
+{% endblock %}

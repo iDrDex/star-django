@@ -1,4 +1,5 @@
 import json
+from itertools import groupby
 
 import jinja2
 from django_jinja import library
@@ -19,3 +20,9 @@ def replace_get(context, **kwargs):
     query = request.GET.copy()
     query.update(kwargs)
     return '%s?%s' % (request.path, query.urlencode())
+
+
+@library.filter
+def index(value, attribute):
+    res = groupby(value, key=lambda o: getattr(o, attribute)[0].upper())
+    return [(key, list(group)) for key, group in res]

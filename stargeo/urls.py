@@ -6,6 +6,9 @@ urlpatterns = patterns('',  # noqa
     url(r'^$', 'core.views.dashboard', name='dashboard'),
 
     url(r'^search/$', 'tags.views.search', name='search'),
+    url(r'^tags/$', 'tags.views.tag_control', name='tag_control'),
+    url(r'^tags/(\d+)/$', 'tags.views.tag', name='tag'),
+
     url(r'^annotate/$', 'tags.views.annotate', name='annotate'),
     url(r'^validate/$', 'tags.views.validate', name='validate'),
     url(r'^on_demand_validate/$', 'tags.views.on_demand_validate', name='on_demand_validate'),

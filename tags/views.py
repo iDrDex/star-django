@@ -52,6 +52,50 @@ def search(request):
 
 @login_required
 @render_to()
+def tag_control(request):
+    return {
+        'tags': Tag.objects.order_by('tag_name')
+    }
+
+@login_required
+@render_to()
+def tag(request, tag_id):
+    tag = get_object_or_404(Tag, pk=tag_id)
+    if request.method == 'POST':
+        form = TagForm(request.POST, instance=tag)
+        if form.is_valid():
+            tag = form.save(commit=False)
+            save_tag(tag)
+            messages.success(request, 'Saved tag %s' % tag.tag_name)
+            return redirect('tag', tag_id)
+    else:
+        form = TagForm(instance=tag)
+
+    return {
+        'form': form
+    }
+
+@transaction.atomic('legacy')
+def save_tag(tag):
+    old_tag = Tag.objects.select_for_update().get(pk=tag.pk)
+    tag.save()
+
+    SampleTag.objects.filter(series_tag__tag=tag, annotation=old_tag.tag_name) \
+             .update(annotation=tag.tag_name)
+    SampleValidation.objects.filter(serie_validation__tag=tag, annotation=old_tag.tag_name) \
+                    .update(annotation=tag.tag_name)
+
+
+from django.forms import ModelForm
+
+class TagForm(ModelForm):
+    class Meta:
+        model = Tag
+        fields = ['tag_name', 'description']
+
+
+@login_required
+@render_to()
 def annotate(request):
     if request.method == 'POST':
         return save_annotation(request)

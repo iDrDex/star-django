@@ -1,0 +1,13 @@
+{% extends "base.j2" %}
+
+{% block content %}
+<h2>Edit {{ form.instance.tag_name}}</h2>
+
+<form class="form" role="form" method="post">
+    {% csrf_token %}
+    {{ form|bootstrap }}
+    <div class="form-group">
+        <input type="submit" class="btn btn-primary" value="Save" />
+    </div>
+</form>
+{% endblock %}

@@ -104,6 +104,9 @@
             <li{% if request.path == '/search/' %} class="active"{% endif %}>
                 <a href="/search/"> <span class="nav-label">Search</span> </a>
             </li>
+            <li{% if request.path.startswith('/tags/') %} class="active"{% endif %}>
+                <a href="/tags/"> <span class="nav-label">Tag Control</span> </a>
+            </li>
             <li{% if request.path == '/validate/' %} class="active"{% endif %}>
                 <a href="/validate/"> <span class="nav-label">Validate</span> </a>
             </li>
