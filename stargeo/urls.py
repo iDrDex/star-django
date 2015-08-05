@@ -9,10 +9,12 @@ urlpatterns = patterns('',  # noqa
     url(r'^tags/$', 'tags.views.tag_control', name='tag_control'),
     url(r'^tags/(\d+)/$', 'tags.views.tag', name='tag'),
 
-    url(r'^annotate/$', 'tags.views.annotate', name='annotate'),
-    url(r'^validate/$', 'tags.views.validate', name='validate'),
-    url(r'^on_demand_validate/$', 'tags.views.on_demand_validate', name='on_demand_validate'),
-    url(r'^on_demand_result/(\d+)/$', 'tags.views.on_demand_result', name='on_demand_result'),
+    url(r'^annotate/$', 'tags.annotate_views.annotate', name='annotate'),
+    url(r'^validate/$', 'tags.annotate_views.validate', name='validate'),
+    url(r'^on_demand_validate/$', 'tags.annotate_views.on_demand_validate',
+        name='on_demand_validate'),
+    url(r'^on_demand_result/(\d+)/$', 'tags.annotate_views.on_demand_result',
+        name='on_demand_result'),
 
     url(r'^stats/$', 'tags.user_views.stats', name='stats'),
     url(r'^accounting/$', 'tags.user_views.accounting', name='accounting'),
