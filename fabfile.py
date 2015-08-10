@@ -92,9 +92,8 @@ def deploy():
         print(green('Installing required Python libraries...'))
         execute(install_requirements)
 
-    if incoming.need_migrate:
-        print(green('Running migrations...'))
-        execute(migrate)
+    print(green('Running migrations...'))
+    execute(migrate)
 
     print(green('Collecting static files...'))
     execute(collect_static)
