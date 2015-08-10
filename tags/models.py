@@ -121,6 +121,54 @@ class SampleValidation(models.Model):
         db_table = 'sample_validation'
 
 
+class SerieAnnotation(models.Model):
+    """
+    This model is to store best available annotations.
+    You can also restrict quality by filtering on fleiss_kappa or best_cohens_kappa.
+    """
+    series_tag = models.OneToOneField('legacy.SeriesTag', related_name='canonical')
+    series = models.ForeignKey('legacy.Series', blank=True, null=True)
+    platform = models.ForeignKey('legacy.Platform', blank=True, null=True)
+    tag = models.ForeignKey('legacy.Tag', blank=True, null=True)
+    header = models.CharField(max_length=512, blank=True)
+    regex = models.CharField(max_length=512, blank=True)
+    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
+    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
+
+    annotations = models.IntegerField()
+    authors = models.IntegerField()
+    fleiss_kappa = models.FloatField(blank=True, null=True)
+    best_cohens_kappa = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'series_annotation'
+
+    @classmethod
+    def create_from_series_tag(cls, st):
+        return cls.objects.create(
+            series_tag_id=st.id,
+            series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id,
+            header=st.header, regex=st.regex or '',
+            annotations=1, authors=1
+        )
+
+    def fill_samples(self, sample_annos):
+        SampleAnnotation.objects.bulk_create([
+            SampleAnnotation(serie_annotation=self,
+                             sample_id=obj.sample_id, annotation=obj.annotation or '')
+            for obj in sample_annos
+        ])
+
+
+class SampleAnnotation(models.Model):
+    serie_annotation = models.ForeignKey(SerieAnnotation, related_name='sample_annotations')
+    sample = models.ForeignKey('legacy.Sample')
+    annotation = models.TextField(blank=True)
+
+    class Meta:
+        db_table = 'sample_annotation'
+
+
 class LegacyRouter(object):
     def db_for_write(self, model, **hints):
         if is_legacy(model):

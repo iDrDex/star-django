@@ -13,11 +13,11 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
-from core.tasks import update_stats, update_graph
+from core.tasks import update_dashboard
 from core.utils import login_required
 from legacy.models import Sample, Tag, SeriesTag, SampleTag
-from .models import ValidationJob, SerieValidation, SampleValidation
-from .tasks import calc_validation_stats
+from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
+from .tasks import validation_workflow
 from .data import get_series_columns, get_samples_columns
 
 
@@ -79,7 +79,7 @@ def save_annotation(request):
             )
 
             # Create all sample tags
-            SampleTag.objects.bulk_create([
+            sample_tags = SampleTag.objects.bulk_create([
                 SampleTag(sample_id=sample_id, series_tag=series_tag, annotation=annotation,
                           created_by_id=user_id, modified_by_id=user_id)
                 for sample_id, annotation in annotations
@@ -88,10 +88,13 @@ def save_annotation(request):
             # Create validation job
             ValidationJob.objects.create(series_tag=series_tag)
 
+            # Create canonical annotation
+            sa = SerieAnnotation.create_from_series_tag(series_tag)
+            sa.fill_samples(sample_tags)
+
     messages.success(request, 'Saved annotations')
 
-    update_stats.delay()
-    update_graph.delay()
+    update_dashboard.delay()
 
     return redirect(reverse(annotate) + '?series_id=' + series_id)
 
@@ -165,9 +168,7 @@ def save_validation(request):
     message = 'Saved {} validations for {}'.format(len(values), serie_validation.tag.tag_name)
     messages.success(request, message)
 
-    calc_validation_stats.delay(serie_validation.pk)
-    update_stats.delay()
-    update_graph.delay()
+    (validation_workflow(serie_validation.pk, st.pk) | update_dashboard).delay()
 
     return redirect(request.get_full_path())
 
@@ -257,9 +258,7 @@ def save_on_demand_validation(request):
         len(values), st.series.gse_name, st.tag.tag_name)
     messages.success(request, message)
 
-    calc_validation_stats.delay(serie_validation.pk)
-    update_stats.delay()
-    update_graph.delay()
+    (validation_workflow(serie_validation.pk, st.pk) | update_dashboard).delay()
 
     return redirect(on_demand_result, serie_validation.id)
 

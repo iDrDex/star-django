@@ -52,6 +52,11 @@ def update_graph():
     redis_client.set('core.graph', json.dumps(graph_data, default=defaultencode))
 
 
+from celery import group
+
+update_dashboard = group(update_stats.si(), update_graph.si())
+
+
 # Utils
 
 from datetime import datetime

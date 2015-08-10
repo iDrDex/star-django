@@ -10,11 +10,17 @@ from django.db import transaction
 from django.db.models import F
 
 from core.conf import redis_client
+from legacy.models import SeriesTag
 from .models import (SerieValidation, SampleValidation,
                      UserStats, ValidationJob, Payment, PaymentState)
 
 
 logger = logging.getLogger(__name__)
+
+
+def validation_workflow(serie_validation_pk, series_tag_pk):
+    return calc_validation_stats.s(serie_validation_pk) \
+        | update_canonical_annotation.si(series_tag_pk)
 
 
 @shared_task(acks_late=True)
@@ -62,8 +68,6 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
             if v.created_by_id != serie_validation.created_by_id
             and is_samples_concordant(earlier_sample_validations[v.pk], sample_validations)
         )
-    if not serie_validation.on_demand and serie_validation.agrees_with and not recalc:
-        _generate_agreement_annotation(series_tag, serie_validation)
 
     # NOTE: this includes kappas against your prev validations
     serie_validation.best_kappa = max(chain(
@@ -98,10 +102,6 @@ def _fill_concordancy(sample_validations, reference):
         sample_tag = tags_by_sample[sv.sample_id]
         sv.concordant = sv.annotation == (sample_tag.annotation or '')
         sv.save()
-
-
-def _generate_agreement_annotation(original_series_tag, serie_validation):
-    pass
 
 
 def _update_user_stats(serie_validation):
@@ -177,6 +177,37 @@ def _cohens_kappa(annos1, annos2):
         table[category_index[sv1.annotation or ''], category_index[sv2.annotation or '']] += 1
 
     return cohens_kappa(table, return_results=False)
+
+
+@shared_task(acks_late=True)
+@transaction.atomic('legacy')
+def update_canonical_annotation(series_tag_pk):
+    st = SeriesTag.objects.select_for_update().get(pk=series_tag_pk)
+    validations = st.validations.order_by('pk')
+
+    st.canonical.annotations = validations.count() + 1
+    st.canonical.authors = len(set(v.created_by_id for v in validations) | {st.created_by_id})
+    st.canonical.fleiss_kappa = st.fleiss_kappa
+    st.canonical.best_cohens_kappa = max(v.best_kappa for v in validations) if validations else None
+    st.canonical.save()
+
+    # Update samples to be canonical
+    source = first(v for v in validations
+                   if v.best_kappa == st.canonical.best_cohens_kappa
+                   or v.concordant or v.agrees_with)
+
+    if source:
+        current_samples = st.canonical.sample_annotations.all()
+        source_samples = source.sample_validations.all()
+        # If samples set changed then just replace everything
+        if set(o.sample_id for o in current_samples) != set(o.sample_id for o in source_samples):
+            current_samples.delete()
+            st.canonical.fill_samples(source_samples)
+        elif not is_samples_concordant(current_samples, source_samples):
+            anno_by_sample = {obj.sample_id: obj.annotation for obj in source_samples}
+            for sample_anno in current_samples:
+                sample_anno.annotation = anno_by_sample[sample_anno.sample_id]
+                sample_anno.save()
 
 
 from tango import place_order
