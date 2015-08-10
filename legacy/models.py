@@ -82,6 +82,7 @@ class SeriesTag(models.Model):
 
     agreed = models.IntegerField(blank=True, null=True)
     fleiss_kappa = models.FloatField(blank=True, null=True)
+    obsolete = models.CharField(max_length=1, blank=True, null=True)
 
     class Meta:
         managed = False
