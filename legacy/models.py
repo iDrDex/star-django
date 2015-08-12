@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django_pandas.managers import DataFrameManager
 
 
 class AuthUser(models.Model):
@@ -29,6 +30,19 @@ class Platform(models.Model):
     class Meta:
         managed = False
         db_table = 'platform'
+
+
+class PlatformProbe(models.Model):
+    platform = models.ForeignKey(Platform, blank=True, null=True)
+    probe = models.TextField(blank=True)
+    mygene_sym = models.TextField(blank=True)
+    mygene_entrez = models.IntegerField(blank=True, null=True)
+
+    objects = DataFrameManager()
+
+    class Meta:
+        managed = False
+        db_table = 'platform_probe'
 
 
 class Tag(models.Model):
@@ -121,3 +135,70 @@ class SampleTag(models.Model):
     class Meta:
         managed = False
         db_table = 'sample_tag'
+
+
+class Analysis(models.Model):
+    analysis_name = models.CharField(max_length=512, blank=True)
+    description = models.CharField(max_length=512, blank=True)
+    case_query = models.CharField(max_length=512, blank=True)
+    control_query = models.CharField(max_length=512, blank=True)
+    modifier_query = models.CharField(max_length=512, blank=True)
+    series_count = models.IntegerField(blank=True, null=True)
+    platform_count = models.IntegerField(blank=True, null=True)
+    sample_count = models.IntegerField(blank=True, null=True)
+    series_ids = models.TextField(blank=True)
+    platform_ids = models.TextField(blank=True)
+    sample_ids = models.TextField(blank=True)
+    is_active = models.CharField(max_length=1, blank=True)
+    created_on = models.DateTimeField(blank=True, null=True)
+    created_by = models.ForeignKey('AuthUser', db_column='created_by', blank=True, null=True)
+    modified_on = models.DateTimeField(blank=True, null=True)
+    modified_by = models.ForeignKey('AuthUser', db_column='modified_by', blank=True, null=True,
+                                    related_name='+')
+
+    class Meta:
+        managed = False
+        db_table = 'analysis'
+
+
+class MetaAnalysis(models.Model):
+    analysis = models.ForeignKey(Analysis, blank=True, null=True)
+    mygene_sym = models.CharField(max_length=512, blank=True)
+    mygene_entrez = models.IntegerField(blank=True, null=True)
+    direction = models.CharField(max_length=512, blank=True)
+    casedatacount = models.IntegerField(blank=True, null=True)
+    controldatacount = models.IntegerField(blank=True, null=True)
+    k = models.IntegerField(blank=True, null=True)
+    fixed_te = models.FloatField(blank=True, null=True)
+    fixed_se = models.FloatField(blank=True, null=True)
+    fixed_lower = models.FloatField(blank=True, null=True)
+    fixed_upper = models.FloatField(blank=True, null=True)
+    fixed_pval = models.FloatField(blank=True, null=True)
+    fixed_zscore = models.FloatField(blank=True, null=True)
+    random_te = models.FloatField(blank=True, null=True)
+    random_se = models.FloatField(blank=True, null=True)
+    random_lower = models.FloatField(blank=True, null=True)
+    random_upper = models.FloatField(blank=True, null=True)
+    random_pval = models.FloatField(blank=True, null=True)
+    random_zscore = models.FloatField(blank=True, null=True)
+    predict_te = models.FloatField(blank=True, null=True)
+    predict_se = models.FloatField(blank=True, null=True)
+    predict_lower = models.FloatField(blank=True, null=True)
+    predict_upper = models.FloatField(blank=True, null=True)
+    predict_pval = models.FloatField(blank=True, null=True)
+    predict_zscore = models.FloatField(blank=True, null=True)
+    tau2 = models.FloatField(blank=True, null=True)
+    tau2_se = models.FloatField(blank=True, null=True)
+    c = models.FloatField(blank=True, null=True)
+    h = models.FloatField(blank=True, null=True)
+    h_lower = models.FloatField(blank=True, null=True)
+    h_upper = models.FloatField(blank=True, null=True)
+    i2 = models.FloatField(blank=True, null=True)
+    i2_lower = models.FloatField(blank=True, null=True)
+    i2_upper = models.FloatField(blank=True, null=True)
+    q = models.FloatField(blank=True, null=True)
+    q_df = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'meta_analysis'

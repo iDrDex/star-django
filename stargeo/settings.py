@@ -46,6 +46,7 @@ INSTALLED_APPS = (
     'core',
     'legacy',
     'tags',
+    'analysis',
 )
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar',)

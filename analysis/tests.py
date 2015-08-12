@@ -8,7 +8,7 @@ def real_db(_django_cursor_wrapper):
     _django_cursor_wrapper.enable()
 
 
-import pandas as pd
+# import pandas as pd
 from pandas.util.testing import assert_frame_equal
 from .analysis import get_analysis_df
 
