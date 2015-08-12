@@ -164,6 +164,11 @@ LOGGING = {
         },
     },
     'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
@@ -197,3 +202,8 @@ LOGGING = {
         },
     },
 }
+
+# Log to console in DEBUG mode
+if DEBUG:
+    for logger in LOGGING['loggers'].values():
+        logger['handlers'] = ['console']
