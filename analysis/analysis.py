@@ -508,44 +508,40 @@ class MetaAnalyser:
         return result
 
     def __init__(self, gene_stats):
-        from easydict import EasyDict
-
-        gene_stats['TE'] = gene_stats.caseDataMu - gene_stats.controlDataMu
+        TE = gene_stats.caseDataMu - gene_stats.controlDataMu
 
         # (7) Calculate results for individual studies
         # MD method
-        gene_stats['TE_se'] = np.sqrt(
+        TE_se = np.sqrt(
             gene_stats['caseDataSigma'] ** 2 / gene_stats['caseDataCount']
             + gene_stats['controlDataSigma'] ** 2 / gene_stats['controlDataCount']
         )
         # Studies with non-positive variance get zero weight in meta-analysis
-        negative_var = (gene_stats['caseDataSigma'] <= 0) | (gene_stats['controlDataSigma'] <= 0)
-        gene_stats.TE_se[negative_var] = None
-        gene_stats['w_fixed'] = (1 / gene_stats.TE_se ** 2).fillna(0)
-        self.gene_stats = gene_stats
+        TE_se[(gene_stats['caseDataSigma'] <= 0) | (gene_stats['controlDataSigma'] <= 0)] = None
+        w_fixed = (1 / TE_se ** 2).fillna(0)
 
-        TE_fixed = np.average(gene_stats.TE, weights=gene_stats.w_fixed)
-        TE_fixed_se = np.sqrt(1 / sum(gene_stats.w_fixed))
+        TE_fixed = np.average(TE, weights=w_fixed)
+        TE_fixed_se = np.sqrt(1 / sum(w_fixed))
         self.fixed = self.getConfidenceIntervals(TE_fixed, TE_fixed_se)
 
-        self.Q = sum(gene_stats.w_fixed * (gene_stats.TE - TE_fixed) ** 2)
-        self.Q_df = gene_stats.TE_se.dropna().count() - 1
+        self.Q = sum(w_fixed * (TE - TE_fixed) ** 2)
+        self.Q_df = TE_se.dropna().count() - 1
 
-        self.cVal = sum(gene_stats.w_fixed) - sum(gene_stats.w_fixed ** 2) / sum(gene_stats.w_fixed)
+        self.cVal = sum(w_fixed) - sum(w_fixed ** 2) / sum(w_fixed)
         if self.Q <= self.Q_df:
             self.tau2 = 0
         else:
             self.tau2 = (self.Q - self.Q_df) / self.cVal
         self.tau = np.sqrt(self.tau2)
         self.tau2_se = None
-        gene_stats['w_random'] = (1 / (gene_stats.TE_se ** 2 + self.tau2)).fillna(0)
-        TE_random = np.average(gene_stats.TE, weights=gene_stats.w_random)
-        TE_random_se = np.sqrt(1 / sum(gene_stats.w_random))
+        w_random = (1 / (TE_se ** 2 + self.tau2)).fillna(0)
+        TE_random = np.average(TE, weights=w_random)
+        TE_random_se = np.sqrt(1 / sum(w_random))
         self.random = self.getConfidenceIntervals(TE_random, TE_random_se)
 
         # Prediction interval
         self.level_predict = 0.95
-        self.k = gene_stats.TE_se.count()
+        self.k = TE_se.count()
         self.predict = EasyDict(TE=None,
                                 se=None,
                                 level=None,
