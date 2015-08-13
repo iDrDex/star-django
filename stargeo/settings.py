@@ -46,6 +46,7 @@ INSTALLED_APPS = (
     'core',
     'legacy',
     'tags',
+    'analysis',
 )
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar',)
@@ -166,6 +167,11 @@ LOGGING = {
         },
     },
     'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
@@ -199,3 +205,8 @@ LOGGING = {
         },
     },
 }
+
+# Log to console in DEBUG mode
+if DEBUG:
+    for logger in LOGGING['loggers'].values():
+        logger['handlers'] = ['console']
