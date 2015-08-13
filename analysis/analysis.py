@@ -83,7 +83,7 @@ def task_analyze(analysis_name, description, case_query, control_query, modifier
 def get_fold_change_analysis(gse):
     # TODO: get rid of unneeded OOP interface
     logger.debug('Calculating fold change for %s', gse.name)
-    return GseAnalyzer(gse).getResults(how='fc', debug=False)
+    return GseAnalyzer(gse).getResults(debug=False)
 
 
 @memoize
@@ -332,7 +332,7 @@ class GseAnalyzer:
     def __init__(self, gse):
         self.gse = gse
 
-    def getResults(self, gpls=None, subsets=None, numPerm=100, how='samr', name=None, debug=False):
+    def getResults(self, debug=False):
         gse = self.gse
         samples = gse.samples
 
@@ -348,12 +348,6 @@ class GseAnalyzer:
             subset, gpl = group
             probes = gse.gpl2probes[gpl]
             print subset, gpl
-            if subsets and subset not in subsets:
-                print "skipping", subset
-                continue
-            if gpls and gpl not in gpls:
-                print "skipping", gpl
-                continue
 
             # NOTE: if data has changed then sample ids could be different
             if not set(df["gsm_name"]) <= set(gse.gpl2data[gpl].columns):
@@ -367,79 +361,35 @@ class GseAnalyzer:
 
             myCols = ['mygene_sym', 'mygene_entrez']
             table = pd.DataFrame(columns=myCols).set_index(myCols)
-            if how == 'ranked':
-                caseData = data[df.query('sample_class == 1').index]
-                caseEstimates = getGeneEstimates(caseData, probes)
-                caseEstimates['sample_class'] = 1
-                caseEstimates['subset'] = 'case'
-                if not caseEstimates.empty:
-                    table = pd.concat([table, caseEstimates])
-                controlData = data[df.query('sample_class == 0').index]
-                controlEstimates = getGeneEstimates(controlData, probes)
-                controlEstimates['sample_class'] = 0
-                controlEstimates['subset'] = 'control'
-                if not controlEstimates.empty:
-                    table = pd.concat([table, controlEstimates])
-                table['gse'] = gse.name
-                table['gpl'] = gpl
-                # table['subset'] = subset
-                allResults = pd.concat([allResults, table.reset_index()])
             # Studies with defined SAMPLE CLASS
-            else:
-                # at least 2 samples required
-                if len(df.sample_class) < 3:
-                    print "skipping for insufficient data", df.sample_class
-                    continue
-                # at least 1 case and control required
-                classes = df.sample_class.unique()
-                if not (0 in classes and 1 in classes):
-                    print "skipping for insufficient data", df.sample_class
-                    continue
-                # data.to_csv("data.test.csv")
-                sample_class = df.ix[data.columns].sample_class
+            # at least 2 samples required
+            if len(df.sample_class) < 3:
+                print "skipping for insufficient data", df.sample_class
+                continue
+            # at least 1 case and control required
+            classes = df.sample_class.unique()
+            if not (0 in classes and 1 in classes):
+                print "skipping for insufficient data", df.sample_class
+                continue
+            # data.to_csv("data.test.csv")
+            sample_class = df.ix[data.columns].sample_class
 
-                if how == 'fc':
-                    debug = debug and debug + ".%s_%s_%s" % (self.gse.name, gpl, subset)
-                    table = getFoldChangeAnalysis(data, sample_class,
-                                                  debug=debug)
-                    debug and table.to_csv("%s.table.csv" % debug)
-                else:
-                    if how == 'samr':
-                        results = getSamrAnalysis(data, sample_class, numPerm)
-                        if results:
-                            for table in results:
-                                if not table.empty:
-                                    # SAMR returns raw fold changes but Numerator(r) contains the
-                                    # log2 transform
-                                    table['log2foldChange'] = np.log2(table['Fold Change'])
-                                    # print table['log2foldChange']
-                    elif how == 'rp':
-                        results = getRpAnalysis(data, sample_class, numPerm)
-                        if results:
-                            for table in results:
-                                if not table.empty:
-                                    # invert b/c RANKPROD does the goofy condition 1 / condition 2
-                                    # also force RP results in log2 with logged = False in RP call
-                                    table['log2foldChange'] = -1.0 * table['FC:(class1/class2)'] \
-                                        if isLogged(data) \
-                                        else np.log2(-1.0 * table['FC:(class1/class2)'])
-                    if results:
-                        table1, table2 = results
-                        # table1['direction'] = 'up'
-                        # table2['direction'] = 'down'
-                        table = pd.concat([table1, table2])
+            debug = debug and debug + ".%s_%s_%s" % (self.gse.name, gpl, subset)
+            table = getFoldChangeAnalysis(data, sample_class,
+                                          debug=debug)
+            debug and table.to_csv("%s.table.csv" % debug)
 
-                if not table.empty:
-                    table['direction'] = table.log2foldChange.map(
-                        lambda x: "up" if x > 0 else 'down')
-                    table['subset'] = subset
-                    table['gpl'] = gpl
-                    table['gse'] = self.gse.name
-                    probes = gse.gpl2probes[gpl]
-                    table = table \
-                        .join(probes[['mygene_entrez', 'mygene_sym']]) \
-                        .dropna(subset=['mygene_entrez', 'mygene_sym'])
-                    allResults = pd.concat([allResults, table.reset_index()])
+            if not table.empty:
+                table['direction'] = table.log2foldChange.map(
+                    lambda x: "up" if x > 0 else 'down')
+                table['subset'] = subset
+                table['gpl'] = gpl
+                table['gse'] = self.gse.name
+                probes = gse.gpl2probes[gpl]
+                table = table \
+                    .join(probes[['mygene_entrez', 'mygene_sym']]) \
+                    .dropna(subset=['mygene_entrez', 'mygene_sym'])
+                allResults = pd.concat([allResults, table.reset_index()])
         # allResults.index.name = "probe"
         self.results = allResults
         return allResults
