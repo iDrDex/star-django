@@ -4,13 +4,14 @@ import gzip
 import urllib2
 import shutil
 
+from easydict import EasyDict
 from funcy import first, log_durations, imap, memoize, without, make_lookuper
 from handy.db import db_execute
 import numpy as np
 import pandas as pd
 from django.db import connections, transaction
 
-from legacy.models import Tag, Sample, Series, Platform, PlatformProbe, Analysis, MetaAnalysis
+from legacy.models import Sample, Series, Platform, PlatformProbe, Analysis, MetaAnalysis
 
 import logging
 logger = logging.getLogger("stargeo.analysis")
@@ -21,7 +22,8 @@ SERIES_MATRIX_URL = 'ftp://ftp.ncbi.nih.gov/pub/geo/DATA/SeriesMatrix/'
 SERIES_MATRIX_MIRROR = os.environ['SERIES_MATRIX_MIRROR']
 
 
-def task_analyze(analysis_name, description, case_query, control_query, modifier_query, debug=False):
+def task_analyze(analysis_name, description, case_query, control_query, modifier_query,
+                 debug=False):
     logger.info('Started %s analysis', analysis_name)
     with log_durations(logger.debug, 'Loading dataframe for %s' % analysis_name):
         df = get_analysis_df(case_query, control_query, modifier_query)
@@ -50,12 +52,12 @@ def task_analyze(analysis_name, description, case_query, control_query, modifier
             case_query=case_query,
             control_query=control_query,
             modifier_query=modifier_query,
-            series_count = len(df.series_id.unique()),
-            platform_count = len(df.platform_id.unique()),
-            sample_count = len(df.sample_id.unique()),
-            series_ids = df.series_id.unique().tolist(),
-            platform_ids = df.platform_id.unique().tolist(),
-            sample_ids = df.sample_id.unique().tolist(),
+            series_count=len(df.series_id.unique()),
+            platform_count=len(df.platform_id.unique()),
+            sample_count=len(df.sample_id.unique()),
+            series_ids=df.series_id.unique().tolist(),
+            platform_ids=df.platform_id.unique().tolist(),
+            sample_ids=df.sample_id.unique().tolist(),
         )
         balanced['analysis'] = analysis
         # replace infs with NaN for db insert
@@ -70,13 +72,13 @@ def task_analyze(analysis_name, description, case_query, control_query, modifier
     logger.info('DONE %s analysis', analysis_name)
 
 
-from debug_cache import DebugCache
-dcache_new = DebugCache('/home/suor/projects/health/debug_cache_new')
+# from debug_cache import DebugCache
+# dcache_new = DebugCache('/home/suor/projects/health/debug_cache_new')
 # dcache_tmp = DebugCache('/home/suor/projects/health/debug_cache_tmp')
 
 
 # @dcache.checked
-@dcache_new.cached
+# @dcache_new.cached
 @log_durations(logger.debug)
 def get_fold_change_analysis(gse):
     # TODO: get rid of unneeded OOP interface
@@ -93,13 +95,14 @@ def _get_columns(table):
 def get_full_df():
     # tags_qs = Tag.objects.values_list('tag_name', flat=True).order_by('tag_name').distinct()
     # tags = [tag.lower() for tag in tags_qs]
-    tags = without(_get_columns('sample_tag_view'), 'id', 'doc', 'series_id', 'platform_id', 'sample_id')
+    non_tags = ['id', 'doc', 'series_id', 'platform_id', 'sample_id']
+    tags = without(_get_columns('sample_tag_view'), *non_tags)
 
-    sample_tag_view_fields = ['id', 'series_id', 'platform_id', 'sample_id'] + tags
-    fields = ['sample_tag_view.{0} as "sample_tag_view.{0}"'.format(f) for f in sample_tag_view_fields]
+    view_fields = ['id', 'series_id', 'platform_id', 'sample_id'] + tags
+    fields = ['sample_tag_view.{0} as "sample_tag_view.{0}"'.format(f) for f in view_fields]
     for cls in (Sample, Series, Platform):
         fields += ['{0}.{1} as "{0}.{1}"'.format(cls._meta.db_table, field.column)
-                    for field in cls._meta.fields]
+                   for field in cls._meta.fields]
     fields_sql = ','.join(fields)
 
     df = pd.read_sql_query('''
@@ -113,11 +116,11 @@ def get_full_df():
     clean_columns = []
     clean_series = []
 
+    field_names = ['gse_name', 'gpl_name', 'gsm_name', "series_id", "sample_id", "platform_id"]
     for col in df.columns:
         table, header = col.split(".")
         field = header.lower()
-        if (field in tags) or \
-                (field in ['gse_name', 'gpl_name', 'gsm_name', "series_id", "sample_id", "platform_id"]):
+        if (field in tags) or (field in field_names):
             toAdd = field
         else:
             toAdd = col
@@ -134,7 +137,7 @@ def get_full_df():
     return clean_df  # .fillna(np.nan).replace('', np.nan)
 
 
-@dcache_new.cached
+# @dcache_new.cached
 def get_analysis_df(case_query, control_query, modifier_query):
     # NOTE: would be more efficient to select only required data
     df = get_full_df()
@@ -285,7 +288,7 @@ class Gse:
 #     'probe dataMu dataSi*.debug=HIV resistacnce.5ed75c5ee5401c45ab16b6555aab5d2b':
 #         'probe dataMu dataSi*.debug=HIV resistacnce.6a5171890c81e9cc7fbc5b2f5c2b7a9d'
 # })
-@dcache_new.cached
+# @dcache_new.cached
 def getFullMetaAnalysis(fcResults, debug=False):
     debug and fcResults.to_csv("%s.fc.csv" % debug)
     all = []
@@ -313,12 +316,14 @@ def getFullMetaAnalysis(fcResults, debug=False):
         all.append(metaAnalysis)
     allMetaAnalysis = pd.DataFrame(all).set_index(['mygene_sym', 'mygene_entrez'])
     debug and allMetaAnalysis.to_csv('allMetaAnalysis.csv')
-    allMetaAnalysis['direction'] = allMetaAnalysis['random_TE'].map(lambda x: "up" if x >= 0 else "down")
+    allMetaAnalysis['direction'] = allMetaAnalysis['random_TE'].map(
+        lambda x: "up" if x >= 0 else "down")
     # allMetaAnalysis.to_csv(filename)
 
     return allMetaAnalysis
 
-@dcache_new.cached
+
+# @dcache_new.cached
 def getMetaAnalysis(geneEstimates):
     return MetaAnalyser(geneEstimates).get_results()
 
@@ -357,7 +362,8 @@ class GseAnalyzer:
 
             df = df.set_index("gsm_name")
             data = gse.gpl2data[gpl][df.index]
-            # data = data.dropna(axis=1, thresh=data.shape[0] * .2)  #drop samples with > 80% missing samples
+            # Drop samples with > 80% missing samples
+            # data = data.dropna(axis=1, thresh=data.shape[0] * .2)
 
             myCols = ['mygene_sym', 'mygene_entrez']
             table = pd.DataFrame(columns=myCols).set_index(myCols)
@@ -397,15 +403,14 @@ class GseAnalyzer:
                     table = getFoldChangeAnalysis(data, sample_class,
                                                   debug=debug)
                     debug and table.to_csv("%s.table.csv" % debug)
-                    # table['log2foldChange'] = table['fc'] if isLogged(data) else np.log2(table['fc'])
                 else:
                     if how == 'samr':
                         results = getSamrAnalysis(data, sample_class, numPerm)
                         if results:
                             for table in results:
                                 if not table.empty:
-                                    # SAMR returns raw fold changes but Numerator(r) contains the log2 transform
-                                    # table['log2foldChange'] = table['Numerator(r)'] if isLogged(data) else np.log2(table['Numerator(r)'])
+                                    # SAMR returns raw fold changes but Numerator(r) contains the
+                                    # log2 transform
                                     table['log2foldChange'] = np.log2(table['Fold Change'])
                                     # print table['log2foldChange']
                     elif how == 'rp':
@@ -415,8 +420,9 @@ class GseAnalyzer:
                                 if not table.empty:
                                     # invert b/c RANKPROD does the goofy condition 1 / condition 2
                                     # also force RP results in log2 with logged = False in RP call
-                                    table['log2foldChange'] = -1.0 * table['FC:(class1/class2)'] if isLogged(
-                                        data) else np.log2(-1.0 * table['FC:(class1/class2)'])
+                                    table['log2foldChange'] = -1.0 * table['FC:(class1/class2)'] \
+                                        if isLogged(data) \
+                                        else np.log2(-1.0 * table['FC:(class1/class2)'])
                     if results:
                         table1, table2 = results
                         # table1['direction'] = 'up'
@@ -424,7 +430,8 @@ class GseAnalyzer:
                         table = pd.concat([table1, table2])
 
                 if not table.empty:
-                    table['direction'] = table.log2foldChange.map(lambda x: "up" if x > 0 else 'down')
+                    table['direction'] = table.log2foldChange.map(
+                        lambda x: "up" if x > 0 else 'down')
                     table['subset'] = subset
                     table['gpl'] = gpl
                     table['gse'] = self.gse.name
@@ -440,71 +447,61 @@ class GseAnalyzer:
 
 class MetaAnalyser:
     def isquared(self, Q, df, level):
-        ##
-        ## Calculate I-Squared
-        ## Higgins & Thompson (2002), Statistics in Medicine, 21, 1539-58
-        ##
-        from easydict import EasyDict
-
+        """
+        Calculate I-Squared.
+        Higgins & Thompson (2002), Statistics in Medicine, 21, 1539-58.
+        """
         tres = self.calcH(Q, df, level)
-        result = EasyDict(TE=None,
-                          lower=None,
-                          upper = None)
+        result = EasyDict(TE=None, lower=None, upper=None)
         if tres.TE:
-            t = lambda x: (x**2-1)/x**2
-            result = EasyDict(TE=t(tres.TE),
-                              lower=t(tres.lower),
-                              upper = t(tres.upper))
+            t = lambda x: (x ** 2 - 1) / x ** 2
+            result = EasyDict(TE=t(tres.TE), lower=t(tres.lower), upper=t(tres.upper))
         return result
 
     def calcH(self, Q, df, level):
-        ## Calculate H
-        ## Higgins & Thompson (2002), Statistics in Medicine, 21, 1539-58
+        """
+        Calculate H.
+        Higgins & Thompson (2002), Statistics in Medicine, 21, 1539-58.
+        """
+        k = df + 1
+        H = np.sqrt(Q / (k - 1))
 
-        from easydict import EasyDict
-
-        k = df+1
-        H = np.sqrt(Q/(k-1))
-
-        result = EasyDict(TE=None,
-                          lower=None,
-                          upper = None)
-        if k>2:
-            if Q<=k:
-                selogH = np.sqrt(1/(2*(k-2))*(1-1/(3*(k-2)**2)))
+        result = EasyDict(TE=None, lower=None, upper=None)
+        if k > 2:
+            if Q <= k:
+                selogH = np.sqrt(1 / (2 * (k - 2)) * (1 - 1 / (3 * (k - 2) ** 2)))
             else:
-                selogH = 0.5*(np.log(Q)-np.log(k-1))/(np.sqrt(2*Q)-np.sqrt(2*k-3))
+                selogH = 0.5 * (np.log(Q) - np.log(k - 1)) / (np.sqrt(2 * Q) - np.sqrt(2 * k - 3))
 
             tres = self.getConfidenceIntervals(np.log(H), selogH, level)
             result = EasyDict(TE=1 if np.exp(tres.TE) < 1 else np.exp(tres.TE),
-                               lower=1 if np.exp(tres.lower) < 1 else np.exp(tres.lower),
-                               upper=1 if np.exp(tres.upper) < 1 else np.exp(tres.upper))
+                              lower=1 if np.exp(tres.lower) < 1 else np.exp(tres.lower),
+                              upper=1 if np.exp(tres.upper) < 1 else np.exp(tres.upper))
         return result
 
-    def getConfidenceIntervals(self, TE, TE_se, level = .95, df=None):
-        from easydict import EasyDict
+    def getConfidenceIntervals(self, TE, TE_se, level=.95, df=None):
         import scipy.stats as stats
 
-        alpha = 1-level
-#         print TE, TE_se
-        zscore = TE/TE_se
+        alpha = 1 - level
+        # print TE, TE_se
+        zscore = TE / TE_se
         if not df:
-            lower = TE - stats.norm.ppf(1-alpha/2)*TE_se
-            upper = TE + stats.norm.ppf(1-alpha/2)*TE_se
-            pval  = 2*(1-stats.norm.cdf(abs(zscore)))
+            lower = TE - stats.norm.ppf(1 - alpha / 2) * TE_se
+            upper = TE + stats.norm.ppf(1 - alpha / 2) * TE_se
+            pval = 2 * (1 - stats.norm.cdf(abs(zscore)))
         else:
-            lower = TE - stats.t.ppf(1-alpha/2, df=df)*TE_se
-            upper  = TE + stats.t.ppf(1-alpha/2, df=df)*TE_se
-            pval   = 2*(1-stats.t.cdf(abs(zscore), df=df))
+            lower = TE - stats.t.ppf(1 - alpha / 2, df=df) * TE_se
+            upper = TE + stats.t.ppf(1 - alpha / 2, df=df) * TE_se
+            pval = 2 * (1 - stats.t.cdf(abs(zscore), df=df))
 
         result = EasyDict(TE=TE,
                           se=TE_se,
                           level=level,
                           df=df,
-                          pval = pval,
-                          zscore = zscore,
-                          upper = upper,
-                          lower = lower)
+                          pval=pval,
+                          zscore=zscore,
+                          upper=upper,
+                          lower=lower)
 
 #         if isinstance(TE_se, collections.Iterable):
 #             result = pd.DataFrame(result)
@@ -515,93 +512,98 @@ class MetaAnalyser:
 
         gene_stats['TE'] = gene_stats.caseDataMu - gene_stats.controlDataMu
 
-        ## (7) Calculate results for individual studies
-        #MD method
-        gene_stats['TE_se'] = np.sqrt(gene_stats['caseDataSigma']**2/gene_stats['caseDataCount'] + gene_stats['controlDataSigma']**2/gene_stats['controlDataCount'])
-        ## Studies with non-positive variance get zero weight in meta-analysis
-        gene_stats.TE_se[(gene_stats['caseDataSigma'] <= 0) | (gene_stats['controlDataSigma'] <= 0)] = None
-        gene_stats['w_fixed'] = (1/gene_stats.TE_se**2).fillna(0)
+        # (7) Calculate results for individual studies
+        # MD method
+        gene_stats['TE_se'] = np.sqrt(
+            gene_stats['caseDataSigma'] ** 2 / gene_stats['caseDataCount']
+            + gene_stats['controlDataSigma'] ** 2 / gene_stats['controlDataCount']
+        )
+        # Studies with non-positive variance get zero weight in meta-analysis
+        negative_var = (gene_stats['caseDataSigma'] <= 0) | (gene_stats['controlDataSigma'] <= 0)
+        gene_stats.TE_se[negative_var] = None
+        gene_stats['w_fixed'] = (1 / gene_stats.TE_se ** 2).fillna(0)
         self.gene_stats = gene_stats
 
         TE_fixed = np.average(gene_stats.TE, weights=gene_stats.w_fixed)
-        TE_fixed_se = np.sqrt(1/sum(gene_stats.w_fixed))
+        TE_fixed_se = np.sqrt(1 / sum(gene_stats.w_fixed))
         self.fixed = self.getConfidenceIntervals(TE_fixed, TE_fixed_se)
 
-        self.Q = sum(gene_stats.w_fixed * (gene_stats.TE - TE_fixed)**2)
+        self.Q = sum(gene_stats.w_fixed * (gene_stats.TE - TE_fixed) ** 2)
         self.Q_df = gene_stats.TE_se.dropna().count() - 1
 
-        self.cVal = (sum(gene_stats.w_fixed) - sum(gene_stats.w_fixed**2)/sum(gene_stats.w_fixed))
-        if self.Q<=self.Q_df:
+        self.cVal = sum(gene_stats.w_fixed) - sum(gene_stats.w_fixed ** 2) / sum(gene_stats.w_fixed)
+        if self.Q <= self.Q_df:
             self.tau2 = 0
         else:
-            self.tau2 = (self.Q-self.Q_df)/self.cVal
+            self.tau2 = (self.Q - self.Q_df) / self.cVal
         self.tau = np.sqrt(self.tau2)
         self.tau2_se = None
-        gene_stats['w_random'] = (1/(gene_stats.TE_se**2 + self.tau2)).fillna(0)
-        TE_random = np.average(gene_stats.TE, weights = gene_stats.w_random)
-        TE_random_se = np.sqrt(1/sum(gene_stats.w_random))
+        gene_stats['w_random'] = (1 / (gene_stats.TE_se ** 2 + self.tau2)).fillna(0)
+        TE_random = np.average(gene_stats.TE, weights=gene_stats.w_random)
+        TE_random_se = np.sqrt(1 / sum(gene_stats.w_random))
         self.random = self.getConfidenceIntervals(TE_random, TE_random_se)
 
-        ## Prediction interval
+        # Prediction interval
         self.level_predict = 0.95
         self.k = gene_stats.TE_se.count()
         self.predict = EasyDict(TE=None,
-                          se=None,
-                          level=None,
-                          df=None,
-                          pval = None,
-                          zscore = None,
-                          upper = None,
-                          lower = None)
-        if self.k>=3:
-            TE_predict_se = np.sqrt(TE_random_se**2 + self.tau2)
-            self.predict = self.getConfidenceIntervals(TE_random, TE_predict_se, self.level_predict, self.k-2)
+                                se=None,
+                                level=None,
+                                df=None,
+                                pval=None,
+                                zscore=None,
+                                upper=None,
+                                lower=None)
+        if self.k >= 3:
+            TE_predict_se = np.sqrt(TE_random_se ** 2 + self.tau2)
+            self.predict = self.getConfidenceIntervals(TE_random, TE_predict_se, self.level_predict,
+                                                       self.k - 2)
 
-        ## Calculate H and I-Squared
+        # Calculate H and I-Squared
         self.level_comb = 0.95
         self.H = self.calcH(self.Q, self.Q_df, self.level_comb)
         self.I2 = self.isquared(self.Q, self.Q_df, self.level_comb)
 
     def get_results(self):
         return dict(
-            k = self.k,
-            fixed_TE = self.fixed.TE,
-            fixed_se = self.fixed.se,
-            fixed_lower = self.fixed.lower,
-            fixed_upper = self.fixed.upper,
-            fixed_pval = self.fixed.pval,
-            fixed_zscore = self.fixed.zscore,
+            k=self.k,
+            fixed_TE=self.fixed.TE,
+            fixed_se=self.fixed.se,
+            fixed_lower=self.fixed.lower,
+            fixed_upper=self.fixed.upper,
+            fixed_pval=self.fixed.pval,
+            fixed_zscore=self.fixed.zscore,
 
-            random_TE = self.random.TE,
-            random_se = self.random.se,
-            random_lower = self.random.lower,
-            random_upper = self.random.upper,
-            random_pval = self.random.pval,
-            random_zscore = self.random.zscore,
+            random_TE=self.random.TE,
+            random_se=self.random.se,
+            random_lower=self.random.lower,
+            random_upper=self.random.upper,
+            random_pval=self.random.pval,
+            random_zscore=self.random.zscore,
 
 
-            predict_TE = self.predict.TE,
-            predict_se = self.predict.se,
-            predict_lower = self.predict.lower,
-            predict_upper = self.predict.upper,
-            predict_pval = self.predict.pval,
-            predict_zscore = self.predict.zscore,
+            predict_TE=self.predict.TE,
+            predict_se=self.predict.se,
+            predict_lower=self.predict.lower,
+            predict_upper=self.predict.upper,
+            predict_pval=self.predict.pval,
+            predict_zscore=self.predict.zscore,
 
-            tau2 = self.tau2,
-            tau2_se = self.tau2_se,
+            tau2=self.tau2,
+            tau2_se=self.tau2_se,
 
-            C = self.cVal,
+            C=self.cVal,
 
-            H = self.H.TE,
-            H_lower = self.H.lower,
-            H_upper = self.H.upper,
+            H=self.H.TE,
+            H_lower=self.H.lower,
+            H_upper=self.H.upper,
 
-            I2 = self.I2.TE,
-            I2_lower = self.I2.lower,
-            I2_upper = self.I2.upper,
+            I2=self.I2.TE,
+            I2_lower=self.I2.lower,
+            I2_upper=self.I2.upper,
 
-            Q = self.Q,
-            Q_df = self.Q_df
+            Q=self.Q,
+            Q_df=self.Q_df,
         )
 
 
@@ -626,7 +628,8 @@ def getFoldChangeAnalysis(data, sample_class, debug=False):
     debug and controlData.to_csv("%s.control.data.csv" % debug)
 
     summary['controlDataMu'] = controlData.mean(axis="columns")
-    summary['controlDataSigma'] = controlData.std(axis="columns") if len(controlData.columns) > 1 else 0
+    summary['controlDataSigma'] = controlData.std(axis="columns") \
+        if len(controlData.columns) > 1 else 0
     summary['controlDataCount'] = controlData.count(axis="columns")
 
     summary['fc'] = summary['caseDataMu'] - summary['controlDataMu']
@@ -658,12 +661,12 @@ def getNormalize_quantiles(df):
     """
     df with samples in the columns and probes across the rows
     """
-    #http://biopython.org/pipermail/biopython/2010-March/006319.html
-    A=df.values
+    # http://biopython.org/pipermail/biopython/2010-March/006319.html
+    A = df.values
     AA = np.zeros_like(A)
     I = np.argsort(A, axis=0)
     AA[I, np.arange(A.shape[1])] = np.mean(A[I, np.arange(A.shape[1])], axis=1)[:, np.newaxis]
-    return pd.DataFrame(AA, index = df.index, columns=df.columns)
+    return pd.DataFrame(AA, index=df.index, columns=df.columns)
 
 
 def isLogged(data):
