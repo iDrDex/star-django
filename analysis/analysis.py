@@ -265,7 +265,7 @@ def get_data(series_id, platform_id):
 
 @log_durations(logger.debug)
 def get_probes(platform_id):
-    df = PlatformProbe.objects.filter(platform=platform_id).to_dataframe()
+    df = PlatformProbe.objects.filter(platform=platform_id).order_by('id').to_dataframe()
     # df = db(Platform_Probe.platform_id == platform_id).select(processor=pandas_processor)
     df.columns = [col.lower().replace("platform_probe.", "") for col in df.columns]
     df.probe = df.probe.astype(str)  # must cast probes as str
