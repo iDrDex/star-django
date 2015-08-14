@@ -43,7 +43,6 @@ def task_analyze(analysis_name, description, case_query, control_query, modifier
         debug and balanced.to_csv("%s.meta.csv" % debug)
 
     logger.info('Inserting %s analysis results', analysis_name)
-
     with log_durations(logger.debug, 'Saving results of %s' % analysis_name), \
             transaction.atomic('legacy'):
         analysis = Analysis.objects.create(
@@ -292,33 +291,29 @@ class Gse:
 def getFullMetaAnalysis(fcResults, debug=False):
     debug and fcResults.to_csv("%s.fc.csv" % debug)
     all = []
-    i = 0
+    # i = 0
     allGeneEstimates = fcResults.sort('p') \
         .drop_duplicates(['gse', 'gpl', 'mygene_sym', 'mygene_entrez', 'subset']) \
         .dropna()
     debug and allGeneEstimates.to_csv("%s.geneestimates.csv" % debug)
     for group, geneEstimates in allGeneEstimates.groupby(['mygene_sym', 'mygene_entrez']):
         mygene_sym, mygene_entrez = group
-        print i, group
         # if debug:
         #     print i, group
-        i += 1
+        # i += 1
         # if i > 10:
         #     break
-        geneEstimates.title = mygene_sym
-        # debug and geneEstimates.to_csv("%s.%s.fc.csv" % (debug, mygene_sym))
         metaAnalysis = getMetaAnalysis(geneEstimates)
-        # metaAnalysis = MetaAnalysis(geneEstimates).get_results()
         metaAnalysis['caseDataCount'] = geneEstimates['caseDataCount'].sum()
         metaAnalysis['controlDataCount'] = geneEstimates['controlDataCount'].sum()
         metaAnalysis['mygene_sym'] = mygene_sym
         metaAnalysis['mygene_entrez'] = mygene_entrez
         all.append(metaAnalysis)
+
     allMetaAnalysis = pd.DataFrame(all).set_index(['mygene_sym', 'mygene_entrez'])
     debug and allMetaAnalysis.to_csv('allMetaAnalysis.csv')
     allMetaAnalysis['direction'] = allMetaAnalysis['random_TE'].map(
         lambda x: "up" if x >= 0 else "down")
-    # allMetaAnalysis.to_csv(filename)
 
     return allMetaAnalysis
 
@@ -589,7 +584,7 @@ def getFoldChangeAnalysis(data, sample_class, debug=False):
     summary['ttest'] = ttest
     summary['p'] = prob
     summary['direction'] = summary['effect_size'].map(lambda x: "up" if x >= 0 else "down")
-    # 1/0
+
     return summary
 
 
