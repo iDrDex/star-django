@@ -584,20 +584,10 @@ def getFoldChangeAnalysis(data, sample_class, debug=False):
     # summary['fc'] = np.log2(summary['caseDataMu']/summary['controlDataMu'])
 
     summary['effect_size'] = summary['fc'] / summary['dataSigma']
-    ttest = pd.DataFrame([ttest_ind(caseData.ix[probe].dropna(),
-                                    controlData.ix[probe].dropna())
-                          for probe in data.index],
-                         columns=['ttest', 'p'],
-                         index=data.index)
 
-    debug and ttest.to_csv("%s.ttest.csv" % debug)
-
-    # mask to deal with missing data: http://stackoverflow.com/questions/23543431/treatment-of-nans
-    # ttest = ttest_ind(caseData[np.isfinite(caseData)],
-    # controlData[np.isfinite(controlData)],
-    # axis=1)
-    summary['ttest'] = ttest['ttest']
-    summary['p'] = ttest['p']
+    ttest, prob = ttest_ind(caseData, controlData, axis=1)
+    summary['ttest'] = ttest
+    summary['p'] = prob
     summary['direction'] = summary['effect_size'].map(lambda x: "up" if x >= 0 else "down")
     # 1/0
     return summary
