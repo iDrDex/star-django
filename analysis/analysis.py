@@ -22,6 +22,7 @@ SERIES_MATRIX_URL = 'ftp://ftp.ncbi.nih.gov/pub/geo/DATA/SeriesMatrix/'
 SERIES_MATRIX_MIRROR = os.environ['SERIES_MATRIX_MIRROR']
 
 
+@log_durations(logger.debug)
 def task_analyze(analysis_name, description, case_query, control_query, modifier_query,
                  debug=False):
     logger.info('Started %s analysis', analysis_name)
@@ -165,6 +166,7 @@ def get_analysis_df(case_query, control_query, modifier_query):
     return analysis_df
 
 
+@log_durations(logger.debug)
 def load_gse(df, series_id):
     gse_name = series_gse_name(series_id)
     logger.debug('Loading data for %s, id = %d', gse_name, series_id)
