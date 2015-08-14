@@ -556,7 +556,7 @@ class MetaAnalyser:
 def getFoldChangeAnalysis(data, sample_class, debug=False):
     from scipy.stats import ttest_ind
 
-    data = getNormalize_quantiles(getLogged(data))
+    data = normalize_quantiles(get_logged(data))
 
     summary = pd.DataFrame(index=data.index)
 
@@ -593,29 +593,26 @@ def getFoldChangeAnalysis(data, sample_class, debug=False):
     return summary
 
 
-def getNormalize_quantiles(df):
+def normalize_quantiles(df):
     """
     df with samples in the columns and probes across the rows
     """
     # http://biopython.org/pipermail/biopython/2010-March/006319.html
     A = df.values
-    AA = np.zeros_like(A)
+    AA = np.empty_like(A)
     I = np.argsort(A, axis=0)
     AA[I, np.arange(A.shape[1])] = np.mean(A[I, np.arange(A.shape[1])], axis=1)[:, np.newaxis]
     return pd.DataFrame(AA, index=df.index, columns=df.columns)
 
 
-def isLogged(data):
-    return True if (data.std() < 10).all() else False
+import numexpr as ne
 
-def getLogged(data):
-    # if (data.var() > 10).all():
-    if isLogged(data):
+def get_logged(data):
+    if is_logged(data):
         return data
-    return np.log2(translateNegativeCols(data))
+    floor = np.abs(np.min(data))
+    res = ne.evaluate('log(data + floor + 1) / log(2)')
+    return pd.DataFrame(res, index=data.index, columns=data.columns)
 
-
-def translateNegativeCols(data):
-    """Translate the minimum value of each col to 1"""
-    transformed = data + np.abs(np.min(data)) + 1
-    return transformed
+def is_logged(data):
+    return ne.evaluate('data < 10').all().all()
