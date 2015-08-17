@@ -303,6 +303,8 @@ def getFullMetaAnalysis(fcResults, debug=False):
         # if debug:
         #     print i, group
         # i += 1
+        if len(geneEstimates) == 1:
+            continue
         # if i > 10:
         #     break
         metaAnalysis = getMetaAnalysis(geneEstimates)
