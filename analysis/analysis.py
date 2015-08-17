@@ -612,4 +612,5 @@ def get_logged(data):
     return pd.DataFrame(res, index=data.index, columns=data.columns)
 
 def is_logged(data):
+    # TODO: try ufunc.reduce, e.g. np.max.reduce(data)
     return ne.evaluate('data < 10').all().all()
