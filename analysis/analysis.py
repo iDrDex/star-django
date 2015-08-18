@@ -9,6 +9,7 @@ from funcy import first, log_durations, imap, memoize, without, make_lookuper
 from handy.db import db_execute
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 from django.db import connections, transaction
 
 from legacy.models import Sample, Series, Platform, PlatformProbe, Analysis, MetaAnalysis
@@ -395,17 +396,16 @@ class GseAnalyzer:
 
 
 class MetaAnalyser:
-    def isquared(self, Q, df, level):
+    def isquared(self, H):
         """
         Calculate I-Squared.
         Higgins & Thompson (2002), Statistics in Medicine, 21, 1539-58.
         """
-        tres = self.calcH(Q, df, level)
-        result = EasyDict(TE=None, lower=None, upper=None)
-        if tres.TE:
+        if H.TE:
             t = lambda x: (x ** 2 - 1) / x ** 2
-            result = EasyDict(TE=t(tres.TE), lower=t(tres.lower), upper=t(tres.upper))
-        return result
+            return EasyDict(TE=t(H.TE), lower=t(H.lower), upper=t(H.upper))
+        else:
+            return EasyDict(TE=None, lower=None, upper=None)
 
     def calcH(self, Q, df, level):
         """
@@ -428,19 +428,22 @@ class MetaAnalyser:
                               upper=1 if np.exp(tres.upper) < 1 else np.exp(tres.upper))
         return result
 
-    def getConfidenceIntervals(self, TE, TE_se, level=.95, df=None):
-        import scipy.stats as stats
 
+    norm_ppf = staticmethod(memoize(stats.norm.ppf))
+    t_ppf = staticmethod(memoize(stats.t.ppf))
+
+    def getConfidenceIntervals(self, TE, TE_se, level=.95, df=None):
         alpha = 1 - level
-        # print TE, TE_se
         zscore = TE / TE_se
         if not df:
-            lower = TE - stats.norm.ppf(1 - alpha / 2) * TE_se
-            upper = TE + stats.norm.ppf(1 - alpha / 2) * TE_se
+            delta = self.norm_ppf(1 - alpha / 2) * TE_se
+            lower = TE - delta
+            upper = TE + delta
             pval = 2 * (1 - stats.norm.cdf(abs(zscore)))
         else:
-            lower = TE - stats.t.ppf(1 - alpha / 2, df=df) * TE_se
-            upper = TE + stats.t.ppf(1 - alpha / 2, df=df) * TE_se
+            delta = self.t_ppf(1 - alpha / 2, df=df) * TE_se
+            lower = TE - delta
+            upper = TE + delta
             pval = 2 * (1 - stats.t.cdf(abs(zscore), df=df))
 
         result = EasyDict(TE=TE,
@@ -452,21 +455,31 @@ class MetaAnalyser:
                           upper=upper,
                           lower=lower)
 
-#         if isinstance(TE_se, collections.Iterable):
-#             result = pd.DataFrame(result)
         return result
 
+    @staticmethod
+    def get_TE_se(gene_stats):
+        # Convert to numpy arrays for speed
+        caseSigma = gene_stats['caseDataSigma'].values
+        caseCount = gene_stats['caseDataCount'].values
+        controlSigma = gene_stats['controlDataSigma'].values
+        controlCount = gene_stats['controlDataCount'].values
+
+        # MD method
+        na = np.sqrt(caseSigma ** 2 / caseCount + controlSigma ** 2 / controlCount)
+
+        # Studies with non-positive variance get zero weight in meta-analysis
+        for i in range(len(na)):
+            if caseSigma[i] <= 0 or controlSigma[i] <= 0:
+                na[i] = float('nan')
+
+        return pd.Series(na, index=gene_stats.index)
+
     def __init__(self, gene_stats):
-        TE = gene_stats.caseDataMu - gene_stats.controlDataMu
+        TE = gene_stats.caseDataMu.values - gene_stats.controlDataMu.values
 
         # (7) Calculate results for individual studies
-        # MD method
-        TE_se = np.sqrt(
-            gene_stats['caseDataSigma'] ** 2 / gene_stats['caseDataCount']
-            + gene_stats['controlDataSigma'] ** 2 / gene_stats['controlDataCount']
-        )
-        # Studies with non-positive variance get zero weight in meta-analysis
-        TE_se[(gene_stats['caseDataSigma'] <= 0) | (gene_stats['controlDataSigma'] <= 0)] = None
+        TE_se = self.get_TE_se(gene_stats)
         w_fixed = (1 / TE_se ** 2).fillna(0)
 
         TE_fixed = np.average(TE, weights=w_fixed)
@@ -507,7 +520,7 @@ class MetaAnalyser:
         # Calculate H and I-Squared
         self.level_comb = 0.95
         self.H = self.calcH(self.Q, self.Q_df, self.level_comb)
-        self.I2 = self.isquared(self.Q, self.Q_df, self.level_comb)
+        self.I2 = self.isquared(self.H)
 
     def get_results(self):
         return dict(
