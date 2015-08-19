@@ -5,3 +5,5 @@ bower_components
 .ipynb_checkpoints/
 stargeo.sql*
 .pdb-pyhist
+*.lprof
+*.pyxbldc
