@@ -204,14 +204,14 @@ def get_matrix_filename(series_id, platform_id):
         return mirror_filename
 
     for filename in filenames:
-        print 'Loading URL', SERIES_MATRIX_URL + filename, '...'
+        logger.info('Loading URL %s...' % (SERIES_MATRIX_URL + filename))
         try:
             res = urllib2.urlopen(SERIES_MATRIX_URL + filename)
         except urllib2.URLError:
             pass
         else:
             mirror_filename = os.path.join(SERIES_MATRIX_MIRROR, filename)
-            print 'Cache to', mirror_filename
+            logger.info('Cache to %s' % mirror_filename)
 
             directory = os.path.dirname(mirror_filename)
             if not os.path.exists(directory):
@@ -241,7 +241,7 @@ def get_data(series_id, platform_id):
                                             engine='python')
         except IOError as e:
             # In case we have cirrupt file
-            print "Failed loading %s: %s" % (matrixFilename, e)
+            logger.error("Failed loading %s: %s" % (matrixFilename, e))
             os.remove(matrixFilename)
             if attempt:
                 raise
@@ -354,7 +354,7 @@ class GseAnalyzer:
             # at least 1 case and control required
             classes = df.sample_class.unique()
             if not (0 in classes and 1 in classes):
-                logger.debug("skipping for insufficient data", df.sample_class)
+                logger.debug("skipping for insufficient data %s" % df.sample_class)
                 continue
             # data.to_csv("data.test.csv")
             sample_class = df.ix[data.columns].sample_class
