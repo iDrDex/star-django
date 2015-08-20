@@ -1,0 +1,40 @@
+{% extends "base.j2" %}
+
+{% set page_title = '%s log' % analysis.analysis_name %}
+
+
+{% block content %}
+    <pre id="analysis-log" style="height: 30em; overflow: auto"></pre>
+{% endblock %}
+
+
+{% block script %}
+    <script type="text/javascript">
+        var logPre = $('#analysis-log');
+        var logOffset = 0;
+
+        function escapeHtml(text) {
+            return text.replace(/[\"&<>]/g, function (a) {
+                return { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[a];
+            });
+        }
+
+        function updateLog(lines) {
+            if (lines.length) {
+                logOffset += lines.length;
+                logPre.append(lines.map(escapeHtml).join('\n') + '\n')
+                      .scrollTop(logPre[0].scrollHeight);
+            }
+
+            if (!lines.some(function (line) {return line.match(/^DONE /)})) {
+                setTimeout(function () {
+                    $.ajax({
+                        data: {offset: logOffset},
+                        dataType: 'json',
+                    }).done(updateLog).fail(updateLog.bind(null, []))
+                }, 1000)
+            }
+        }
+        updateLog({{ log_lines|json|safe }})
+    </script>
+{% endblock %}

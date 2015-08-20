@@ -142,11 +142,11 @@ class SampleTag(models.Model):
 
 
 class Analysis(models.Model):
-    analysis_name = models.CharField(max_length=512, blank=True)
-    description = models.CharField(max_length=512, blank=True)
-    case_query = models.CharField(max_length=512, blank=True)
-    control_query = models.CharField(max_length=512, blank=True)
-    modifier_query = models.CharField(max_length=512, blank=True)
+    analysis_name = models.CharField(max_length=512)
+    description = models.CharField(max_length=512, blank=True, default='')
+    case_query = models.CharField(max_length=512)
+    control_query = models.CharField(max_length=512)
+    modifier_query = models.CharField(max_length=512, blank=True, default='')
     series_count = models.IntegerField(blank=True, null=True)
     platform_count = models.IntegerField(blank=True, null=True)
     sample_count = models.IntegerField(blank=True, null=True)
@@ -154,9 +154,9 @@ class Analysis(models.Model):
     platform_ids = models.TextField(blank=True)
     sample_ids = models.TextField(blank=True)
     is_active = models.CharField(max_length=1, blank=True)
-    created_on = models.DateTimeField(blank=True, null=True)
+    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey('AuthUser', db_column='created_by', blank=True, null=True)
-    modified_on = models.DateTimeField(blank=True, null=True)
+    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
     modified_by = models.ForeignKey('AuthUser', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
@@ -164,14 +164,22 @@ class Analysis(models.Model):
         managed = False
         db_table = 'analysis'
 
+    def __unicode__(self):
+        if self.modifier_query:
+            return u'%s: case=%s control=%s modifier=%s' \
+                % (self.analysis_name, self.case_query, self.control_query, self.modifier_query)
+        else:
+            return u'%s: case=%s control=%s' \
+                % (self.analysis_name, self.case_query, self.control_query)
+
 
 class MetaAnalysis(models.Model):
     analysis = models.ForeignKey(Analysis, blank=True, null=True)
     mygene_sym = models.CharField(max_length=512, blank=True)
     mygene_entrez = models.IntegerField(blank=True, null=True)
     direction = models.CharField(max_length=512, blank=True)
-    casedatacount = models.IntegerField(blank=True, null=True)
-    controldatacount = models.IntegerField(blank=True, null=True)
+    casedatacount = models.IntegerField('Case Count', blank=True, null=True)
+    controldatacount = models.IntegerField('Control Count', blank=True, null=True)
     k = models.IntegerField(blank=True, null=True)
     fixed_te = models.FloatField(blank=True, null=True)
     fixed_se = models.FloatField(blank=True, null=True)

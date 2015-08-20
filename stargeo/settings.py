@@ -42,6 +42,7 @@ INSTALLED_APPS = (
     'django_jinja',
     'django_jinja.contrib._humanize',
     'bootstrapform_jinja',
+    'datatableview',
 
     'core',
     'legacy',

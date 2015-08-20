@@ -1,0 +1,43 @@
+{% extends "base.j2" %}
+
+{% set page_title = 'Analysis' %}
+
+
+{% block header %}
+    <a href="{{ url('analysis_create') }}" class="btn btn-success" style="float: right">Create</a>
+    {{ super() }}
+{% endblock %}
+
+
+{% block content %}
+<div class="table-responsive">
+  <table class="table table-striped" id="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        {# <th>Description</th> #}
+        <th>Case</th>
+        <th>Control</th>
+        <th>Modifier</th>
+        <th class="text-right">Series</th>
+        <th class="text-right">Platforms</th>
+        <th class="text-right">Samples</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for analysis in analyses %}
+        <tr>
+          <td><a href="{{ url('analysis_results', analysis.pk) }}">{{ analysis.analysis_name }}</a></td>
+          {# <td>{{ analysis.description }}</td> #}
+          <td>{{ analysis.case_query }}</td>
+          <td>{{ analysis.control_query }}</td>
+          <td>{{ analysis.modifier_query }}</td>
+          <td class="text-right">{{ analysis.series_count }}</td>
+          <td class="text-right">{{ analysis.platform_count }}</td>
+          <td class="text-right">{{ analysis.sample_count }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="{{ static('homer/fonts/pe-icon-7-stroke/css/pe-icon-7-stroke.css') }}" />
     <link rel="stylesheet" href="{{ static('homer/fonts/pe-icon-7-stroke/css/helper.css') }}" />
     <link rel="stylesheet" href="{{ static('homer/styles/style.css') }}">
+    <link rel="stylesheet" href="{{ static('site.css') }}">
 
     <!-- My scripts -->
     <script src="{{ static('homer/vendor/jquery/dist/jquery.min.js') }}"></script>
@@ -110,6 +111,9 @@
             <li{% if request.path == '/validate/' %} class="active"{% endif %}>
                 <a href="/validate/"> <span class="nav-label">Validate</span> </a>
             </li>
+            <li{% if request.path.startswith('/analysis/') %} class="active"{% endif %}>
+                <a href="/analysis/"> <span class="nav-label">Analysis</span> </a>
+            </li>
             {# HACK: hardcode my and Dexters ids #}
             {% if request.user_data.id in (1, 24) %}
             <li{% if request.path == '/stats/' %} class="active"{% endif %}>
@@ -129,7 +133,9 @@
         <div class="normalheader">
             <div class="hpanel">
                 <div class="panel-body">
-                    <h2 class="font-light" style="margin-bottom: 0">{{ page_title }}</h2>
+                    {% block header %}
+                        <h2 class="font-light" style="margin-bottom: 0">{{ page_title }}</h2>
+                    {% endblock %}
                 </div>
             </div>
         </div>

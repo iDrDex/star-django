@@ -15,7 +15,7 @@ from django.db import connections, transaction
 from legacy.models import Sample, Series, Platform, PlatformProbe, Analysis, MetaAnalysis
 
 import logging
-logger = logging.getLogger("stargeo.analysis")
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
@@ -24,53 +24,46 @@ SERIES_MATRIX_MIRROR = os.environ['SERIES_MATRIX_MIRROR']
 
 
 @log_durations(logger.debug)
-def task_analyze(analysis_name, description, case_query, control_query, modifier_query,
-                 debug=False):
-    logger.info('Started %s analysis', analysis_name)
-    with log_durations(logger.debug, 'Loading dataframe for %s' % analysis_name):
-        df = get_analysis_df(case_query, control_query, modifier_query)
-    debug and df.to_csv("%s.analysis_df.csv" % analysis_name)
+def perform_analysis(analysis, debug=False):
+    logger.info('Started %s analysis', analysis.analysis_name)
+    with log_durations(logger.debug, 'Loading dataframe for %s' % analysis.analysis_name):
+        df = get_analysis_df(analysis.case_query, analysis.control_query, analysis.modifier_query)
+    debug and df.to_csv("%s.analysis_df.csv" % analysis.analysis_name)
 
     # Load GSE data, make and concat all fold change analyses results.
     # NOTE: we are doing load_gse() lazily here to avoid loading all matrices at once.
-    logger.info('Loading data and calculating fold changes for %s', analysis_name)
-    with log_durations(logger.debug, 'Fold changes for %s' % analysis_name):
+    logger.info('Loading data and calculating fold changes for %s', analysis.analysis_name)
+    with log_durations(logger.debug, 'Fold changes for %s' % analysis.analysis_name):
         gses = (load_gse(df, series_id) for series_id in sorted(df.series_id.unique()))
         fold_changes = pd.concat(imap(get_fold_change_analysis, gses))
         debug and fold_changes.to_csv("%s.fc.csv" % debug)
 
-    logger.info('Meta-Analyzing %s', analysis_name)
-    with log_durations(logger.debug, 'Meta analysis for %s' % analysis_name):
+    logger.info('Meta-Analyzing %s', analysis.analysis_name)
+    with log_durations(logger.debug, 'Meta analysis for %s' % analysis.analysis_name):
         balanced = getFullMetaAnalysis(fold_changes, debug=debug).reset_index()
         debug and balanced.to_csv("%s.meta.csv" % debug)
 
-    logger.info('Inserting %s analysis results', analysis_name)
-    with log_durations(logger.debug, 'Saving results of %s' % analysis_name), \
+    logger.info('Inserting %s analysis results', analysis.analysis_name)
+    with log_durations(logger.debug, 'Saving results of %s' % analysis.analysis_name), \
             transaction.atomic('legacy'):
-        analysis = Analysis.objects.create(
-            analysis_name=analysis_name,
-            description=description,
-            case_query=case_query,
-            control_query=control_query,
-            modifier_query=modifier_query,
-            series_count=len(df.series_id.unique()),
-            platform_count=len(df.platform_id.unique()),
-            sample_count=len(df.sample_id.unique()),
-            series_ids=df.series_id.unique().tolist(),
-            platform_ids=df.platform_id.unique().tolist(),
-            sample_ids=df.sample_id.unique().tolist(),
-        )
+        analysis.series_count = len(df.series_id.unique())
+        analysis.platform_count = len(df.platform_id.unique())
+        analysis.sample_count = len(df.sample_id.unique())
+        analysis.series_ids = df.series_id.unique().tolist()
+        analysis.platform_ids = df.platform_id.unique().tolist()
+        analysis.sample_ids = df.sample_id.unique().tolist()
+        analysis.save(update_fields=['series_count', 'platform_count', 'sample_count',
+                                     'series_ids', 'platform_ids', 'sample_ids'])
+
         balanced['analysis'] = analysis
-        # replace infs with NaN for db insert
-        # balanced = balanced.replace([np.inf, -np.inf], np.nan)
-        # http://stackoverflow.com/questions/14162723/replacing-pandas-or-numpy-nan-with-a-none-to-use-with-mysqldb
-        # balanced = balanced.where((pd.notnull(balanced)), None)
         balanced.columns = balanced.columns.map(lambda x: x.replace(".", "_").lower())
         field_names = [f.name for f in MetaAnalysis._meta.fields if f.name != 'id']
         rows = balanced[field_names].T.to_dict().values()
+        # Delete old values in case we recalculating analysis
+        MetaAnalysis.objects.filter(analysis=analysis).delete()
         MetaAnalysis.objects.bulk_create(MetaAnalysis(**row) for row in rows)
 
-    logger.info('DONE %s analysis', analysis_name)
+    logger.info('DONE %s analysis', analysis.analysis_name)
 
 
 # from debug_cache import DebugCache
@@ -139,15 +132,12 @@ def get_full_df():
 
 
 # @dcache_new.cached
+@log_durations(logger.debug)
 def get_analysis_df(case_query, control_query, modifier_query):
     # NOTE: would be more efficient to select only required data
     df = get_full_df()
-    # df = db(Sample_Tag_View).select(processor=pandas_processor)
-    # print 'queries', case_query, control_query, modifier_query
     case_df = df.query(case_query.lower())
-    # print 'case_df', len(case_df)
     control_df = df.query(control_query.lower())
-    # print 'control_df', len(control_df)
     modifier_df = pd.DataFrame()
     # R: modify then select case and control, no need for this fancy intersections.
     if modifier_query:
@@ -283,14 +273,9 @@ class Gse:
         self.gpl2probes = gpl2probes
 
     def __str__(self):
-        return '<Gse %r>' % self.name
+        return '<Gse %s>' % self.name
 
 
-# @dcache.checked(strict=True, subs={
-#     'probe dataMu dataSi*.debug=HIV resistacnce.5ed75c5ee5401c45ab16b6555aab5d2b':
-#         'probe dataMu dataSi*.debug=HIV resistacnce.6a5171890c81e9cc7fbc5b2f5c2b7a9d'
-# })
-# @dcache_new.cached
 def getFullMetaAnalysis(fcResults, debug=False):
     debug and fcResults.to_csv("%s.fc.csv" % debug)
     all = []
@@ -347,11 +332,11 @@ class GseAnalyzer:
         for group, df in groups:
             subset, gpl = group
             probes = gse.gpl2probes[gpl]
-            print subset, gpl
+            logger.debug('%s, %s' % (subset, gpl))
 
             # NOTE: if data has changed then sample ids could be different
             if not set(df["gsm_name"]) <= set(gse.gpl2data[gpl].columns):
-                print "skipping %s: sample ids mismatch" % gpl
+                logger.debug("skipping %s: sample ids mismatch" % gpl)
                 continue
 
             df = df.set_index("gsm_name")
@@ -364,12 +349,12 @@ class GseAnalyzer:
             # Studies with defined SAMPLE CLASS
             # at least 2 samples required
             if len(df.sample_class) < 3:
-                print "skipping for insufficient data", df.sample_class
+                logger.debug("skipping for insufficient data %s" % df.sample_class)
                 continue
             # at least 1 case and control required
             classes = df.sample_class.unique()
             if not (0 in classes and 1 in classes):
-                print "skipping for insufficient data", df.sample_class
+                logger.debug("skipping for insufficient data", df.sample_class)
                 continue
             # data.to_csv("data.test.csv")
             sample_class = df.ix[data.columns].sample_class
