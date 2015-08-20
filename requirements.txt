@@ -19,7 +19,7 @@ gzip-reader==0.1
 pandas==0.16.2
 termcolor==1.1.0
 numpy==1.9.2
-numpexpr==2.4.3
+numexpr==2.4.3
 scipy==0.16.0
 statsmodels==0.6.1
 django_pandas==0.3.0
