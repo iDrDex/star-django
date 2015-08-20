@@ -9,7 +9,7 @@ from .analysis import perform_analysis
 def analysis_task(analysis_id):
     log_key = 'analysis:%d:log' % analysis_id
     redis_client.delete(log_key)
-    with extra_logging_handler('', RedisHandler(key=log_key)):
+    with extra_logging_handler('analysis', RedisHandler(key=log_key)):
         analysis = Analysis.objects.get(pk=analysis_id)
         perform_analysis(analysis)
 
@@ -25,6 +25,8 @@ def extra_logging_handler(name, handler):
     logger.addHandler(handler)
     try:
         yield
+    except Exception as e:
+        logger.error(e, exc_info=True)
     finally:
         logger.removeHandler(handler)
 
