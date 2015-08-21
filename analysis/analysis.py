@@ -33,7 +33,7 @@ def perform_analysis(analysis, debug=False):
     # Load GSE data, make and concat all fold change analyses results.
     # NOTE: we are doing load_gse() lazily here to avoid loading all matrices at once.
     logger.info('Loading data and calculating fold changes for %s', analysis.analysis_name)
-    with log_durations(logger.debug, 'Fold changes for %s' % analysis.analysis_name):
+    with log_durations(logger.debug, 'Load/fold for %s' % analysis.analysis_name):
         gses = (load_gse(df, series_id) for series_id in sorted(df.series_id.unique()))
         fold_changes = pd.concat(imap(get_fold_change_analysis, gses))
         debug and fold_changes.to_csv("%s.fc.csv" % debug)
@@ -76,7 +76,6 @@ def perform_analysis(analysis, debug=False):
 @log_durations(logger.debug)
 def get_fold_change_analysis(gse):
     # TODO: get rid of unneeded OOP interface
-    logger.debug('Calculating fold change for %s', gse.name)
     return GseAnalyzer(gse).getResults(debug=False)
 
 
@@ -332,7 +331,6 @@ class GseAnalyzer:
         for group, df in groups:
             subset, gpl = group
             probes = gse.gpl2probes[gpl]
-            logger.debug('%s, %s' % (subset, gpl))
 
             # NOTE: if data has changed then sample ids could be different
             if not set(df["gsm_name"]) <= set(gse.gpl2data[gpl].columns):
@@ -349,12 +347,12 @@ class GseAnalyzer:
             # Studies with defined SAMPLE CLASS
             # at least 2 samples required
             if len(df.sample_class) < 3:
-                logger.debug("skipping for insufficient data %s" % df.sample_class)
+                logger.debug("skipping %s: insufficient data" % gpl)
                 continue
             # at least 1 case and control required
             classes = df.sample_class.unique()
             if not (0 in classes and 1 in classes):
-                logger.debug("skipping for insufficient data %s" % df.sample_class)
+                logger.debug("skipping %s: single-class data" % gpl)
                 continue
             # data.to_csv("data.test.csv")
             sample_class = df.ix[data.columns].sample_class
