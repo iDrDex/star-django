@@ -65,10 +65,10 @@ def create(request):
         'form': form
     }
 
-@transaction.atomic('legacy')
 def save_analysis(request, analysis):
-    analysis.created_by_id = analysis.modified_by_id = request.user_data['id']
-    analysis.save()
+    with transaction.atomic('legacy'):
+        analysis.created_by_id = analysis.modified_by_id = request.user_data['id']
+        analysis.save()
     analysis_task.delay(analysis.pk)
     return redirect(log, analysis.pk)
 
