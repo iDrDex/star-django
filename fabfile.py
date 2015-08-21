@@ -1,13 +1,11 @@
 # encoding: utf-8
-from itertools import chain
-
 from fabric.api import *
 from fabric.contrib import django
 from fabric.colors import green, cyan, red, yellow
 
 
 __all__ = ('deploy', 'rsync', 'dirty_deploy', 'dirty_fast', 'shell',
-           'restart', 'manage', 'incoming_files', 'install_requirements', 'migrate',
+           'restart', 'manage', 'install_requirements', 'migrate',
            'pull_db')
 
 
@@ -16,20 +14,6 @@ env.cwd = '/home/ubuntu/app'
 env.use_ssh_config = True
 env.hosts = ['stargeo']
 activate = lambda: prefix('source ~/venv/bin/activate')
-
-
-class FileSet(frozenset):
-    @property
-    def need_migrate(self):
-        return self.need_upgrade or any('migrations' in filename for filename in self)
-
-    @property
-    def need_upgrade(self):
-        return 'requirements.txt' in self
-
-    @property
-    def crontab_changed(self):
-        return 'stuff/crontab.txt' in self
 
 
 def restart():
@@ -57,10 +41,6 @@ def shell():
     with activate():
         run('./manage.py shell')
 
-def incoming_files():
-    return run('git --no-pager diff --name-only origin..HEAD',
-               quiet=True).splitlines()
-
 
 def install_requirements():
     with activate():
@@ -76,11 +56,6 @@ def deploy():
     print(green('Fetching git commits...'))
     run('git fetch --progress')
 
-    incoming = FileSet(chain(*execute(incoming_files).values()))
-
-    if not incoming:
-        print(yellow('Nothing seems to be changed, proceeding anyway'))
-
     print(green('Updating the working copy...'))
     result = run('git merge origin/master', warn_only=True)
 
@@ -88,9 +63,8 @@ def deploy():
         print(red('Git merge returned error, exiting'))
         raise SystemExit()
 
-    if incoming.need_upgrade:
-        print(green('Installing required Python libraries...'))
-        execute(install_requirements)
+    print(green('Installing required Python libraries...'))
+    execute(install_requirements)
 
     print(green('Running migrations...'))
     execute(migrate)
@@ -98,9 +72,8 @@ def deploy():
     print(green('Collecting static files...'))
     execute(collect_static)
 
-    if incoming.crontab_changed:
-        print(green('Installing new crontab...'))
-        execute(install_crontab)
+    # print(green('Installing new crontab...'))
+    # execute(install_crontab)
 
     execute(restart)
 
