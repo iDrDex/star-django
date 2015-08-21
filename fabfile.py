@@ -44,8 +44,7 @@ def shell():
 
 def install_requirements():
     with activate():
-        with shell_env(PIP_DOWNLOAD_CACHE='~/.pip_download_cache'):
-            run('pip install --exists-action=s -r requirements.txt')
+        run('pip install --exists-action=s -r requirements.txt')
 
 
 def install_crontab():
