@@ -236,9 +236,8 @@ def get_data(series_id, platform_id):
                                             skiprows=headerRows,
                                             index_col=["ID_REF"],
                                             na_values=na_values,
-                                            engine='c')
-            # Drop last line
-            data = data.drop(data.index[-1])
+                                            skipfooter=1,
+                                            engine='python')
             break
         except IOError as e:
             # In case we have cirrupt file
