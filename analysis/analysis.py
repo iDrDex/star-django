@@ -378,6 +378,10 @@ class GseAnalyzer:
         return allResults
 
 
+import pyximport; pyximport.install()
+from _analysis import _get_TE_se
+
+
 class MetaAnalyser:
     def isquared(self, H):
         """
@@ -442,20 +446,19 @@ class MetaAnalyser:
 
     @staticmethod
     def get_TE_se(gene_stats):
-        # Convert to numpy arrays for speed
-        caseSigma = gene_stats['caseDataSigma'].values
-        caseCount = gene_stats['caseDataCount'].values
-        controlSigma = gene_stats['controlDataSigma'].values
-        controlCount = gene_stats['controlDataCount'].values
+        # NOTE: Use this hacky access for speed, see https://github.com/pydata/pandas/issues/10843
+        def get_col_values(name):
+            i = gene_stats.columns.get_loc(name)
+            bm = gene_stats._data
+            return bm.blocks[bm._blknos[i]].iget(bm._blklocs[i])
 
-        # MD method
-        na = np.sqrt(caseSigma ** 2 / caseCount + controlSigma ** 2 / controlCount)
+        # Extracting numpy arrays to pass them to cython
+        caseSigma = get_col_values('caseDataSigma')
+        caseCount = get_col_values('caseDataCount')
+        controlSigma = get_col_values('controlDataSigma')
+        controlCount = get_col_values('controlDataCount')
 
-        # Studies with non-positive variance get zero weight in meta-analysis
-        for i in range(len(na)):
-            if caseSigma[i] <= 0 or controlSigma[i] <= 0:
-                na[i] = float('nan')
-
+        na = _get_TE_se_cols(caseSigma, caseCount, controlSigma, controlCount)
         return pd.Series(na, index=gene_stats.index)
 
     def __init__(self, gene_stats):
