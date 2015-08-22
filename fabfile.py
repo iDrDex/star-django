@@ -37,9 +37,14 @@ def manage(cmd):
     with activate():
         run('./manage.py %s' % cmd)
 
+
+def smart_shell(command=''):
+    env_commands = "cd '%s'; %s" % (env.cwd, " && ".join(env.command_prefixes))
+    open_shell('%s; %s' % (env_commands, command))
+
 def shell():
     with activate():
-        run('./manage.py shell')
+        smart_shell('./manage.py shell')
 
 
 def install_requirements():
