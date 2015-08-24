@@ -82,6 +82,15 @@ def deploy():
     execute(restart)
 
 
+def deploy_fast():
+    print(green('Updating working copy...'))
+    run('git pull')
+
+    # Not restarting celery, make `fab restart` if you do want that
+    print(green('Reloading uWSGI...'))
+    run('touch uwsgi-reload')
+
+
 def rsync():
     print(green('Uploading files...'))
     local("rsync -avzL --progress --filter=':- .gitignore' . stargeo:/home/ubuntu/app")
