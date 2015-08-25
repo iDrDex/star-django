@@ -605,13 +605,14 @@ def normalize_quantiles(df):
 
 import numexpr as ne
 
-def get_logged(data):
-    if is_logged(data):
-        return data
-    floor = np.abs(np.min(data))
-    res = ne.evaluate('log(data + floor + 1) / log(2)')
-    return pd.DataFrame(res, index=data.index, columns=data.columns)
+def get_logged(df):
+    if is_logged(df):
+        return df
 
-def is_logged(data):
-    # TODO: try ufunc.reduce, e.g. np.max.reduce(data)
-    return ne.evaluate('data < 10').all().all()
+    data = df.values
+    floor = np.abs(np.min(data, axis=0))
+    res = ne.evaluate('log(data + floor + 1) / log(2)')
+    return pd.DataFrame(res, index=df.index, columns=df.columns)
+
+def is_logged(df):
+    return np.max(df.values) < 10
