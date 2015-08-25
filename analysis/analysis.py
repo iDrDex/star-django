@@ -458,7 +458,7 @@ class MetaAnalyser:
         controlSigma = get_col_values('controlDataSigma')
         controlCount = get_col_values('controlDataCount')
 
-        na = _get_TE_se_cols(caseSigma, caseCount, controlSigma, controlCount)
+        na = _get_TE_se(caseSigma, caseCount, controlSigma, controlCount)
         return pd.Series(na, index=gene_stats.index)
 
     def __init__(self, gene_stats):
