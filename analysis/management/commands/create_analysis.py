@@ -3,7 +3,8 @@ from optparse import make_option
 from funcy import project
 from django.core.management.base import BaseCommand, CommandError
 
-from analysis.analysis import task_analyze
+from legacy.models import Analysis
+from analysis.tasks import analysis_task
 
 
 class Command(BaseCommand):
@@ -31,15 +32,12 @@ class Command(BaseCommand):
             action='store', type='string', dest='modifier_query', default='',
             help='Modifier query'
         ),
-        make_option(
-            '--debug',
-            action='store_true', dest='debug', default=False,
-        ),
     )
 
     def handle(self, *args, **options):
         if not args:
             raise CommandError('Specify analysis name')
         analysis_name = args[0]
-        fields = ['description', 'case_query', 'control_query', 'modifier_query', 'debug']
-        task_analyze(analysis_name, **project(options, fields))
+        fields = ['description', 'case_query', 'control_query', 'modifier_query']
+        analysis = Analysis.objects.create(analysis_name=analysis_name, **project(options, fields))
+        analysis_task(analysis.pk)
