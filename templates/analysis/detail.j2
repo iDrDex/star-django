@@ -1,10 +1,27 @@
 {% extends "base.j2" %}
 
+{% set page_title = analysis.analysis_name %}
 
-{% set page_title = 'Analysis' %}
 
 
 {% block content %}
+    <table class="table" style="width: auto; float: left; margin-right: 1.5em">
+        {% if analysis.description %}
+            <tr><th>Description</th><td>{{ analysis.description }}</td></tr>
+        {% endif %}
+        <tr><th>Case Query</th><td>{{ analysis.case_query }}</td></tr>
+        <tr><th>Control Query</th><td>{{ analysis.control_query }}</td></tr>
+        {% if analysis.modifier_query %}
+            <tr><th>Modifier Query</th><td>{{ analysis.modifier_query }}</td></tr>
+        {% endif %}
+    </table>
+    {% if analysis.series_count %}
+        <table class="table" style="width: auto">
+            <tr><th>Series</th><td>{{ analysis.series_count }}</td></tr>
+            <tr><th>Platforms</th><td>{{ analysis.platform_count }}</td></tr>
+            <tr><th>Samples</th><td>{{ analysis.sample_count }}</td></tr>
+        </table>
+    {% endif %}
     <div class="datatable-wrap">
         {{ datatable|safe }}
     </div>

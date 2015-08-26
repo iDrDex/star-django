@@ -30,10 +30,16 @@ class Detail(DatatableView):
 
     def get(self, request, analysis_id):
         self.analysis_id = analysis_id
+        self.analysis = get_object_or_404(Analysis, pk=analysis_id)
         return super(Detail, self).get(request, analysis_id)
 
     def get_queryset(self):
         return MetaAnalysis.objects.filter(analysis=self.analysis_id)
+
+    def get_context_data(self, **kwargs):
+        context = super(Detail, self).get_context_data(**kwargs)
+        context['analysis'] = self.analysis
+        return context
 
 detail = Detail.as_view()
 
