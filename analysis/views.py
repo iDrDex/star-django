@@ -2,6 +2,7 @@ from funcy import silent
 from handy.decorators import render_to, paginate
 from datatableview.views import DatatableView
 
+from django.contrib import messages
 from django.db import transaction
 from django.forms import ModelForm
 from django.http import JsonResponse
@@ -17,7 +18,7 @@ from .tasks import analysis_task
 @paginate('analyses', 10)
 def index(request):
     return {
-        'analyses': Analysis.objects.order_by('-id'),
+        'analyses': Analysis.objects.exclude(deleted='T').order_by('-id'),
     }
 
 
@@ -92,3 +93,12 @@ def rerun(request, analysis_id):
         analysis.save()
     analysis_task.delay(analysis.pk)
     return redirect(log, analysis.pk)
+
+
+def delete(request, analysis_id):
+    with transaction.atomic('legacy'):
+        analysis = get_object_or_404(Analysis, pk=analysis_id)
+        analysis.deleted = 'T'
+        analysis.save()
+    messages.success(request, 'Successfully deleted %s analysis' % analysis.analysis_name)
+    return redirect(index)

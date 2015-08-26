@@ -21,6 +21,7 @@ urlpatterns = patterns('',  # noqa
     url(r'^analysis/(\d+)/$', 'analysis.views.detail', name='analysis_results'),
     url(r'^analysis/(\d+)/log/$', 'analysis.views.log', name='analysis_log'),
     url(r'^analysis/(\d+)/rerun/$', 'analysis.views.rerun', name='analysis_rerun'),
+    url(r'^analysis/(\d+)/delete/$', 'analysis.views.delete', name='analysis_delete'),
 
     url(r'^stats/$', 'tags.user_views.stats', name='stats'),
     url(r'^accounting/$', 'tags.user_views.accounting', name='accounting'),

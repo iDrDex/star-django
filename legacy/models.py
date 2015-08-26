@@ -159,6 +159,7 @@ class Analysis(models.Model):
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
     modified_by = models.ForeignKey('AuthUser', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
+    deleted = models.CharField(max_length=1, blank=True, null=True)
 
     class Meta:
         managed = False
