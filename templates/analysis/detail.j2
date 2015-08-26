@@ -3,6 +3,13 @@
 {% set page_title = analysis.analysis_name %}
 
 
+{% block header %}
+    <div class="pull-right">
+        <a href="{{ url('analysis_log', analysis.pk) }}" class="btn btn-default">Log</a>
+    </div>
+    {{ super() }}
+{% endblock %}
+
 
 {% block content %}
     <table class="table" style="width: auto; float: left; margin-right: 1.5em">
