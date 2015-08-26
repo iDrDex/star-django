@@ -17,9 +17,10 @@ urlpatterns = patterns('',  # noqa
         name='on_demand_result'),
 
     url(r'^analysis/$', 'analysis.views.index', name='analysis'),
+    url(r'^analysis/create/$', 'analysis.views.create', name='analysis_create'),
     url(r'^analysis/(\d+)/$', 'analysis.views.detail', name='analysis_results'),
     url(r'^analysis/(\d+)/log/$', 'analysis.views.log', name='analysis_log'),
-    url(r'^analysis/create/$', 'analysis.views.create', name='analysis_create'),
+    url(r'^analysis/(\d+)/rerun/$', 'analysis.views.rerun', name='analysis_rerun'),
 
     url(r'^stats/$', 'tags.user_views.stats', name='stats'),
     url(r'^accounting/$', 'tags.user_views.accounting', name='accounting'),
