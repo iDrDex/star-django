@@ -18,6 +18,8 @@ def _json(value):
 def replace_get(context, **kwargs):
     request = context.get('request')
     query = request.GET.copy()
+    for param in kwargs:
+        query.pop(param, None)
     query.update(kwargs)
     return '%s?%s' % (request.path, query.urlencode())
 
