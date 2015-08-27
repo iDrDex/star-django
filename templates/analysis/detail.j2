@@ -55,6 +55,14 @@
         $(function(){
             datatableview.initialize($('.datatable'), {
                 scrollX: true,
+                columnDefs: [
+                    {
+                        render: function ( data, type, row ) {
+                            return data ? Number(data).toPrecision(3) : data;
+                        },
+                        targets: _.range(8, 37)
+                    }
+                ]
             });
         });
     </script>

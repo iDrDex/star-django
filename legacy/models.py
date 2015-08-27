@@ -176,11 +176,11 @@ class Analysis(models.Model):
 
 class MetaAnalysis(models.Model):
     analysis = models.ForeignKey(Analysis, blank=True, null=True)
-    mygene_sym = models.CharField(max_length=512, blank=True)
-    mygene_entrez = models.IntegerField(blank=True, null=True)
+    mygene_sym = models.CharField("sym", max_length=512, blank=True)
+    mygene_entrez = models.IntegerField("entrez", blank=True, null=True)
     direction = models.CharField(max_length=512, blank=True)
-    casedatacount = models.IntegerField('Case Count', blank=True, null=True)
-    controldatacount = models.IntegerField('Control Count', blank=True, null=True)
+    casedatacount = models.IntegerField('cases', blank=True, null=True)
+    controldatacount = models.IntegerField('controls', blank=True, null=True)
     k = models.IntegerField(blank=True, null=True)
     fixed_te = models.FloatField(blank=True, null=True)
     fixed_se = models.FloatField(blank=True, null=True)
