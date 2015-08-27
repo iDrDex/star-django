@@ -5,14 +5,15 @@ import urllib2
 import shutil
 
 from easydict import EasyDict
-from funcy import first, log_durations, imap, memoize, without, make_lookuper
+from funcy import first, log_durations, imap, memoize, without, make_lookuper, cat, re_all, keep
 from handy.db import db_execute
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 from django.db import connections, transaction
 
-from legacy.models import Sample, Series, Platform, PlatformProbe, Analysis, MetaAnalysis
+from legacy.models import (Sample, Series, Platform, PlatformProbe, Analysis, MetaAnalysis,
+                           Tag, SampleTag)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -79,72 +80,37 @@ def get_fold_change_analysis(gse):
     return GseAnalyzer(gse).getResults(debug=False)
 
 
-@memoize
-def _get_columns(table):
-    with db_execute('select * from %s limit 1' % table, (), 'legacy') as cursor:
-        return [col.name for col in cursor.description]
+COLUMNS = {
+    'sample__id': 'sample_id', 'sample__gsm_name': 'gsm_name', 'annotation': 'annotation',
+    'series_tag__series__id': 'series_id',
+    'series_tag__platform__id': 'platform_id', 'series_tag__platform__gpl_name': 'gpl_name',
+    'series_tag__tag__tag_name': 'tag_name',
+}
 
-
-def get_full_df():
-    # tags_qs = Tag.objects.values_list('tag_name', flat=True).order_by('tag_name').distinct()
-    # tags = [tag.lower() for tag in tags_qs]
-    non_tags = ['id', 'doc', 'series_id', 'platform_id', 'sample_id']
-    tags = without(_get_columns('sample_tag_view'), *non_tags)
-
-    view_fields = ['id', 'series_id', 'platform_id', 'sample_id'] + tags
-    fields = ['sample_tag_view.{0} as "sample_tag_view.{0}"'.format(f) for f in view_fields]
-    for cls in (Sample, Series, Platform):
-        fields += ['{0}.{1} as "{0}.{1}"'.format(cls._meta.db_table, field.column)
-                   for field in cls._meta.fields]
-    fields_sql = ','.join(fields)
-
-    df = pd.read_sql_query('''
-        select %s
-            from sample_tag_view
-            join sample on (sample_tag_view.sample_id = sample.id)
-            join series on (sample_tag_view.series_id = series.id)
-            join platform on (sample_tag_view.platform_id = platform.id)
-    ''' % fields_sql, connections['legacy']).convert_objects(convert_numeric=True)
-
-    clean_columns = []
-    clean_series = []
-
-    field_names = ['gse_name', 'gpl_name', 'gsm_name', "series_id", "sample_id", "platform_id"]
-    for col in df.columns:
-        table, header = col.split(".")
-        field = header.lower()
-        if (field in tags) or (field in field_names):
-            toAdd = field
-        else:
-            toAdd = col
-        if toAdd not in clean_columns:
-            clean_columns.append(toAdd)
-            clean_series.append(df[col])
-
-    clean_df = pd.DataFrame(dict(zip(clean_columns, clean_series)))
-    for col in clean_df.columns:
-        if col in tags:
-            if clean_df.dtypes[col] == object:
-                clean_df[col] = clean_df[col].str.lower()
-
-    return clean_df  # .fillna(np.nan).replace('', np.nan)
-
-
-# @dcache_new.cached
 @log_durations(logger.debug)
 def get_analysis_df(case_query, control_query, modifier_query):
-    # NOTE: would be more efficient to select only required data
-    df = get_full_df()
+    # Fetch all relevant data
+    queries = [case_query, control_query, modifier_query]
+    tokens = set(cat(re_all('[a-zA-Z]\w*', query) for query in queries))
+
+    tags = Tag.objects.filter(tag_name__iregex='^(%s)$' % '|'.join(map(re.escape, tokens)))
+    qs = SampleTag.objects.filter(series_tag__tag__in=tags)
+    df = qs.to_dataframe(COLUMNS.keys()).rename(columns=COLUMNS)
+
+    # Make tag columns
+    df.tag_name = df.tag_name.str.lower()
+    df.annotation = df.annotation.str.lower()
+    for tag in tags:
+        tag_name = tag.tag_name.lower()
+        df[tag_name] = df[df.tag_name == tag_name].annotation
+
+    # Apply case/control/modifier
+    if modifier_query:
+        df = df.query(modifier_query.lower())
     case_df = df.query(case_query.lower())
     control_df = df.query(control_query.lower())
-    modifier_df = pd.DataFrame()
-    # R: modify then select case and control, no need for this fancy intersections.
-    if modifier_query:
-        modifier_df = df.query(modifier_query.lower())
-        case_df = df.ix[set(case_df.index).intersection(set(modifier_df.index))]
-        control_df = df.ix[set(control_df.index).intersection(set(modifier_df.index))]
 
-    # set 0 and 1 for analysis
+    # Set 0 and 1 for analysis
     overlap_df = df.ix[set(case_df.index).intersection(set(control_df.index))]
 
     df['sample_class'] = None
@@ -152,8 +118,7 @@ def get_analysis_df(case_query, control_query, modifier_query):
     df['sample_class'].ix[control_df.index] = 0
     df['sample_class'].ix[overlap_df.index] = -1
 
-    analysis_df = df.dropna(subset=["sample_class"])
-    return analysis_df
+    return df.dropna(subset=["sample_class"])
 
 
 @log_durations(logger.debug)

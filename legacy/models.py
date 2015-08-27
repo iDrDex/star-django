@@ -136,6 +136,8 @@ class SampleTag(models.Model):
     modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
+    objects = DataFrameManager()
+
     class Meta:
         managed = False
         db_table = 'sample_tag'
