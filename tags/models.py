@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.db import models
 from handy.models import JSONField
+from django_pandas.managers import DataFrameManager
 
 
 ANNOTATION_REWARD = Decimal('0.05')
@@ -164,6 +165,8 @@ class SampleAnnotation(models.Model):
     serie_annotation = models.ForeignKey(SerieAnnotation, related_name='sample_annotations')
     sample = models.ForeignKey('legacy.Sample')
     annotation = models.TextField(blank=True)
+
+    objects = DataFrameManager()
 
     class Meta:
         db_table = 'sample_annotation'

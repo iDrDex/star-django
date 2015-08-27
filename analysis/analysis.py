@@ -14,6 +14,7 @@ from django.db import connections, transaction
 
 from legacy.models import (Sample, Series, Platform, PlatformProbe, Analysis, MetaAnalysis,
                            Tag, SampleTag)
+from tags.models import SampleAnnotation
 
 import logging
 logger = logging.getLogger(__name__)
@@ -81,10 +82,13 @@ def get_fold_change_analysis(gse):
 
 
 COLUMNS = {
-    'sample__id': 'sample_id', 'sample__gsm_name': 'gsm_name', 'annotation': 'annotation',
-    'series_tag__series__id': 'series_id',
-    'series_tag__platform__id': 'platform_id', 'series_tag__platform__gpl_name': 'gpl_name',
-    'series_tag__tag__tag_name': 'tag_name',
+    'sample__id': 'sample_id',
+    'sample__gsm_name':
+    'gsm_name', 'annotation': 'annotation',
+    'serie_annotation__series__id': 'series_id',
+    'serie_annotation__platform__id': 'platform_id',
+    'serie_annotation__platform__gpl_name': 'gpl_name',
+    'serie_annotation__tag__tag_name': 'tag_name',
 }
 
 @log_durations(logger.debug)
@@ -94,7 +98,7 @@ def get_analysis_df(case_query, control_query, modifier_query):
     tokens = set(cat(re_all('[a-zA-Z]\w*', query) for query in queries))
 
     tags = Tag.objects.filter(tag_name__iregex='^(%s)$' % '|'.join(map(re.escape, tokens)))
-    qs = SampleTag.objects.filter(series_tag__tag__in=tags)
+    qs = SampleAnnotation.objects.filter(serie_annotation__tag__in=tags)
     df = qs.to_dataframe(COLUMNS.keys()).rename(columns=COLUMNS)
 
     # Make tag columns
