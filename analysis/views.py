@@ -90,6 +90,7 @@ def rerun(request, analysis_id):
     analysis = get_object_or_404(Analysis, pk=analysis_id)
     if request.GET.get('copy'):
         analysis.pk = None
+        analysis.deleted = None
         analysis.save()
     analysis_task.delay(analysis.pk)
     return redirect(log, analysis.pk)
