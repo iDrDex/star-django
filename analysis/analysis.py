@@ -329,7 +329,7 @@ class GseAnalyzer:
 
             # NOTE: if data has changed then sample ids could be different
             if not set(df["gsm_name"]) <= set(gse.gpl2data[gpl].columns):
-                logger.debug("skipping %s: sample ids mismatch" % gpl)
+                logger.info("skipping %s: sample ids mismatch" % gpl)
                 continue
 
             df = df.set_index("gsm_name")
@@ -342,12 +342,12 @@ class GseAnalyzer:
             # Studies with defined SAMPLE CLASS
             # at least 2 samples required
             if len(df.sample_class) < 3:
-                logger.debug("skipping %s: insufficient data" % gpl)
+                logger.info("skipping %s: insufficient data" % gpl)
                 continue
             # at least 1 case and control required
             classes = df.sample_class.unique()
             if not (0 in classes and 1 in classes):
-                logger.debug("skipping %s: single-class data" % gpl)
+                logger.info("skipping %s: single-class data" % gpl)
                 continue
             # data.to_csv("data.test.csv")
             sample_class = df.ix[data.columns].sample_class
