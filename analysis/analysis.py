@@ -233,7 +233,7 @@ def get_data(series_id, platform_id):
                                             lineterminator='\n',
                                             engine='c')
             # Drop last line
-            data = data.drop(data.index[-1])
+            data = data.drop(data.index[-1]).dropna()
             break
         except IOError as e:
             # In case we have cirrupt file
