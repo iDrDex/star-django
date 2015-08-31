@@ -26,7 +26,7 @@
                       .scrollTop(logPre[0].scrollHeight);
             }
 
-            if (!lines.some(function (line) {return line.match(/^DONE /)})) {
+            if (!lines.some(function (line) {return line.match(/^(DONE|FAIL) /)})) {
                 setTimeout(function () {
                     $.ajax({
                         data: {offset: logOffset},

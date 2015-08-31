@@ -44,6 +44,23 @@ def perform_analysis(analysis, debug=False):
     logger.info('Stats: %d series, %d platforms, %d samples'
                 % (analysis.series_count, analysis.platform_count, analysis.sample_count))
 
+    # Check number of sources
+    sources = len(df[['series_id', 'platform_id']].drop_duplicates())
+    logger.info('Sources: %d' % sources)
+    if sources <= 1:
+        logger.error("FAIL Can't perform meta-analysis on %s"
+                     % ('single source' if sources else 'no data'))
+        return
+
+    # Check both case and control data present
+    sample_classes = set(df.sample_class.unique()) & {0, 1}
+    if sample_classes != {0, 1}:
+        message = ('No case' if sample_classes == {0} else
+                   'No control' if sample_classes == {1} else
+                   'No case, nor control')
+        logger.error("FAIL %s data found" % message)
+        return
+
     # Load GSE data, make and concat all fold change analyses results.
     # NOTE: we are doing load_gse() lazily here to avoid loading all matrices at once.
     logger.info('Loading data and calculating fold changes for %s', analysis.analysis_name)
