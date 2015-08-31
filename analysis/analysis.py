@@ -111,6 +111,11 @@ def get_analysis_df(case_query, control_query, modifier_query):
         tag_name = tag.tag_name.lower()
         df[tag_name] = df[df.tag_name == tag_name].annotation
 
+    # Select only cells with filled annotations
+    df = df.drop(['tag_name', 'annotation'], axis=1)
+    df = df.groupby(['sample_id', 'series_id', 'platform_id', 'gsm_name', 'gpl_name'],
+                    as_index=False).first()
+
     # Apply case/control/modifier
     if modifier_query:
         df = df.query(modifier_query.lower())
