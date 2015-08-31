@@ -1,53 +1,7 @@
 import re
 
-from funcy import project, memoize, without
-from handy.db import fetch_dict, fetch_dicts, fetch_val, fetch_col, db_execute
-
-
-# Data utils
-
-def remove_constant_fields(rows):
-    if len(rows) <= 1:
-        return rows
-
-    varying = {
-        key
-        for row in rows[1:]
-        for key, value in row.items()
-        if rows[0][key] != value
-    }
-    return [project(row, varying) for row in rows]
-
-
-# Data fetching utils
-
-def fetch_annotation_data(series_id, platform_id=None, blind={'id'}):
-    samples = fetch_samples(series_id, platform_id=platform_id)
-    samples = remove_constant_fields(samples)
-    columns = get_samples_columns()
-    if samples:
-        desired = set(samples[0].keys()) - blind
-        columns = filter(desired, columns)
-
-    return samples, columns
-
-
-def fetch_serie(series_id):
-    cols = ', '.join(get_series_columns())
-    return fetch_dict(
-        '''select ''' + cols + ''', S.gse_name from series_view V
-            join series S on (V.series_id = S.id)
-            where V.series_id = %s''',
-        (series_id,), 'legacy')
-
-def fetch_samples(series_id, platform_id=None):
-    cols = ', '.join(get_samples_columns())
-    sql = 'select ' + cols + ' from sample_view where series_id = %s'
-    params = (series_id,)
-    if platform_id:
-        sql += ' and platform_id = %s'
-        params += (platform_id,)
-    return fetch_dicts(sql, params, 'legacy')
+from funcy import memoize, without
+from handy.db import fetch_dicts, fetch_val, fetch_col, db_execute
 
 
 def get_series_columns():
