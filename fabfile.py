@@ -1,7 +1,7 @@
 # encoding: utf-8
 from fabric.api import *
 from fabric.contrib import django
-from fabric.colors import green, cyan, red, yellow
+from fabric.colors import green, red
 
 
 __all__ = ('deploy', 'rsync', 'dirty_deploy', 'dirty_fast', 'shell',

@@ -5,15 +5,13 @@ import urllib2
 import shutil
 
 from easydict import EasyDict
-from funcy import first, log_durations, imap, memoize, without, make_lookuper, cat, re_all, keep
-from handy.db import db_execute
+from funcy import first, log_durations, imap, memoize, make_lookuper, cat, re_all
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
-from django.db import connections, transaction
+from django.db import transaction
 
-from legacy.models import (Sample, Series, Platform, PlatformProbe, Analysis, MetaAnalysis,
-                           Tag, SampleTag)
+from legacy.models import Series, Platform, PlatformProbe, MetaAnalysis, Tag
 from tags.models import SampleAnnotation
 
 import logging
