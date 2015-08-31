@@ -32,6 +32,18 @@ def perform_analysis(analysis, debug=False):
         df = get_analysis_df(analysis.case_query, analysis.control_query, analysis.modifier_query)
     debug and df.to_csv("%s.analysis_df.csv" % analysis.analysis_name)
 
+    # Calculating stats
+    analysis.series_count = len(df.series_id.unique())
+    analysis.platform_count = len(df.platform_id.unique())
+    analysis.sample_count = len(df.sample_id.unique())
+    analysis.series_ids = df.series_id.unique().tolist()
+    analysis.platform_ids = df.platform_id.unique().tolist()
+    analysis.sample_ids = df.sample_id.unique().tolist()
+    analysis.save(update_fields=['series_count', 'platform_count', 'sample_count',
+                                 'series_ids', 'platform_ids', 'sample_ids'])
+    logger.info('Stats: %d series, %d platforms, %d samples'
+                % (analysis.series_count, analysis.platform_count, analysis.sample_count))
+
     # Load GSE data, make and concat all fold change analyses results.
     # NOTE: we are doing load_gse() lazily here to avoid loading all matrices at once.
     logger.info('Loading data and calculating fold changes for %s', analysis.analysis_name)
@@ -48,15 +60,6 @@ def perform_analysis(analysis, debug=False):
     logger.info('Inserting %s analysis results', analysis.analysis_name)
     with log_durations(logger.debug, 'Saving results of %s' % analysis.analysis_name), \
             transaction.atomic('legacy'):
-        analysis.series_count = len(df.series_id.unique())
-        analysis.platform_count = len(df.platform_id.unique())
-        analysis.sample_count = len(df.sample_id.unique())
-        analysis.series_ids = df.series_id.unique().tolist()
-        analysis.platform_ids = df.platform_id.unique().tolist()
-        analysis.sample_ids = df.sample_id.unique().tolist()
-        analysis.save(update_fields=['series_count', 'platform_count', 'sample_count',
-                                     'series_ids', 'platform_ids', 'sample_ids'])
-
         balanced['analysis'] = analysis
         balanced.columns = balanced.columns.map(lambda x: x.replace(".", "_").lower())
         field_names = [f.name for f in MetaAnalysis._meta.fields if f.name != 'id']
