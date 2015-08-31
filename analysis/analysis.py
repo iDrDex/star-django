@@ -101,8 +101,8 @@ def get_fold_change_analysis(gse):
 
 COLUMNS = {
     'sample__id': 'sample_id',
-    'sample__gsm_name':
-    'gsm_name', 'annotation': 'annotation',
+    'sample__gsm_name': 'gsm_name',
+    'annotation': 'annotation',
     'serie_annotation__series__id': 'series_id',
     'serie_annotation__platform__id': 'platform_id',
     'serie_annotation__platform__gpl_name': 'gpl_name',
