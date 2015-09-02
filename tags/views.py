@@ -57,7 +57,7 @@ def tag(request, tag_id):
             tag = form.save(commit=False)
             save_tag(tag)
             messages.success(request, 'Saved tag %s' % tag.tag_name)
-            return redirect('tag', tag_id)
+            return redirect(tag_control)
     else:
         form = TagForm(instance=tag)
 
