@@ -1,8 +1,9 @@
 {% extends "base.j2" %}
 
-{% block content %}
-<h2>Edit {{ form.instance.tag_name}}</h2>
+{% set page_title = title %}
 
+
+{% block content %}
 <form class="form" role="form" method="post">
     {% csrf_token %}
     {{ form|bootstrap }}
@@ -10,4 +11,7 @@
         <input type="submit" class="btn btn-primary" value="Save" />
     </div>
 </form>
+<script type="text/javascript">
+    $('form.form :input:visible:first').focus();
+</script>
 {% endblock %}

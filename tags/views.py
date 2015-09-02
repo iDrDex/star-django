@@ -47,6 +47,25 @@ def tag_control(request):
         'tags': Tag.objects.order_by('tag_name')
     }
 
+
+@login_required
+@render_to('tags/tag.j2')
+def create_tag(request):
+    if request.method == 'POST':
+        form = TagForm(request.POST)
+        if form.is_valid():
+            tag = form.save()
+            messages.success(request, 'Saved tag %s' % tag.tag_name)
+            return redirect(tag_control)
+    else:
+        form = TagForm()
+
+    return {
+        'title': 'Create tag',
+        'form': form
+    }
+
+
 @login_required
 @render_to()
 def tag(request, tag_id):
@@ -62,6 +81,7 @@ def tag(request, tag_id):
         form = TagForm(instance=tag)
 
     return {
+        'title': 'Edit tag',
         'form': form
     }
 

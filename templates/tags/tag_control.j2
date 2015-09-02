@@ -1,6 +1,13 @@
 {% extends "base.j2" %}
 
-{# {% set page_title = 'Tag Control' %} #}
+{% set page_title = 'Tags' %}
+
+
+{% block header %}
+    <a href="{{ url('tag_create') }}" class="btn btn-success" style="float: right">Create</a>
+    {{ super() }}
+{% endblock %}
+
 
 {% block content %}
     <div class="row toc">
