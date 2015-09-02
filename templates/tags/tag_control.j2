@@ -18,7 +18,7 @@
                 <div class="col-sm-1"><h2>{{ key }}</h2></div>
                 <div class="col-sm-11 toc-items">
                     {%- for tag in group %}
-                        <a href="{{ url('tag', tag.id) }}" class="label label-success">{{ tag.tag_name }}</a>&nbsp;
+                        <a href="{{ url('tag', tag.id) }}" class="label label-success" title="{{ tag.description or '(no description)' }}">{{ tag.tag_name }}</a>&nbsp;
                     {%- endfor %}
                 </div>
             </div>
