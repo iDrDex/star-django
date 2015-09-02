@@ -1,7 +1,7 @@
 from operator import itemgetter
 from collections import defaultdict
 
-from funcy import distinct, imapcat, join, str_join
+from funcy import distinct, imapcat, join, str_join, keep, silent
 from handy.decorators import render_to, paginate
 
 from django.contrib import messages
@@ -18,7 +18,7 @@ from .data import get_series_columns, SQLQuerySet
 @paginate('series', 10)
 def search(request):
     q = request.GET.get('q')
-    exclude_tags = request.GET.getlist('exclude_tags')
+    exclude_tags = keep(silent(int), request.GET.getlist('exclude_tags'))
     serie_tags, tag_series = series_tags_data()
 
     if q:
@@ -27,7 +27,7 @@ def search(request):
         tags = distinct(imapcat(serie_tags, series_ids), key=itemgetter('id'))
 
         if exclude_tags:
-            exclude_series = join(tag_series[int(t)] for t in exclude_tags)
+            exclude_series = join(tag_series[t] for t in exclude_tags)
             qs = qs.where('series_id not in (%s)' % str_join(',', exclude_series))
     else:
         qs = None
