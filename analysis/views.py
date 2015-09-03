@@ -92,6 +92,10 @@ def rerun(request, analysis_id):
     if request.GET.get('copy'):
         analysis.pk = None
         analysis.deleted = None
+        analysis.created_by_id = analysis.modified_by_id = request.user_data['id']
+        analysis.save()
+    else:
+        analysis.modified_by_id = request.user_data['id']
         analysis.save()
     analysis_task.delay(analysis.pk)
     return redirect(log, analysis.pk)
