@@ -86,6 +86,7 @@ class AnalysisForm(ModelForm):
         fields = ['analysis_name', 'description', 'case_query', 'control_query', 'modifier_query']
 
 
+@login_required
 def rerun(request, analysis_id):
     analysis = get_object_or_404(Analysis, pk=analysis_id)
     if request.GET.get('copy'):
@@ -96,6 +97,7 @@ def rerun(request, analysis_id):
     return redirect(log, analysis.pk)
 
 
+@login_required
 def delete(request, analysis_id):
     with transaction.atomic('legacy'):
         analysis = get_object_or_404(Analysis, pk=analysis_id)
