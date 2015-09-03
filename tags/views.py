@@ -54,7 +54,9 @@ def create_tag(request):
     if request.method == 'POST':
         form = TagForm(request.POST)
         if form.is_valid():
-            tag = form.save()
+            tag = form.save(commit=False)
+            tag.created_by_id = tag.modified_by_id = request.user_data['id']
+            tag.save()
             messages.success(request, 'Saved tag %s' % tag.tag_name)
             return redirect(tag_control)
     else:
@@ -73,10 +75,7 @@ def tag(request, tag_id):
     if request.method == 'POST':
         form = TagForm(request.POST, instance=tag)
         if form.is_valid():
-            tag = form.save(commit=False)
-            save_tag(tag)
-            messages.success(request, 'Saved tag %s' % tag.tag_name)
-            return redirect(tag_control)
+            return save_tag(request, form)
     else:
         form = TagForm(instance=tag)
 
@@ -86,8 +85,10 @@ def tag(request, tag_id):
     }
 
 @transaction.atomic('legacy')
-def save_tag(tag):
+def save_tag(request, form):
+    tag = form.save(commit=False)
     old_tag = Tag.objects.select_for_update().get(pk=tag.pk)
+    tag.modified_by_id = request.user_data['id']
     tag.save()
 
     if tag.tag_name != old_tag.tag_name:
@@ -95,6 +96,9 @@ def save_tag(tag):
                  .update(annotation=tag.tag_name)
         SampleValidation.objects.filter(serie_validation__tag=tag, annotation=old_tag.tag_name) \
                         .update(annotation=tag.tag_name)
+
+    messages.success(request, 'Saved tag %s' % tag.tag_name)
+    return redirect(tag_control)
 
 
 from django.forms import ModelForm
