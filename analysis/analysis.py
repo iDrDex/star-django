@@ -131,6 +131,8 @@ def get_analysis_df(case_query, control_query, modifier_query):
     df = df.groupby(['sample_id', 'series_id', 'platform_id', 'gsm_name', 'gpl_name'],
                     as_index=False).first()
 
+    df = df.convert_objects(convert_numeric=True)
+
     # Apply case/control/modifier
     if modifier_query:
         df = df.query(modifier_query.lower())
