@@ -58,7 +58,7 @@ def save_annotation(request):
     regex = request.POST['regex']
     values = dict(json.loads(request.POST['values']))
 
-    with transaction.atomic('legacy'):
+    with transaction.atomic():
         # Group samples by platform
         sample_to_platform = dict(Sample.objects.filter(id__in=values)
                                         .values_list('id', 'platform_id'))
@@ -132,7 +132,7 @@ def save_validation(request):
     regex = request.POST['regex']
     values = dict(json.loads(request.POST['values']))
 
-    with transaction.atomic('legacy'):
+    with transaction.atomic():
         # Make database lock on job in queue
         try:
             job = ValidationJob.objects.select_for_update().get(id=job_id, locked_by=user_id)
@@ -173,7 +173,7 @@ def save_validation(request):
     return redirect(request.get_full_path())
 
 
-@transaction.atomic('legacy')
+@transaction.atomic
 def lock_validation_job(user_id):
     # Get a job that:
     #   - not authored by this user,
@@ -237,7 +237,7 @@ def save_on_demand_validation(request):
     regex = request.POST['regex']
     values = dict(json.loads(request.POST['values']))
 
-    with transaction.atomic('legacy'):
+    with transaction.atomic():
         # Save validation with used column and regex
         st = SeriesTag.objects.get(pk=series_tag_id)
         serie_validation = SerieValidation.objects.create(
@@ -309,7 +309,8 @@ def fetch_serie(series_id):
         '''select ''' + cols + ''', S.gse_name from series_view V
             join series S on (V.series_id = S.id)
             where V.series_id = %s''',
-        (series_id,), 'legacy')
+        (series_id,)
+    )
 
 
 def fetch_samples(series_id, platform_id=None):
@@ -319,4 +320,4 @@ def fetch_samples(series_id, platform_id=None):
     if platform_id:
         sql += ' and platform_id = %s'
         params += (platform_id,)
-    return fetch_dicts(sql, params, 'legacy')
+    return fetch_dicts(sql, params)

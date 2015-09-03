@@ -15,5 +15,5 @@ class Migration(migrations.Migration):
         migrations_plus.RunSQL("""
             update tags_userstats set earned = earned_sample_annotations * 0.05,
                                       payed = samples_payed * 0.05;
-        """, db='legacy')
+        """)
     ]

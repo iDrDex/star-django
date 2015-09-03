@@ -22,5 +22,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations_plus.RunSQL(FILL_SQL, reverse_sql=EMPTY_SQL, db='legacy'),
+        migrations_plus.RunSQL(FILL_SQL, reverse_sql=EMPTY_SQL),
     ]

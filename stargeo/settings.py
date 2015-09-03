@@ -72,10 +72,8 @@ WSGI_APPLICATION = 'stargeo.wsgi.application'
 import dj_database_url
 DATABASES = {
     'default': dj_database_url.config(),
-    'legacy': dj_database_url.config('LEGACY_DATABASE_URL')
 }
 
-DATABASE_ROUTERS = ['tags.models.LegacyRouter']
 
 REDIS = {
     'host': 'localhost',

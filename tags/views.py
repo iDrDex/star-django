@@ -108,7 +108,7 @@ def tag(request, tag_id):
         'form': form
     }
 
-@transaction.atomic('legacy')
+@transaction.atomic
 def save_tag(request, form):
     tag = form.save(commit=False)
     old_tag = Tag.objects.select_for_update().get(pk=tag.pk)
@@ -158,7 +158,7 @@ def search_series_qs(query_string):
                  where true order by S.id
               """.format(', '.join(get_series_columns()))
         params = ()
-    return SQLQuerySet(sql, params, server='legacy')
+    return SQLQuerySet(sql, params)
 
 
 def series_tags_data():

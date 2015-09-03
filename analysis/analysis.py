@@ -76,7 +76,7 @@ def perform_analysis(analysis, debug=False):
 
     logger.info('Inserting %s analysis results', analysis.analysis_name)
     with log_durations(logger.debug, 'Saving results of %s' % analysis.analysis_name), \
-            transaction.atomic('legacy'):
+            transaction.atomic():
         balanced['analysis'] = analysis
         balanced.columns = balanced.columns.map(lambda x: x.replace(".", "_").lower())
         field_names = [f.name for f in MetaAnalysis._meta.fields if f.name != 'id']

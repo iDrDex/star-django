@@ -96,7 +96,7 @@ def create(request):
     }
 
 def save_analysis(request, analysis):
-    with transaction.atomic('legacy'):
+    with transaction.atomic():
         analysis.created_by_id = analysis.modified_by_id = request.user_data['id']
         analysis.save()
     analysis_task.delay(analysis.pk)
@@ -127,7 +127,7 @@ def rerun(request, analysis_id):
 
 @login_required
 def delete(request, analysis_id):
-    with transaction.atomic('legacy'):
+    with transaction.atomic():
         analysis = get_object_or_404(Analysis, pk=analysis_id)
         analysis.deleted = 'T'
         analysis.save()

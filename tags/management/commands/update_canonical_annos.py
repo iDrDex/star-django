@@ -26,7 +26,7 @@ class Command(BaseCommand):
             update_canonical_annotation(pk)
 
 
-@transaction.atomic('legacy')
+@transaction.atomic
 def create_canonical_anno(series_tag_pk):
     st = SeriesTag.objects.get(pk=series_tag_pk)
     sample_tags = st.sample_tags.all()

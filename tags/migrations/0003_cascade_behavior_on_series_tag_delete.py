@@ -34,8 +34,7 @@ class Migration(migrations.Migration):
                 ALTER TABLE validation_job
                     ADD CONSTRAINT validation_job_series_tag_id_753f178d05a7d70f_fk_series_tag_id
                     FOREIGN KEY (series_tag_id) REFERENCES series_tag (id);
-            """,
-            db='legacy'
+            """
         ),
 
         migrations_plus.RunSQL(
@@ -52,8 +51,7 @@ class Migration(migrations.Migration):
                 ALTER TABLE series_validation
                     ADD CONSTRAINT series_validati_series_tag_id_5a35d6201a93f3ec_fk_series_tag_id
                     FOREIGN KEY (series_tag_id) REFERENCES series_tag (id);
-            """,
-            db='legacy'
+            """
         ),
 
     ]

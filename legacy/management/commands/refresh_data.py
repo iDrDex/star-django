@@ -86,7 +86,7 @@ def load_data(header):
     insert_or_update_data(series_df, samples_df)
 
 
-@transaction.atomic('legacy')
+@transaction.atomic
 def insert_or_update_data(series_df, samples_df):
     gse_name = series_df['series_geo_accession'][0]
 

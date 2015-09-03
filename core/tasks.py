@@ -8,20 +8,20 @@ from .conf import redis_client
 
 @shared_task
 def update_stats():
-    tags = fetch_val('select count(*) from tag', server='legacy')
+    tags = fetch_val('select count(*) from tag')
     redis_client.set('core.stats.tags', tags)
 
     serie_annotations = fetch_val(
         '''select (select count(*) from series_tag)
-                + (select count(*) from series_validation)''',
-        server='legacy')
+                + (select count(*) from series_validation)'''
+    )
     redis_client.set('core.stats.serie_annotations', serie_annotations)
 
     sample_annotations = fetch_val(
         '''select (select count(*) from sample_tag)
                 + (select count(*) from sample_validation)
-                + (select count(*) from sample_validation__backup)''',
-        server='legacy')
+                + (select count(*) from sample_validation__backup)'''
+    )
     redis_client.set('core.stats.sample_annotations', sample_annotations)
 
 
@@ -45,9 +45,9 @@ def update_graph():
         GROUP BY 1 ORDER BY 1
     """
 
-    total = fetch_all(samples_graph_sql, server='legacy')
-    right = fetch_all(validations_graph_sql % '=', server='legacy')
-    wrong = fetch_all(validations_graph_sql % '!=', server='legacy')
+    total = fetch_all(samples_graph_sql)
+    right = fetch_all(validations_graph_sql % '=')
+    wrong = fetch_all(validations_graph_sql % '!=')
     graph_data = {'total': total, 'right': right, 'wrong': wrong}
     redis_client.set('core.graph', json.dumps(graph_data, default=defaultencode))
 

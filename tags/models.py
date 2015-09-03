@@ -173,20 +173,3 @@ class SampleAnnotation(models.Model):
 
     class Meta:
         db_table = 'sample_annotation'
-
-
-class LegacyRouter(object):
-    def db_for_write(self, model, **hints):
-        if is_legacy(model):
-            return 'legacy'
-    db_for_read = db_for_write
-
-    def allow_relation(self, obj1, obj2, **hints):
-        return is_legacy(obj1.__class__) == is_legacy(obj2.__class__)
-
-    def allow_migrate(self, db, model):
-        return is_legacy(model) == (db == 'legacy')
-
-
-def is_legacy(model):
-    return model._meta.app_label in {'legacy', 'tags'}

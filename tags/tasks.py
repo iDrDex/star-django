@@ -24,7 +24,7 @@ def validation_workflow(serie_validation_pk, series_tag_pk):
 
 
 @shared_task(acks_late=True)
-@transaction.atomic('legacy')
+@transaction.atomic
 def calc_validation_stats(serie_validation_pk, recalc=False):
     serie_validation = SerieValidation.objects.select_for_update().get(pk=serie_validation_pk)
     # Guard from double update, so that user stats won't be messed up
@@ -180,7 +180,7 @@ def _cohens_kappa(annos1, annos2):
 
 
 @shared_task(acks_late=True)
-@transaction.atomic('legacy')
+@transaction.atomic
 def update_canonical_annotation(series_tag_pk):
     st = SeriesTag.objects.select_for_update().get(pk=series_tag_pk)
     validations = st.validations.order_by('pk')
@@ -216,7 +216,7 @@ def redeem_earnings(receiver_id=None, amount=None, method='Tango Card API', send
     # We need to create a pending payment in a separate transaction to be safe from double card
     # ordering. This way even if we fail at any moment later payment and new stats will persist
     # and won't allow us to issue a new card for same work.
-    with transaction.atomic('legacy'):
+    with transaction.atomic():
         stats = UserStats.objects.select_for_update().get(user_id=receiver_id)
         # If 2 redeem attempts are tried simultaneously than first one will lock samples,
         # and second one should just do nothing.
@@ -242,7 +242,7 @@ def redeem_earnings(receiver_id=None, amount=None, method='Tango Card API', send
         stats.payed += amount
         stats.save()
 
-    with transaction.atomic('legacy'):
+    with transaction.atomic():
         # Relock this so that nobody will alter or remove it concurrently
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
         if payment.state != PaymentState.PENDING:
@@ -277,7 +277,7 @@ def redeem_earnings(receiver_id=None, amount=None, method='Tango Card API', send
     redis_client.delete('redeem:%d' % receiver_id)
 
 
-@transaction.atomic('legacy')
+@transaction.atomic
 def donate_earnings(user_id):
     stats = UserStats.objects.select_for_update().get(user_id=user_id)
     amount = stats.unpayed

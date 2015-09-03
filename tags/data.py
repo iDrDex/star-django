@@ -17,7 +17,7 @@ def get_samples_columns():
 
 @memoize
 def _get_columns(table, exclude=()):
-    with db_execute('select * from %s limit 1' % table, (), 'legacy') as cursor:
+    with db_execute('select * from %s limit 1' % table, ()) as cursor:
         columns = [col.name for col in cursor.description]
         return without(columns, *exclude)
 
