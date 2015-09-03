@@ -48,11 +48,11 @@ class PlatformProbe(models.Model):
 class Tag(models.Model):
     tag_name = models.CharField(unique=True, max_length=512, blank=True)
     description = models.CharField(max_length=512, blank=True)
-    is_active = models.CharField(max_length=1, blank=True)
-    created_on = models.DateTimeField(blank=True, null=True)
+    is_active = models.CharField(max_length=1, blank=True, default='T')
+    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True,
                                    related_name='tags')
-    modified_on = models.DateTimeField(blank=True, null=True)
+    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
     modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
