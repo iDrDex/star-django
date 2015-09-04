@@ -10,35 +10,33 @@
 
 
 {% block content %}
-<div class="table-responsive">
-  <table class="table table-striped" id="data-table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        {# <th>Description</th> #}
-        <th>Case</th>
-        <th>Control</th>
-        <th>Modifier</th>
-        <th class="text-right">Series</th>
-        <th class="text-right">Platforms</th>
-        <th class="text-right">Samples</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for analysis in analyses %}
-        <tr>
-          <td><a href="{{ url('analysis_results', analysis.pk) }}">{{ analysis.analysis_name }}</a></td>
-          {# <td>{{ analysis.description }}</td> #}
-          <td>{{ analysis.case_query }}</td>
-          <td>{{ analysis.control_query }}</td>
-          <td>{{ analysis.modifier_query }}</td>
-          <td class="text-right">{{ analysis.series_count }}</td>
-          <td class="text-right">{{ analysis.platform_count }}</td>
-          <td class="text-right">{{ analysis.sample_count }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{{ paginator() }}
+    <div class="datatable-wrap">
+        {{ datatable|safe }}
+    </div>
+{% endblock %}
+
+
+{% block script %}
+    <link rel="stylesheet" href="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.css') }}" />
+
+    <script src="{{ static('homer/vendor/datatables/media/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.min.js')    }}"></script>
+
+    <script src="{{ static('js/datatableview.js') }}"></script>
+    <script type="text/javascript">
+        datatableview.auto_initialize = false;
+        $(function(){
+            datatableview.initialize($('.datatable'), {
+                columnDefs: [
+                    {
+                        render: function ( data, type, row ) {
+                            console.log(row)
+                            return '<a href="/analysis/' + row[0] + '/">' + data + '</a>';
+                        },
+                        targets: [1]
+                    }
+                ]
+            });
+        });
+    </script>
 {% endblock %}

@@ -1,5 +1,5 @@
 from funcy import silent
-from handy.decorators import render_to, paginate
+from handy.decorators import render_to
 from datatableview.views import DatatableView
 
 from django.contrib import messages
@@ -14,12 +14,22 @@ from legacy.models import Analysis, MetaAnalysis
 from .tasks import analysis_task
 
 
-@render_to()
-@paginate('analyses', 10)
-def index(request):
-    return {
-        'analyses': Analysis.objects.exclude(deleted='T').order_by('-id'),
+class Index(DatatableView):
+    model = Analysis
+    template_name = 'analysis/index.j2'
+    datatable_options = {
+        'columns': [
+            'id',
+            ('Name', 'analysis_name'),
+            ('Case', 'case_query'), ('Control', 'control_query'), ('Modifier', 'modifier_query'),
+            ('Series', 'series_count'), ('Platforms', 'platform_count'), ('Samples', 'sample_count')
+        ]
     }
+
+    def get_queryset(self):
+        return Analysis.objects.exclude(deleted='T').order_by('-id')
+
+index = Index.as_view()
 
 
 class Detail(DatatableView):
