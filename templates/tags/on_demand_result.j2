@@ -2,6 +2,13 @@
 
 {% set page_title = 'On Demand Validation Result' %}
 
+
+{% block header %}
+    <a href="{{ url('on_demand_validate') }}?series_tag_id={{ serie_validation.series_tag_id }}" class="btn btn-default" style="float: right">Back to validation</a>
+    {{ super() }}
+{% endblock %}
+
+
 {% block content %}
     <p id="validation-info">Calculating stats...</p>
 
