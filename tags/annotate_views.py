@@ -268,7 +268,7 @@ def on_demand_result(request, serie_validation_id):
     if serie_validation.created_by_id != request.user_data['id']:
         raise Http404
 
-    if request.is_ajax():
+    if 'json' in request.GET:
         data = select_keys(r'kappa', serie_validation.__dict__)
         return JsonResponse(data)
 
