@@ -1,3 +1,4 @@
+import re
 from operator import itemgetter
 from collections import defaultdict
 
@@ -6,6 +7,7 @@ from handy.decorators import render_to, paginate
 
 from django.contrib import messages
 from django.db import transaction
+from django.forms import ModelForm, ValidationError
 from django.shortcuts import redirect, get_object_or_404
 
 from legacy.models import Tag, SampleTag, SeriesTag
@@ -101,12 +103,18 @@ def save_tag(request, form):
     return redirect(tag_control)
 
 
-from django.forms import ModelForm
-
 class TagForm(ModelForm):
     class Meta:
         model = Tag
         fields = ['tag_name', 'description']
+
+    def clean_tag_name(self):
+        tag_name = self.cleaned_data['tag_name']
+        if ' ' in tag_name:
+            raise ValidationError('Spaces are not allowed in tag names, use underscores instead.')
+        elif not re.search(r'^[a-zA-Z]\w+$', tag_name):
+            raise ValidationError('Wrong tag name format.')
+        return tag_name
 
 
 # Data fetching utils
