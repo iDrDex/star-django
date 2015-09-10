@@ -27,13 +27,18 @@ def search(request):
     serie_tags, tag_series, tag_ids = series_tags_data()
 
     q_string, q_tags = _parse_query(q)
-    qs = search_series_qs(q_string)
+    q_tags, wrong_tags = split(tag_ids.get, q_tags)
+    if wrong_tags:
+        message = 'Unknown tag%s %s.' % ('s' if len(wrong_tags) > 1 else '', ', '.join(wrong_tags))
+        messages.warning(request, message)
+    if not q_string and not q_tags:
+        return {'series': None}
 
+    qs = search_series_qs(q_string)
     if q_tags:
-        q_tag_ids = keep(tag_ids.get, q_tags)
+        q_tag_ids = keep(tag_ids, q_tags)
         include_series = reduce(set.intersection, (tag_series[t] for t in q_tag_ids))
         qs = qs.where('series_id in (%s)' % str_join(',', include_series))
-
     if exclude_tags:
         exclude_series = join(tag_series[t] for t in exclude_tags)
         qs = qs.where('series_id not in (%s)' % str_join(',', exclude_series))
