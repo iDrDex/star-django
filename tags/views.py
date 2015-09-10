@@ -2,7 +2,7 @@ import re
 from operator import itemgetter
 from collections import defaultdict
 
-from funcy import distinct, imapcat, join, str_join, keep, silent
+from funcy import distinct, imapcat, join, str_join, keep, silent, split, map
 from handy.decorators import render_to, paginate
 
 from django.contrib import messages
@@ -20,26 +20,37 @@ from .data import get_series_columns, SQLQuerySet
 @paginate('series', 10)
 def search(request):
     q = request.GET.get('q')
+    if not q:
+        return {'series': None}
+
     exclude_tags = keep(silent(int), request.GET.getlist('exclude_tags'))
-    serie_tags, tag_series = series_tags_data()
+    serie_tags, tag_series, tag_ids = series_tags_data()
 
-    if q:
-        qs = search_series_qs(q)
-        series_ids = qs.values_list('series_id', flat=True)
-        tags = distinct(imapcat(serie_tags, series_ids), key=itemgetter('id'))
+    q_string, q_tags = _parse_query(q)
+    qs = search_series_qs(q_string)
 
-        if exclude_tags:
-            exclude_series = join(tag_series[t] for t in exclude_tags)
-            qs = qs.where('series_id not in (%s)' % str_join(',', exclude_series))
-    else:
-        qs = None
-        tags = None
+    if q_tags:
+        q_tag_ids = keep(tag_ids.get, q_tags)
+        include_series = reduce(set.intersection, (tag_series[t] for t in q_tag_ids))
+        qs = qs.where('series_id in (%s)' % str_join(',', include_series))
+
+    if exclude_tags:
+        exclude_series = join(tag_series[t] for t in exclude_tags)
+        qs = qs.where('series_id not in (%s)' % str_join(',', exclude_series))
+
+    series_ids = qs.values_list('series_id', flat=True)
+    tags = distinct(imapcat(serie_tags, series_ids), key=itemgetter('id'))
 
     return {
         'series': qs,
         'tags': tags,
         'serie_tags': serie_tags,
     }
+
+def _parse_query(q):
+    tags, words = split(r'^tag:', q.split())
+    tags = map(r'^tag:(.*)', tags)
+    return ' '.join(words), tags
 
 
 @login_required
@@ -120,13 +131,23 @@ class TagForm(ModelForm):
 # Data fetching utils
 
 def search_series_qs(query_string):
-    sql = """
-             select S.gse_name, {}, ts_rank_cd(doc, q) as rank
-             from series_view SV join series S on (SV.series_id = S.id)
-             , plainto_tsquery('english', %s) as q
-             where doc @@ q order by rank desc
-          """.format(', '.join(get_series_columns()))
-    return SQLQuerySet(sql, (query_string,), server='legacy')
+    if query_string:
+        sql = """
+                 select S.gse_name, {}, ts_rank_cd(doc, q) as rank
+                 from series_view SV join series S on (SV.series_id = S.id)
+                 , plainto_tsquery('english', %s) as q
+                 where doc @@ q order by rank desc, S.id
+              """.format(', '.join(get_series_columns()))
+        params = (query_string,)
+    else:
+        # HACK: we use `where true` here to make SQLQuerySet.where() to work
+        sql = """
+                 select S.gse_name, {}
+                 from series_view SV join series S on (SV.series_id = S.id)
+                 where true order by S.id
+              """.format(', '.join(get_series_columns()))
+        params = ()
+    return SQLQuerySet(sql, params, server='legacy')
 
 
 def series_tags_data():
@@ -134,8 +155,10 @@ def series_tags_data():
 
     serie_tags = defaultdict(list)
     tag_series = defaultdict(set)
+    tag_ids = {}
     for serie_id, tag_id, tag_name in pairs:
+        tag_ids[tag_name] = tag_id
         serie_tags[serie_id].append({'id': tag_id, 'name': tag_name})
         tag_series[tag_id].add(serie_id)
 
-    return serie_tags, tag_series
+    return serie_tags, tag_series, tag_ids
