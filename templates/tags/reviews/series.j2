@@ -1,0 +1,20 @@
+{% extends "base.j2" %}
+
+{% set page_title = 'Series annotations' %}
+
+
+{% block content %}
+    <div class="datatable-wrap">
+        {{ datatable|safe }}
+    </div>
+{% endblock %}
+
+
+{% block script %}
+    <link rel="stylesheet" href="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.css') }}" />
+
+    <script src="{{ static('homer/vendor/datatables/media/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.min.js')    }}"></script>
+
+    <script src="{{ static('js/datatableview.js') }}"></script>
+{% endblock %}

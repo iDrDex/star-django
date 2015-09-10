@@ -136,6 +136,9 @@
             <li{% if request.path == '/validate/' %} class="active"{% endif %}>
                 <a href="/validate/"> <span class="nav-label">Validate</span> </a>
             </li>
+            <li{% if request.path == '/series_annotations/' %} class="active"{% endif %}>
+                <a href="/series_annotations/"> <span class="nav-label">Annotations</span> </a>
+            </li>
             <li{% if request.path.startswith('/analysis/') %} class="active"{% endif %}>
                 <a href="/analysis/"> <span class="nav-label">Analysis</span> </a>
             </li>
