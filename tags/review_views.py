@@ -28,6 +28,7 @@ class SeriesAnnotations(DatatableView):
             ('Series', 'series__gse_name'),
             ('Platform', 'platform__gpl_name'),
             ('Tag', 'tag__tag_name'),
+            'samples',
             'annotations',
             'authors',
             'fleiss_kappa',

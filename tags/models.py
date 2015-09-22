@@ -140,6 +140,7 @@ class SerieAnnotation(models.Model):
     authors = models.IntegerField()
     fleiss_kappa = models.FloatField(blank=True, null=True)
     best_cohens_kappa = models.FloatField(blank=True, null=True)
+    samples = models.IntegerField(default=0)
 
     class Meta:
         db_table = 'series_annotation'
@@ -154,6 +155,8 @@ class SerieAnnotation(models.Model):
         )
 
     def fill_samples(self, sample_annos):
+        self.samples = len(sample_annos)
+        self.save()
         SampleAnnotation.objects.bulk_create([
             SampleAnnotation(serie_annotation=self,
                              sample_id=obj.sample_id, annotation=obj.annotation or '')
