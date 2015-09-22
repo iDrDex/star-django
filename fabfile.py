@@ -4,7 +4,7 @@ from fabric.contrib import django
 from fabric.colors import green, red
 
 
-__all__ = ('deploy', 'rsync', 'dirty_deploy', 'dirty_fast', 'shell',
+__all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast', 'shell',
            'restart', 'manage', 'install_requirements', 'migrate',
            'pull_db')
 
@@ -84,7 +84,7 @@ def deploy():
 
 def deploy_fast():
     print(green('Updating working copy...'))
-    run('git pull')
+    run('git pull origin master')
 
     # Not restarting celery, make `fab restart` if you do want that
     print(green('Reloading uWSGI...'))
