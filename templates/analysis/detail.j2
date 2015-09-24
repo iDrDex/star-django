@@ -15,7 +15,6 @@
 
 
 {% block content %}
-    <a href="{{ url('analysis_export', analysis.id) }}" class="btn btn-primary pull-right">Export</a>
     <table class="table" style="width: auto; float: left; margin-right: 1.5em">
         {% if analysis.description %}
             <tr><th>Description</th><td>{{ analysis.description }}</td></tr>
@@ -34,6 +33,7 @@
         </table>
     {% endif %}
     {{ super() }}
+    <a href="{{ url('analysis_export', analysis.id) }}" class="btn btn-primary pull-right">Export</a>
 {% endblock %}
 
 
