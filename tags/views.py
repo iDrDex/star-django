@@ -27,7 +27,7 @@ def search(request):
     serie_tags, tag_series, tag_ids = series_tags_data()
 
     q_string, q_tags = _parse_query(q)
-    q_tags, wrong_tags = split(tag_ids.get, q_tags)
+    q_tags, wrong_tags = split(lambda t: t.lower() in tag_ids, q_tags)
     if wrong_tags:
         message = 'Unknown tag%s %s.' % ('s' if len(wrong_tags) > 1 else '', ', '.join(wrong_tags))
         messages.warning(request, message)
@@ -36,7 +36,7 @@ def search(request):
 
     qs = search_series_qs(q_string)
     if q_tags:
-        q_tag_ids = keep(tag_ids, q_tags)
+        q_tag_ids = keep(tag_ids.get(t.lower()) for t in q_tags)
         include_series = reduce(set.intersection, (tag_series[t] for t in q_tag_ids))
         qs = qs.where('series_id in (%s)' % str_join(',', include_series))
     if exclude_tags:
@@ -162,7 +162,7 @@ def series_tags_data():
     tag_series = defaultdict(set)
     tag_ids = {}
     for serie_id, tag_id, tag_name in pairs:
-        tag_ids[tag_name] = tag_id
+        tag_ids[tag_name.lower()] = tag_id
         serie_tags[serie_id].append({'id': tag_id, 'name': tag_name})
         tag_series[tag_id].add(serie_id)
 
