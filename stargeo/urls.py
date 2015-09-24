@@ -17,8 +17,10 @@ urlpatterns = patterns('',  # noqa
     url(r'^on_demand_result/(\d+)/$', 'tags.annotate_views.on_demand_result',
         name='on_demand_result'),
 
-    url(r'^series_annotations/$', 'tags.review_views.series_annotations',
+    url(r'^annotations/$', 'tags.review_views.series_annotations',
         name='series_annotations'),
+    url(r'^annotations/(\d+)/samples/$', 'tags.review_views.sample_annotations',
+        name='sample_annotations'),
 
     url(r'^analysis/$', 'analysis.views.index', name='analysis'),
     url(r'^analysis/create/$', 'analysis.views.create', name='analysis_create'),

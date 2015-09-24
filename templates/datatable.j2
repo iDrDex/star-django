@@ -1,0 +1,21 @@
+{% extends "base.j2" %}
+
+
+{% block content %}
+    <div class="datatable-wrap clear-fix">
+        {{ datatable|safe }}
+    </div>
+{% endblock %}
+
+
+{% block style %}
+    <link rel="stylesheet" href="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.css') }}" />
+{% endblock %}
+
+
+{% block script %}
+    <script src="{{ static('homer/vendor/datatables/media/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.min.js')    }}"></script>
+
+    <script src="{{ static('js/datatableview.js') }}"></script>
+{% endblock %}

@@ -1,4 +1,4 @@
-{% extends "base.j2" %}
+{% extends "datatable.j2" %}
 
 {% set page_title = analysis.analysis_name %}
 
@@ -32,24 +32,21 @@
             <tr><th>Samples</th><td>{{ analysis.sample_count }}</td></tr>
         </table>
     {% endif %}
-    <div class="datatable-wrap clear-fix">
-        {{ datatable|safe }}
-    </div>
+    {{ super() }}
 {% endblock %}
 
 
-{% block script %}
-    <link rel="stylesheet" href="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.css') }}" />
-
-    <script src="{{ static('homer/vendor/datatables/media/js/jquery.dataTables.min.js') }}"></script>
-    <script src="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.min.js')    }}"></script>
-
+{% block style %}
+    {{ super() }}
     <style type="text/css">
         table.dataTable th, table.dataTable td {white-space: nowrap;}
         .dataTables_scrollBody table.dataTable thead *:after {display: none !important}
     </style>
+{% endblock %}
 
-    <script src="{{ static('js/datatableview.js') }}"></script>
+
+{% block script %}
+    {{ super() }}
     <script type="text/javascript">
         datatableview.auto_initialize = false;
         $(function(){
