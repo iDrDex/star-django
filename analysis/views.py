@@ -1,11 +1,12 @@
-from funcy import silent
+import re
+from funcy import silent, without
 from handy.decorators import render_to
 from datatableview.views import DatatableView
 
 from django.contrib import messages
 from django.db import transaction
 from django.forms import ModelForm
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 
 from core.conf import redis_client
@@ -53,6 +54,18 @@ class Detail(DatatableView):
         return context
 
 detail = Detail.as_view()
+
+
+def export(request, analysis_id):
+    analysis = get_object_or_404(Analysis, pk=analysis_id)
+    qs = MetaAnalysis.objects.filter(analysis=analysis)
+    fieldnames = without([f.name for f in MetaAnalysis._meta.fields], 'id', 'analysis')
+    csv = qs.to_dataframe(fieldnames, index='mygene_sym').to_csv()
+
+    response = HttpResponse(csv, content_type='text/plain')
+    filename = re.sub(r'\W+', '-', analysis.analysis_name)
+    response['Content-Disposition'] = 'attachment; filename="%s.csv"' % filename
+    return response
 
 
 @render_to()

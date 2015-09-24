@@ -214,6 +214,8 @@ class MetaAnalysis(models.Model):
     q = models.FloatField(blank=True, null=True)
     q_df = models.FloatField(blank=True, null=True)
 
+    objects = DataFrameManager()
+
     class Meta:
         managed = False
         db_table = 'meta_analysis'
