@@ -38,7 +38,13 @@ def search(request):
     if q_tags:
         q_tag_ids = keep(tag_ids.get(t.lower()) for t in q_tags)
         include_series = reduce(set.intersection, (tag_series[t] for t in q_tag_ids))
-        qs = qs.where('series_id in (%s)' % str_join(',', include_series))
+        if include_series:
+            qs = qs.where('series_id in (%s)' % str_join(',', include_series))
+        else:
+            message = 'No series annotated with %s.' \
+                % (q_tags[0] if len(q_tags) == 1 else 'all these tags simultaneously')
+            messages.warning(request, message)
+            return {'series': []}
     if exclude_tags:
         exclude_series = join(tag_series[t] for t in exclude_tags)
         qs = qs.where('series_id not in (%s)' % str_join(',', exclude_series))
