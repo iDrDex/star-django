@@ -59,6 +59,12 @@ def perform_analysis(analysis, debug=False):
         logger.error("FAIL %s data found" % message)
         return
 
+    # Check we have at least one non-single-class study
+    if (df.groupby(['series_id', 'platform_id'])['sample_class'].nunique() < 2).all():
+        logger.error("FAIL each individual study is single-class. "
+                     "Check if there are anything annotated with all the tags.")
+        return
+
     # Load GSE data, make and concat all fold change analyses results.
     # NOTE: we are doing load_gse() lazily here to avoid loading all matrices at once.
     logger.info('Loading data and calculating fold changes for %s', analysis.analysis_name)
