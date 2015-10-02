@@ -192,9 +192,8 @@ def update_canonical_annotation(series_tag_pk):
     st.canonical.save()
 
     # Update samples to be canonical
-    source = first(v for v in validations
-                   if v.best_kappa == st.canonical.best_cohens_kappa
-                   or v.concordant or v.agrees_with)
+    source = first(v for v in validations if v.concordant or v.agrees_with) \
+        or first(v for v in validations if v.best_kappa == st.canonical.best_cohens_kappa)
 
     if source:
         current_samples = st.canonical.sample_annotations.all()
