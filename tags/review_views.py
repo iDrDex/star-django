@@ -99,7 +99,10 @@ class SampleAnnotations(DatatableView):
 
     @staticmethod
     def get_source_title(src):
-        return u'%s %s' % (src.created_by.first_name, src.created_by.last_name)
+        if src.created_by:
+            return u'%s %s' % (src.created_by.first_name, src.created_by.last_name)
+        else:
+            return u'?'
 
     def get_extra(self, src, instance, *args, **kwargs):
         if not hasattr(self, 'extra_data'):
