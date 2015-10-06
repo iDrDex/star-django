@@ -3,7 +3,6 @@ Django==1.7.4
 django-jinja==1.4.1
 django-jinja-bootstrap-form==4.0.3
 funcy==1.6
-gunicorn==19.2.1
 handy==0.5.1
 honcho==0.6.4
 Jinja2==2.7.3
