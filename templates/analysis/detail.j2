@@ -24,6 +24,9 @@
         {% if analysis.modifier_query %}
             <tr><th>Modifier Query</th><td>{{ analysis.modifier_query }}</td></tr>
         {% endif %}
+        {% if analysis.min_samples %}
+            <tr><th>Min Samples</th><td>{{ analysis.min_samples }}</td></tr>
+        {% endif %}
     </table>
     {% if analysis.series_count %}
         <table class="table" style="width: auto">

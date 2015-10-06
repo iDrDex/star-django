@@ -149,12 +149,15 @@ class Analysis(models.Model):
     case_query = models.CharField(max_length=512)
     control_query = models.CharField(max_length=512)
     modifier_query = models.CharField(max_length=512, blank=True, default='')
+    min_samples = models.IntegerField(blank=True, null=True, default=3)
+    # Stats
     series_count = models.IntegerField(blank=True, null=True)
     platform_count = models.IntegerField(blank=True, null=True)
     sample_count = models.IntegerField(blank=True, null=True)
     series_ids = models.TextField(blank=True)
     platform_ids = models.TextField(blank=True)
     sample_ids = models.TextField(blank=True)
+    # Meta
     is_active = models.CharField(max_length=1, blank=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey('AuthUser', db_column='created_by', blank=True, null=True)

@@ -30,6 +30,25 @@ def perform_analysis(analysis, debug=False):
         df = get_analysis_df(analysis.case_query, analysis.control_query, analysis.modifier_query)
     debug and df.to_csv("%s.analysis_df.csv" % analysis.analysis_name)
 
+    logger.info('Matching sources: %d' % df.groupby(['series_id', 'platform_id']).ngroups)
+
+    # Remove single-class sources
+    query = df.groupby(['series_id', 'platform_id']).sample_class.agg(lambda x: set(x)) >= {0, 1}
+    df = filter_sources(df, query, 'as single-class')
+
+    # Check for minimum number of samples
+    if analysis.min_samples:
+        counts = df.groupby(['series_id', 'platform_id']).sample_class.value_counts().unstack()
+        query = (counts[0] >= analysis.min_samples) & (counts[1] >= analysis.min_samples)
+        df = filter_sources(df, query, 'by min samples')
+
+    # Check number of sources
+    sources = df.groupby(['series_id', 'platform_id']).ngroups
+    if sources <= 1:
+        logger.error("FAIL Can't perform meta-analysis on %s"
+                     % ('single source' if sources else 'no data'))
+        return
+
     # Calculating stats
     analysis.series_count = len(df.series_id.unique())
     analysis.platform_count = len(df.platform_id.unique())
@@ -39,31 +58,8 @@ def perform_analysis(analysis, debug=False):
     analysis.sample_ids = df.sample_id.unique().tolist()
     analysis.save(update_fields=['series_count', 'platform_count', 'sample_count',
                                  'series_ids', 'platform_ids', 'sample_ids'])
-    logger.info('Stats: %d series, %d platforms, %d samples'
-                % (analysis.series_count, analysis.platform_count, analysis.sample_count))
-
-    # Check number of sources
-    sources = len(df[['series_id', 'platform_id']].drop_duplicates())
-    logger.info('Sources: %d' % sources)
-    if sources <= 1:
-        logger.error("FAIL Can't perform meta-analysis on %s"
-                     % ('single source' if sources else 'no data'))
-        return
-
-    # Check both case and control data present
-    sample_classes = set(df.sample_class.unique()) & {0, 1}
-    if sample_classes != {0, 1}:
-        message = ('No case' if sample_classes == {0} else
-                   'No control' if sample_classes == {1} else
-                   'No case, nor control')
-        logger.error("FAIL %s data found" % message)
-        return
-
-    # Check we have at least one non-single-class study
-    if (df.groupby(['series_id', 'platform_id'])['sample_class'].nunique() < 2).all():
-        logger.error("FAIL each individual study is single-class. "
-                     "Check if there are anything annotated with all the tags.")
-        return
+    logger.info('Stats: %d sources, %d series, %d platforms, %d samples'
+                % (sources, analysis.series_count, analysis.platform_count, analysis.sample_count))
 
     # Load GSE data, make and concat all fold change analyses results.
     # NOTE: we are doing load_gse() lazily here to avoid loading all matrices at once.
@@ -90,6 +86,16 @@ def perform_analysis(analysis, debug=False):
         MetaAnalysis.objects.bulk_create(MetaAnalysis(**row) for row in rows)
 
     logger.info('DONE %s analysis', analysis.analysis_name)
+
+
+def filter_sources(df, query, reason):
+    start_sources = df.groupby(['series_id', 'platform_id']).ngroups
+    new_df = df.set_index(['series_id', 'platform_id']).loc[query].reset_index()
+    sources = new_df.groupby(['series_id', 'platform_id']).ngroups
+    excluded = start_sources - sources
+    if excluded:
+        logger.info('Excluded %d source%s %s'% (excluded, 's' if excluded > 1 else '', reason))
+    return new_df
 
 
 # from debug_cache import DebugCache
@@ -347,17 +353,6 @@ class GseAnalyzer:
 
             myCols = ['mygene_sym', 'mygene_entrez']
             table = pd.DataFrame(columns=myCols).set_index(myCols)
-            # Studies with defined SAMPLE CLASS
-            # at least 2 samples required
-            if len(df.sample_class) < 3:
-                logger.info("skipping %s: insufficient data" % gpl)
-                continue
-            # at least 1 case and control required
-            classes = df.sample_class.unique()
-            if not (0 in classes and 1 in classes):
-                logger.info("skipping %s: single-class data" % gpl)
-                continue
-            # data.to_csv("data.test.csv")
             sample_class = df.ix[data.columns].sample_class
 
             debug = debug and debug + ".%s_%s_%s" % (self.gse.name, gpl, subset)
