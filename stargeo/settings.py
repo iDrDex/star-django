@@ -52,6 +52,10 @@ INSTALLED_APPS = (
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar', 'django_extensions')
 
+MIGRATION_MODULES = {
+    'auth': 'stargeo.auth_migrations'
+}
+
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
