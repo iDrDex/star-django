@@ -4,7 +4,7 @@ from fabric.contrib import django
 from fabric.colors import green, red
 
 
-__all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast', 'shell',
+__all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast', 'shell', 'ssh',
            'restart', 'manage', 'install_requirements', 'migrate',
            'pull_db')
 
@@ -45,6 +45,10 @@ def smart_shell(command=''):
 def shell():
     with activate():
         smart_shell('./manage.py shell')
+
+def ssh():
+    with activate():
+        smart_shell()
 
 
 def install_requirements():
