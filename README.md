@@ -40,10 +40,7 @@ Here are steps to make local deployment of this app in order to tinker it.
     ```
 
     Adjust settings in `.env` file, you will probably need to only set `DATABASE_URL`
-    and `LEGACY_DATABASE_URL` for your working copy.
-
-    `LEGACY_DATABASE_URL` should refer to wep2py application database or its copy.
-    `DATABASE_URL` should refer to new database, create it.
+    for your working copy.
 
 
 4. Create or migrate database tables:
