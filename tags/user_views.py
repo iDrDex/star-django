@@ -1,11 +1,11 @@
 from handy.decorators import render_to, paginate, render_to_json
 
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.shortcuts import redirect
 
 from core.conf import redis_client
-from legacy.models import AuthUser
 import tango
 from .models import UserStats, Payment
 from .tasks import redeem_earnings, donate_earnings
@@ -18,8 +18,8 @@ admin_required = user_passes_test(lambda u: u.is_superuser)
 @render_to('users/stats.j2')
 def stats(request):
     return {
-        'users': AuthUser.objects.select_related('stats').exclude(stats=None)
-                                 .order_by('first_name', 'last_name')
+        'users': User.objects.select_related('stats').exclude(stats=None)
+                             .order_by('first_name', 'last_name')
     }
 
 
@@ -67,7 +67,7 @@ def redeem(request):
 @admin_required
 @render_to('users/pay.j2')
 def pay(request):
-    receiver = AuthUser.objects.select_related('stats').get(pk=request.GET['user_id'])
+    receiver = User.objects.select_related('stats').get(pk=request.GET['user_id'])
 
     if request.method == 'POST':
         form = PaymentForm(request.POST)

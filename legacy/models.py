@@ -14,7 +14,6 @@ class AuthUser(models.Model):
     registration_id = models.CharField(max_length=512, blank=True)
 
     class Meta:
-        managed = False
         db_table = 'auth_user'
 
     def __unicode__(self):
@@ -28,7 +27,6 @@ class Platform(models.Model):
     datafile = models.TextField(blank=True)
 
     class Meta:
-        managed = False
         db_table = 'platform'
 
 
@@ -41,7 +39,6 @@ class PlatformProbe(models.Model):
     objects = DataFrameManager()
 
     class Meta:
-        managed = False
         db_table = 'platform_probe'
 
 
@@ -50,14 +47,13 @@ class Tag(models.Model):
     description = models.CharField(max_length=512, blank=True)
     is_active = models.CharField(max_length=1, blank=True, default='T')
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True,
+    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
                                    related_name='tags')
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True,
+    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
     class Meta:
-        managed = False
         db_table = 'tag'
 
 
@@ -65,7 +61,6 @@ class Series(models.Model):
     gse_name = models.TextField(blank=True)
 
     class Meta:
-        managed = False
         db_table = 'series'
 
 
@@ -75,7 +70,6 @@ class SeriesAttribute(models.Model):
     attribute_name = models.TextField(blank=True)
 
     class Meta:
-        managed = False
         db_table = 'series_attribute'
 
 
@@ -88,10 +82,10 @@ class SeriesTag(models.Model):
     show_invariant = models.CharField(max_length=1, blank=True)
     is_active = models.CharField(max_length=1, blank=True, default='T')
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True,
+    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
                                    related_name='serie_annotations')
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True,
+    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
     agreed = models.IntegerField(blank=True, null=True)
@@ -99,7 +93,6 @@ class SeriesTag(models.Model):
     obsolete = models.CharField(max_length=1, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'series_tag'
 
 
@@ -110,7 +103,6 @@ class Sample(models.Model):
     deleted = models.CharField(max_length=1, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'sample'
 
 
@@ -120,7 +112,6 @@ class SampleAttribute(models.Model):
     attribute_name = models.TextField(blank=True)
 
     class Meta:
-        managed = False
         db_table = 'sample_attribute'
 
 
@@ -130,16 +121,15 @@ class SampleTag(models.Model):
     annotation = models.TextField(blank=True)
     is_active = models.CharField(max_length=1, blank=True, default='T')
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey(AuthUser, db_column='created_by', blank=True, null=True,
+    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
                                    related_name='sample_annotations')
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey(AuthUser, db_column='modified_by', blank=True, null=True,
+    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
     objects = DataFrameManager()
 
     class Meta:
-        managed = False
         db_table = 'sample_tag'
 
 
@@ -160,14 +150,13 @@ class Analysis(models.Model):
     # Meta
     is_active = models.CharField(max_length=1, blank=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey('AuthUser', db_column='created_by', blank=True, null=True)
+    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True)
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey('AuthUser', db_column='modified_by', blank=True, null=True,
+    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
     deleted = models.CharField(max_length=1, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'analysis'
 
     def __unicode__(self):
@@ -220,5 +209,4 @@ class MetaAnalysis(models.Model):
     objects = DataFrameManager()
 
     class Meta:
-        managed = False
         db_table = 'meta_analysis'
