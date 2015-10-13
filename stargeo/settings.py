@@ -24,8 +24,6 @@ SECRET_KEY = os.environ['SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ['DEBUG'] == 'True'
 
-TEMPLATE_DEBUG = DEBUG
-
 ALLOWED_HOSTS = ['*']
 
 
@@ -116,19 +114,7 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 
 
-TEMPLATE_DIRS = (
-    BASE_DIR + '/templates',
-)
-
-TEMPLATE_LOADERS = (
-    'django_jinja.loaders.FileSystemLoader',
-    'django_jinja.loaders.AppLoader',
-)
-
-DEFAULT_JINJA2_TEMPLATE_INTERCEPT_RE = r'.*\.(j2|jinja)$'
-TEMPLATE_DEFAULT_EXTENSION = '.j2'
-
-TEMPLATE_CONTEXT_PROCESSORS = (
+_TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.auth.context_processors.auth",
     "django.core.context_processors.debug",
     "django.core.context_processors.i18n",
@@ -138,6 +124,32 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.request",
     "django.contrib.messages.context_processors.messages"
 )
+
+TEMPLATES = [
+    {
+        "BACKEND": "django_jinja.backend.Jinja2",
+        "APP_DIRS": True,
+        "DIRS": [BASE_DIR + '/templates'],
+        "OPTIONS": {
+            "match_extension": None,
+            "match_regex": r'.*\.(j2|jinja)$|^registration',
+            "context_processors": _TEMPLATE_CONTEXT_PROCESSORS,
+            "constants": {
+                "legacy_app_url": os.environ['LEGACY_APP_URL'],
+            }
+        }
+    },
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "APP_DIRS": True,
+        "DIRS": [BASE_DIR + '/templates'],
+        "OPTIONS": {
+            "context_processors": _TEMPLATE_CONTEXT_PROCESSORS
+        }
+    },
+]
+
+TEMPLATE_DEFAULT_EXTENSION = '.j2'
 
 LEGACY_APP_URL = os.environ['LEGACY_APP_URL']
 JINJA2_CONSTANTS = {
