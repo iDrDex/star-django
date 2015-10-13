@@ -81,12 +81,12 @@
         <div class="navbar-right">
             <ul class="nav navbar-nav no-borders">
                 <li class="dropdown">
-                    {% if request.user_data %}
-                        <a href="{{ legacy_app_url }}/default/user/logout">
+                    {% if request.user.is_authenticated() %}
+                        <a href="{{ url('logout') }}">
                             <i class="pe-7s-upload pe-rotate-90"></i>
                         </a>
                     {% else %}
-                        <a href="{{ legacy_app_url }}/default/user/login">Log In</a></li>
+                        <a href="{{ url('login') }}">Log In</a></li>
                     {% endif %}
                 </li>
             </ul>
@@ -100,22 +100,19 @@
         <div class="profile-picture">
             <div class="stats-label text-color">
                 <span class="font-extra-bold font-uppercase">
-                    {% if request.user_data %}
-                        {{ request.user_data.first_name }} {{ request.user_data.last_name }}
+                    {% if request.user.is_authenticated() %}
+                        {{ request.user.first_name }} {{ request.user.last_name }}
                     {% else %}
-                        <a href="{{ legacy_app_url }}/default/user/login">Log in</a>
+                        <a href="{{ url('login') }}">Log in</a>
                     {% endif %}
                 </span>
 
-                {% if request.user_data %}
+                {% if request.user.is_authenticated() %}
                 <p style="margin-top: 1em">
-                    <a href="{{ legacy_app_url }}/default/user/profile">
-                        <small class="text-mited">Profile</small>
-                    </a>
                     <a href="{{ url('redeem') }}">
                         <small class="text-mited">Redeem</small>
                     </a>
-                    <a href="{{ legacy_app_url }}/default/user/logout">
+                    <a href="{{ url('logout') }}">
                         <small class="text-mited">Logout</small>
                     </a>
                 </p>
@@ -143,7 +140,7 @@
                 <a href="/analysis/"> <span class="nav-label">Analysis</span> </a>
             </li>
             {# HACK: hardcode my and Dexters ids #}
-            {% if request.user_data.id in (1, 24) %}
+            {% if request.user.is_superuser %}
             <li{% if request.path == '/stats/' %} class="active"{% endif %}>
                 <a href="/stats/"> <span class="nav-label">Statistics</span> </a>
             </li>

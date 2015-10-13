@@ -5,13 +5,13 @@ from collections import defaultdict
 from funcy import distinct, imapcat, join, str_join, keep, silent, split, map
 from handy.decorators import render_to, paginate
 
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.forms import ModelForm, ValidationError
 from django.shortcuts import redirect, get_object_or_404
 
 from legacy.models import Tag, SampleTag, SeriesTag
-from core.utils import login_required
 from .models import SampleValidation
 from .data import get_series_columns, SQLQuerySet
 
@@ -79,7 +79,7 @@ def create_tag(request):
         form = TagForm(request.POST)
         if form.is_valid():
             tag = form.save(commit=False)
-            tag.created_by_id = tag.modified_by_id = request.user_data['id']
+            tag.created_by_id = tag.modified_by_id = request.user.id
             tag.save()
             messages.success(request, 'Saved tag %s' % tag.tag_name)
             return redirect(tag_control)
@@ -112,7 +112,7 @@ def tag(request, tag_id):
 def save_tag(request, form):
     tag = form.save(commit=False)
     old_tag = Tag.objects.select_for_update().get(pk=tag.pk)
-    tag.modified_by_id = request.user_data['id']
+    tag.modified_by_id = request.user.id
     tag.save()
 
     if tag.tag_name != old_tag.tag_name:

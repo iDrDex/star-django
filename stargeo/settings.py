@@ -58,12 +58,13 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'legacy.middleware.Web2PyUser',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
 ROOT_URLCONF = 'stargeo.urls'
+LOGIN_REDIRECT_URL = '/'
 
 WSGI_APPLICATION = 'stargeo.wsgi.application'
 
@@ -132,11 +133,10 @@ TEMPLATES = [
         "DIRS": [BASE_DIR + '/templates'],
         "OPTIONS": {
             "match_extension": None,
-            "match_regex": r'.*\.(j2|jinja)$|^registration',
+            # We use default template names for auth things, so we need to intercept them,
+            # we hackily exclude email and subject templates
+            "match_regex": r'(.*\.(j2|jinja)$|(^registration.*(?<!email|bject)\.\w+$))',
             "context_processors": _TEMPLATE_CONTEXT_PROCESSORS,
-            "constants": {
-                "legacy_app_url": os.environ['LEGACY_APP_URL'],
-            }
         }
     },
     {
@@ -144,17 +144,13 @@ TEMPLATES = [
         "APP_DIRS": True,
         "DIRS": [BASE_DIR + '/templates'],
         "OPTIONS": {
-            "context_processors": _TEMPLATE_CONTEXT_PROCESSORS
+            "context_processors": _TEMPLATE_CONTEXT_PROCESSORS,
+            "debug": DEBUG,
         }
     },
 ]
 
 TEMPLATE_DEFAULT_EXTENSION = '.j2'
-
-LEGACY_APP_URL = os.environ['LEGACY_APP_URL']
-JINJA2_CONSTANTS = {
-    "legacy_app_url": os.environ['LEGACY_APP_URL'],
-}
 
 
 # Cacheops settings
@@ -167,6 +163,8 @@ CACHEOPS_REDIS = {
 
 
 CELERY_SEND_TASK_ERROR_EMAILS = True
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Logging settings
 ADMINS = (

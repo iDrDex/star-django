@@ -1,14 +1,17 @@
 from handy.decorators import render_to, paginate, render_to_json
 
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.shortcuts import redirect
 
 from core.conf import redis_client
-from core.utils import admin_required, login_required
 from legacy.models import AuthUser
 import tango
 from .models import UserStats, Payment
 from .tasks import redeem_earnings, donate_earnings
+
+
+admin_required = user_passes_test(lambda u: u.is_superuser)
 
 
 @admin_required
@@ -41,22 +44,22 @@ def account_info(request):
 def redeem(request):
     if request.method == 'POST':
         if 'donate' in request.POST:
-            donate_earnings(request.user_data['id'])
+            donate_earnings(request.user.id)
             messages.success(request, 'Thank you very mush for your support')
             return redirect('redeem')
         else:
             # Mark redeem as in progress
-            redis_client.setex('redeem:%d' % request.user_data['id'], 60, 'active')
-            redeem_earnings.delay(request.user_data['id'])
+            redis_client.setex('redeem:%d' % request.user.id, 60, 'active')
+            redeem_earnings.delay(request.user.id)
             messages.success(request, 'Ordering a Tango Card for you')
             return redirect('redeem')
 
-    last_payment = Payment.objects.filter(receiver_id=request.user_data['id']) \
+    last_payment = Payment.objects.filter(receiver_id=request.user.id) \
                           .order_by('created_on').last()
 
     return {
-        'active': redis_client.get('redeem.samples:%d' % request.user_data['id']),
-        'stats': UserStats.objects.get(pk=request.user_data['id']),
+        'active': redis_client.get('redeem.samples:%d' % request.user.id),
+        'stats': UserStats.objects.get(pk=request.user.id),
         'last_payment': last_payment
     }
 
@@ -74,7 +77,7 @@ def pay(request):
                 receiver_id=payment.receiver_id,
                 amount=payment.amount,
                 method=payment.method,
-                sender_id=request.user_data['id'],
+                sender_id=request.user.id,
             )
             messages.success(request, 'Ordering Tango card')
             return redirect('stats')

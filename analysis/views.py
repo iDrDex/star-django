@@ -3,6 +3,7 @@ from funcy import silent, without
 from handy.decorators import render_to
 from datatableview.views import DatatableView
 
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.forms import ModelForm
@@ -10,7 +11,6 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 
 from core.conf import redis_client
-from core.utils import login_required
 from legacy.models import Analysis, MetaAnalysis
 from .tasks import analysis_task
 
@@ -97,7 +97,7 @@ def create(request):
 
 def save_analysis(request, analysis):
     with transaction.atomic():
-        analysis.created_by_id = analysis.modified_by_id = request.user_data['id']
+        analysis.created_by_id = analysis.modified_by_id = request.user.id
         analysis.save()
     analysis_task.delay(analysis.pk)
     return redirect(log, analysis.pk)
@@ -116,10 +116,10 @@ def rerun(request, analysis_id):
     if request.GET.get('copy'):
         analysis.pk = None
         analysis.deleted = None
-        analysis.created_by_id = analysis.modified_by_id = request.user_data['id']
+        analysis.created_by_id = analysis.modified_by_id = request.user.id
         analysis.save()
     else:
-        analysis.modified_by_id = request.user_data['id']
+        analysis.modified_by_id = request.user.id
         analysis.save()
     analysis_task.delay(analysis.pk)
     return redirect(log, analysis.pk)

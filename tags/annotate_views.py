@@ -6,6 +6,7 @@ from handy.decorators import render_to
 from handy.db import fetch_dict, fetch_dicts
 
 from django.core.urlresolvers import reverse
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q
@@ -14,7 +15,6 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
 from core.tasks import update_dashboard
-from core.utils import login_required
 from legacy.models import Sample, Tag, SeriesTag, SampleTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
 from .tasks import validation_workflow
@@ -49,7 +49,7 @@ def annotate(request):
 
 
 def save_annotation(request):
-    user_id = request.user_data['id']
+    user_id = request.user.id
 
     # Do not check input, just crash for now
     series_id = request.POST['series_id']
@@ -108,7 +108,7 @@ def validate(request):
         return save_validation(request)
 
     try:
-        job = lock_validation_job(request.user_data['id'])
+        job = lock_validation_job(request.user.id)
     except ValidationJob.DoesNotExist:
         return {'TEMPLATE': 'tags/nothing_to_validate.j2'}
 
@@ -126,7 +126,7 @@ def validate(request):
 
 def save_validation(request):
     # Do not check input, just crash for now
-    user_id = request.user_data['id']
+    user_id = request.user.id
     job_id = request.POST['job_id']
     column = request.POST['column']
     regex = request.POST['regex']
@@ -231,7 +231,7 @@ def on_demand_validate(request):
     }
 
 def save_on_demand_validation(request):
-    user_id = request.user_data['id']
+    user_id = request.user.id
     series_tag_id = request.POST['series_tag_id']
     column = request.POST['column']
     regex = request.POST['regex']
@@ -265,7 +265,7 @@ def save_on_demand_validation(request):
 @login_required
 def on_demand_result(request, serie_validation_id):
     serie_validation = get_object_or_404(SerieValidation, id=serie_validation_id)
-    if serie_validation.created_by_id != request.user_data['id']:
+    if serie_validation.created_by_id != request.user.id:
         raise Http404
 
     if 'json' in request.GET:

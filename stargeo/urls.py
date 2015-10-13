@@ -1,8 +1,16 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 
+from core.forms import PasswordResetForm
+
 
 urlpatterns = patterns('',  # noqa
+    url(r'^accounts/logout/$', 'django.contrib.auth.views.logout',
+        {'next_page': '/'}),
+    url(r'^accounts/password_reset/$', 'django.contrib.auth.views.password_reset',
+        {'password_reset_form': PasswordResetForm}),
+    url('^accounts/', include('django.contrib.auth.urls')),
+
     url(r'^$', 'core.views.dashboard', name='dashboard'),
 
     url(r'^search/$', 'tags.views.search', name='search'),

@@ -1,0 +1,19 @@
+{% extends "base.j2" %}
+
+
+{% block main %}
+<div class="row"> <div class="col-sm-6 col-sm-offset-3"><div class="hpanel">
+{% if heading %}<div class="panel-heading">{{ heading }}</div>{% endif %}
+<div class="panel-body" style="padding-bottom: 5px">
+    {% block content %}{% endblock %}
+</div></div></div></div>
+{% endblock %}
+
+
+{% block script %}
+<script type="text/javascript">
+$(function () {
+    $('.form :input:visible:first').focus()
+})
+</script>
+{% endblock %}
