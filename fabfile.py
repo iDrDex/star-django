@@ -30,7 +30,6 @@ def collect_static():
 
 def migrate():
     execute(manage, 'migrate')
-    execute(manage, 'migrate --database=legacy')
 
 
 def manage(cmd):
@@ -129,8 +128,8 @@ import dj_database_url
 
 def pull_db(dump='app'):
     app_env = honcho.environ.parse(open('.env').read())
-    remote_db = dj_database_url.parse(app_env['REAL_LEGACY_DATABASE_URL'])
-    local_db = dj_database_url.parse(app_env['LEGACY_DATABASE_URL'])
+    remote_db = dj_database_url.parse(app_env['REAL_DATABASE_URL'])
+    local_db = dj_database_url.parse(app_env['DATABASE_URL'])
 
     # Make and download database dump
     if dump == 'direct':
