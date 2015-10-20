@@ -91,6 +91,7 @@ class SerieValidation(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('auth.User')
     on_demand = models.BooleanField(default=False)
+    ignored = models.BooleanField(default=False)
 
     # Calculated fields
     samples_total = models.IntegerField(null=True)

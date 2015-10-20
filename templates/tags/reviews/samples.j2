@@ -1,3 +1,40 @@
 {% extends "datatable.j2" %}
 
+
 {% set page_title = 'Sample annotations for %s' % serie_annotation.series.gse_name %}
+
+
+{% block script %}
+{{ request.path }}
+{{ super() }}
+
+<style type="text/css">
+.datatable .btn-circle {padding: 4px; margin-left: 0.5em}
+</style>
+
+<script src="{{ static('jquery.cookie.js') }}"></script>
+<script type="text/javascript">
+var requestPath = {{ request.path|json }};
+var sourceIds = {{ source_ids|json }};
+
+// Add cross buttons for each annotation column
+var ignoreHTML = '<button class="btn btn-xs btn-default btn-circle" type="button"><i class="fa fa-times"></i></button>';
+$('.datatable thead th:gt(2)').append(ignoreHTML)
+    .find('button').each(function (i) {
+        // First is series_tag id, the rest are validations
+        this.sourceId = sourceIds[i+1];
+    })
+    .click(function (e) {
+        if (confirm('Are you sure you want to ignore this validation?')) {
+            $.ajax({
+                method: 'POST',
+                url: '/annotations/ignore/' + e.currentTarget.sourceId + '/',
+                headers: {'X-CSRFToken': $.cookie('csrftoken')},
+                success: function () { location.reload(); },
+                error: function () { alert('Something went wrong, try again.') }
+            })
+        }
+        return false;
+    })
+</script>
+{% endblock %}

@@ -2,10 +2,12 @@ from funcy import group_by, cached_property, partial
 from datatableview.views import DatatableView
 from datatableview.utils import DatatableOptions
 
-from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import get_object_or_404, redirect
 
 from legacy.models import SeriesTag
 from tags.models import SerieAnnotation, SampleAnnotation, SerieValidation, SampleValidation
+from .tasks import validation_workflow
 
 
 # NOTE: to filter in a special way on GSE\d+ and GPL\d+ we parse options diffrently,
@@ -76,7 +78,7 @@ class SampleAnnotations(DatatableView):
     @cached_property
     def sources(self):
         series_tag = self.serie_annotation.series_tag
-        return [series_tag] + list(series_tag.validations.order_by('id').all())
+        return [series_tag] + list(series_tag.validations.filter(ignored=False).order_by('id'))
 
     def get_queryset(self):
         return SampleAnnotation.objects.select_related('sample') \
@@ -85,6 +87,7 @@ class SampleAnnotations(DatatableView):
     def get_context_data(self, **kwargs):
         context = super(SampleAnnotations, self).get_context_data(**kwargs)
         context['serie_annotation'] = self.serie_annotation
+        context['source_ids'] = [s.id for s in self.sources]
         return context
 
     def _get_datatable_options(self):
@@ -123,3 +126,12 @@ class SampleAnnotations(DatatableView):
         return self.extra_data[src.__class__, src.pk, instance.sample_id] or ''
 
 sample_annotations = SampleAnnotations.as_view()
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def ignore(request, serie_validation_id):
+    sv = get_object_or_404(SerieValidation, pk=serie_validation_id)
+    sv.ignored = True
+    sv.save()
+    validation_workflow.delay(sv.pk, is_new=False)
+    return redirect('sample_annotations', sv.series_tag.canonical.id)

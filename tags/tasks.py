@@ -10,6 +10,7 @@ from django.db import transaction
 from django.db.models import F
 
 from core.conf import redis_client
+from core.tasks import update_dashboard
 from legacy.models import SeriesTag
 from .models import (SerieValidation, SampleValidation,
                      UserStats, ValidationJob, Payment, PaymentState)
@@ -18,9 +19,20 @@ from .models import (SerieValidation, SampleValidation,
 logger = logging.getLogger(__name__)
 
 
-def validation_workflow(serie_validation_pk, series_tag_pk):
-    return calc_validation_stats.s(serie_validation_pk) \
-        | update_canonical_annotation.si(series_tag_pk)
+@shared_task(acks_late=True)
+def validation_workflow(sv_id, is_new=True):
+    series_tag_id = SerieValidation.objects.get(pk=sv_id).series_tag_id
+
+    if is_new:
+        calc_validation_stats(sv_id)
+    else:
+        validations = SerieValidation.objects.filter(series_tag=series_tag_id, pk__gte=sv_id) \
+                                             .order_by('pk')
+        for v in validations:
+            calc_validation_stats(v.pk, recalc=True)
+
+    update_canonical_annotation(series_tag_id)
+    update_dashboard.delay()
 
 
 @shared_task(acks_late=True)
@@ -55,7 +67,7 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
     serie_validation.annotation_kappa = _cohens_kappa(sample_validations, sample_annotations)
 
     # Compare to other validations
-    earlier_validations = series_tag.validations.filter(pk__lt=serie_validation_pk) \
+    earlier_validations = series_tag.validations.filter(pk__lt=serie_validation_pk, ignored=False) \
                                     .order_by('pk')
     earlier_sample_validations = group_by(
         lambda v: v.serie_validation_id,
@@ -139,7 +151,6 @@ def _reschedule_validation(serie_validation, priority=None):
     failed = SerieValidation.objects \
         .filter(series_tag=serie_validation.series_tag, on_demand=False).count()
     if failed >= 5:
-        # TODO: create user interface to see problematic series tags
         logger.info('Failed validating %s serie tag %d times',
                     serie_validation.series_tag_id, failed)
         return
@@ -183,7 +194,7 @@ def _cohens_kappa(annos1, annos2):
 @transaction.atomic
 def update_canonical_annotation(series_tag_pk):
     st = SeriesTag.objects.select_for_update().get(pk=series_tag_pk)
-    validations = st.validations.order_by('pk')
+    validations = st.validations.filter(ignored=False).order_by('pk')
 
     st.canonical.annotations = validations.count() + 1
     st.canonical.authors = len(set(v.created_by_id for v in validations) | {st.created_by_id})

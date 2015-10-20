@@ -168,7 +168,7 @@ def save_validation(request):
     message = 'Saved {} validations for {}'.format(len(values), serie_validation.tag.tag_name)
     messages.success(request, message)
 
-    (validation_workflow(serie_validation.pk, st.pk) | update_dashboard).delay()
+    validation_workflow.delay(serie_validation.pk)
 
     return redirect(request.get_full_path())
 
@@ -258,7 +258,7 @@ def save_on_demand_validation(request):
         len(values), st.series.gse_name, st.tag.tag_name)
     messages.success(request, message)
 
-    (validation_workflow(serie_validation.pk, st.pk) | update_dashboard).delay()
+    validation_workflow.delay(serie_validation.pk)
 
     return redirect(on_demand_result, serie_validation.id)
 
