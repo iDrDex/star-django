@@ -150,16 +150,16 @@ $(function () {
 </script>
 
 <script>
-var columns = {{ columns|json|safe }};
-var samples = {{ samples|json|safe }};
+var columns = {{ columns|json }};
+var samples = {{ samples|json }};
 
 {% if tags %}
-  var tags = {{ tags|json|safe }};
+  var tags = {{ tags|json }};
   var tagNames = _.object(tags.map(function (tag) {
     return [tag.id, tag.tag_name]
   }));
 {% else %}
-  var tagNames = {{ {tag.id: tag.tag_name}|json|safe }};
+  var tagNames = {{ {tag.id: tag.tag_name}|json }};
 {% endif %}
 </script>
 <script type="text/javascript" src="{{ static('annotate.js') }}"></script>

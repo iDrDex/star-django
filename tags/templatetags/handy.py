@@ -4,13 +4,14 @@ from itertools import groupby
 import jinja2
 from django_jinja import library
 from django.db.models.query import QuerySet
+from django.utils.safestring import mark_safe
 
 
 @library.filter(name='json')
 def _json(value):
     if isinstance(value, QuerySet):
         value = list(value)
-    return json.dumps(value)
+    return mark_safe(json.dumps(value))
 
 
 @library.global_function
