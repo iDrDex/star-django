@@ -22,9 +22,9 @@ def test_annotations_similarity():
     from collections import namedtuple
     from tags.tasks import annotations_similarity
 
-    AnnoMock = namedtuple('AnnoMock', ['sample_id', 'annotation'])
+    AnnoMock = namedtuple('AnnoMock', ['sample_id', 'annotation'])  # noqa
     s = [AnnoMock(1, 'hi'), AnnoMock(2, '')]
     s2 = [AnnoMock(1, 'hi'), AnnoMock(2, 'hi')]
     assert annotations_similarity([s, s]) == 1
     assert annotations_similarity([s, s, s]) == 1
-    assert annotations_similarity([s, s2]) == -1/3.0
+    assert annotations_similarity([s, s2]) == -1 / 3.0
