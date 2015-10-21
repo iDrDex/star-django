@@ -339,7 +339,6 @@ class GseAnalyzer:
 
         for group, df in groups:
             subset, gpl = group
-            probes = gse.gpl2probes[gpl]
 
             # NOTE: if data has changed then sample ids could be different
             if not set(df["gsm_name"]) <= set(gse.gpl2data[gpl].columns):
@@ -351,8 +350,6 @@ class GseAnalyzer:
             # Drop samples with > 80% missing samples
             # data = data.dropna(axis=1, thresh=data.shape[0] * .2)
 
-            myCols = ['mygene_sym', 'mygene_entrez']
-            table = pd.DataFrame(columns=myCols).set_index(myCols)
             sample_class = df.ix[data.columns].sample_class
 
             debug = debug and debug + ".%s_%s_%s" % (self.gse.name, gpl, subset)
