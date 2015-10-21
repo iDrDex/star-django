@@ -94,7 +94,7 @@ def filter_sources(df, query, reason):
     sources = new_df.groupby(['series_id', 'platform_id']).ngroups
     excluded = start_sources - sources
     if excluded:
-        logger.info('Excluded %d source%s %s'% (excluded, 's' if excluded > 1 else '', reason))
+        logger.info('Excluded %d source%s %s' % (excluded, 's' if excluded > 1 else '', reason))
     return new_df
 
 
@@ -406,7 +406,6 @@ class MetaAnalyser:
                               upper=1 if np.exp(tres.upper) < 1 else np.exp(tres.upper))
         return result
 
-
     norm_ppf = staticmethod(memoize(stats.norm.ppf))
     t_ppf = staticmethod(memoize(stats.t.ppf))
 
@@ -602,7 +601,7 @@ def get_logged(df):
         return df
 
     data = df.values
-    floor = np.abs(np.min(data, axis=0))
+    floor = np.abs(np.min(data, axis=0))  # noqa
     res = ne.evaluate('log(data + floor + 1) / log(2)')
     return pd.DataFrame(res, index=df.index, columns=df.columns)
 
