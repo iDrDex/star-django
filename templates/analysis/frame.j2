@@ -1,0 +1,29 @@
+{% extends "analysis/detail_base.j2" %}
+
+{% set active = 'frame' %}
+
+
+{% block content %}
+<div class="table-responsive">
+  <table class="table table-striped" id="data-table">
+    <thead>
+      <tr>
+        {% for col in df.columns %}
+            <th>{{ col }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in df.itertuples() %}
+        <tr>
+          {% for val in row[1:] %}
+            <td>{{ val }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+

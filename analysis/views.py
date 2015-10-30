@@ -69,6 +69,13 @@ def export(request, analysis_id):
 
 
 @render_to()
+def frame(request, analysis_id):
+    analysis = get_object_or_404(Analysis, pk=analysis_id)
+    df = analysis.df.frame.drop(['sample_id', 'series_id', 'platform_id'], axis=1)
+    return {'analysis': analysis, 'df': df}
+
+
+@render_to()
 def log(request, analysis_id):
     analysis = get_object_or_404(Analysis, pk=analysis_id)
     offset = silent(int)(request.GET.get('offset')) or 0

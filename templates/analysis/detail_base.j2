@@ -21,12 +21,15 @@
                 <li{% if active == "results" %} class="active"{% endif %}>
                     <a href="{{ url('analysis_results', analysis.pk) }}">Results</a>
                 </li>
+                <li{% if active == "frame" %} class="active"{% endif %}>
+                    <a href="{{ url('analysis_frame', analysis.pk) }}">Source frame</a>
+                </li>
                 <li{% if active == "log" %} class="active"{% endif %}>
                     <a href="{{ url('analysis_log', analysis.pk) }}">Log</a>
                 </li>
             </ul>
             <div class="tab-content">
-                <div id="tab-results" class="tab-pane active">
+                <div class="tab-pane active">
                     <div class="panel-body">
                         {% block content %}{% endblock %}
                     </div>
