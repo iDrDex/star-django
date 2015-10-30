@@ -49,6 +49,10 @@ def perform_analysis(analysis, debug=False):
                      % ('single source' if sources else 'no data'))
         return
 
+    # Save analysis df
+    analysis.upload_df(df)
+    analysis.save()
+
     # Calculating stats
     analysis.series_count = len(df.series_id.unique())
     analysis.platform_count = len(df.platform_id.unique())
@@ -116,6 +120,7 @@ COLUMNS = {
     'sample__gsm_name': 'gsm_name',
     'annotation': 'annotation',
     'serie_annotation__series__id': 'series_id',
+    'serie_annotation__series__gse_name': 'gse_name',
     'serie_annotation__platform__id': 'platform_id',
     'serie_annotation__platform__gpl_name': 'gpl_name',
     'serie_annotation__tag__tag_name': 'tag_name',
@@ -140,8 +145,8 @@ def get_analysis_df(case_query, control_query, modifier_query):
 
     # Select only cells with filled annotations
     df = df.drop(['tag_name', 'annotation'], axis=1)
-    df = df.groupby(['sample_id', 'series_id', 'platform_id', 'gsm_name', 'gpl_name'],
-                    as_index=False).first()
+    df = df.groupby(['sample_id', 'series_id', 'platform_id', 'gsm_name', 'gse_name', 'gpl_name'],
+                    as_index=False).first().fillna('')
 
     df = df.convert_objects(convert_numeric=True)
 
