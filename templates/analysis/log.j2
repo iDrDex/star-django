@@ -1,12 +1,6 @@
-{% extends "base.j2" %}
+{% extends "analysis/detail_base.j2" %}
 
-{% set page_title = '%s log' % analysis.analysis_name %}
-
-
-{% block header %}
-    <a href="{{ url('analysis_results', analysis.pk) }}" class="btn btn-default" style="float: right">Back to analysis</a>
-    {{ super() }}
-{% endblock %}
+{% set active = 'log' %}
 
 
 {% block content %}

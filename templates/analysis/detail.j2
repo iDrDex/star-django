@@ -1,17 +1,6 @@
-{% extends "datatable.j2" %}
+{% extends "analysis/detail_base.j2" %}
 
-{% set page_title = analysis.analysis_name %}
-
-
-{% block header %}
-    <div class="pull-right">
-        <a href="{{ url('analysis_log', analysis.pk) }}" class="btn btn-default">Log</a>
-        <a href="{{ url('analysis_rerun', analysis.pk) }}?copy=1" class="btn btn-primary">Run a copy</a>
-        <a href="{{ url('analysis_rerun', analysis.pk) }}" class="btn btn-primary">Rerun</a>
-        <a href="{{ url('analysis_delete', analysis.pk) }}" onclick="return confirm('Are you sure?')" class="btn btn-danger">Delete</a>
-    </div>
-    {{ super() }}
-{% endblock %}
+{% set active = 'results' %}
 
 
 {% block content %}
@@ -35,13 +24,15 @@
             <tr><th>Samples</th><td>{{ analysis.sample_count }}</td></tr>
         </table>
     {% endif %}
-    {{ super() }}
+    <div class="datatable-wrap clear-fix">
+        {{ datatable|safe }}
+    </div>
     <a href="{{ url('analysis_export', analysis.id) }}" class="btn btn-primary">Export</a>
 {% endblock %}
 
 
 {% block style %}
-    {{ super() }}
+    <link rel="stylesheet" href="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.css') }}" />
     <style type="text/css">
         table.dataTable th, table.dataTable td {white-space: nowrap;}
         .dataTables_scrollBody table.dataTable thead *:after {display: none !important}
@@ -50,7 +41,10 @@
 
 
 {% block script %}
-    {{ super() }}
+    <script src="{{ static('homer/vendor/datatables/media/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.min.js')    }}"></script>
+
+    <script src="{{ static('js/datatableview.js') }}"></script>
     <script type="text/javascript">
         datatableview.auto_initialize = false;
         $(function(){
