@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.forms import ModelForm
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404
 from django.shortcuts import redirect, get_object_or_404
 
 from core.conf import redis_client
@@ -71,6 +71,8 @@ def export(request, analysis_id):
 @render_to()
 def frame(request, analysis_id):
     analysis = get_object_or_404(Analysis, pk=analysis_id)
+    if not analysis.df:
+        raise Http404
     df = analysis.df.frame.drop(['sample_id', 'series_id', 'platform_id'], axis=1)
     return {'analysis': analysis, 'df': df}
 

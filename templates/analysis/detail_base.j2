@@ -21,9 +21,11 @@
                 <li{% if active == "results" %} class="active"{% endif %}>
                     <a href="{{ url('analysis_results', analysis.pk) }}">Results</a>
                 </li>
-                <li{% if active == "frame" %} class="active"{% endif %}>
-                    <a href="{{ url('analysis_frame', analysis.pk) }}">Source frame</a>
-                </li>
+                {% if analysis.df %}
+                    <li{% if active == "frame" %} class="active"{% endif %}>
+                        <a href="{{ url('analysis_frame', analysis.pk) }}">Source frame</a>
+                    </li>
+                {% endif %}
                 <li{% if active == "log" %} class="active"{% endif %}>
                     <a href="{{ url('analysis_log', analysis.pk) }}">Log</a>
                 </li>
