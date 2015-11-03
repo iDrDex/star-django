@@ -4,6 +4,7 @@ import boto
 
 from django.conf import settings
 from django.utils.encoding import force_unicode
+from cacheops import file_cache
 
 
 def upload(desc):
@@ -17,6 +18,7 @@ def upload(desc):
     return dict(bucket=desc['bucket'], key=key_name, name=desc['name'], size=len(desc['data']))
 
 
+@file_cache.cached
 def download_as_string(desc):
     bucket = _get_bucket(desc['bucket'])
     key = bucket.get_key(desc['key'], validate=False)

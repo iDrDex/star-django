@@ -13,7 +13,7 @@ celery==3.1.17
 tqdm==1.0
 requests==2.7.0
 ftptool==0.7.1
-django-cacheops==2.3.2
+django-cacheops==2.4.2
 gzip-reader==0.1
 pandas==0.16.2
 termcolor==1.1.0
