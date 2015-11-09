@@ -11,8 +11,8 @@ from django.db import models
 from . import ops
 
 
-class Resourse(dict):
-    """A resourse value"""
+class Resource(dict):
+    """A resource value"""
     def __init__(self, data):
         dict.__init__(self, data)
         assert {'bucket', 'key', 'name', 'size'} <= set(self)
@@ -42,18 +42,18 @@ class S3Field(models.TextField):
         if value is None or value == '':
             return None
 
-        if isinstance(value, Resourse):
+        if isinstance(value, Resource):
             return value
 
         if isinstance(value, basestring):
-            return Resourse(json.loads(value))
+            return Resource(json.loads(value))
 
-        raise ValidationError('Wrong resourse description')
+        raise ValidationError('Wrong resource description')
 
     def from_db_value(self, value, expression, connection, context):
         if value is None:
             return None
-        return Resourse(json.loads(value))
+        return Resource(json.loads(value))
 
     def get_prep_value(self, value):
         if value is None:
@@ -80,7 +80,7 @@ def _upload_FIELD(self, desc, field=None):  # noqa
         'name': field.make_name(self),
         'data': frame_dumps(desc),
     }
-    setattr(self, field.attname, Resourse(ops.upload(desc)))
+    setattr(self, field.attname, Resource(ops.upload(desc)))
 
 
 def frame_dumps(df):
