@@ -45,9 +45,12 @@ def shell():
     with activate():
         smart_shell('./manage.py shell')
 
-def ssh():
+def ssh(command=''):
     with activate():
-        smart_shell()
+        if command:
+            run(command)
+        else:
+            smart_shell()
 
 
 def install_requirements():
