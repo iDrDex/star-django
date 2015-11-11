@@ -1,4 +1,5 @@
 import re
+from thread import start_new_thread
 
 import boto
 
@@ -7,21 +8,35 @@ from django.utils.encoding import force_unicode
 from cacheops import file_cache
 
 
-def upload(desc):
+def upload(desc, lazy=False):
     assert {'bucket', 'name', 'data'} <= set(desc)
 
-    bucket = _get_bucket(desc['bucket'])
-    key_name = clean_key_name(desc['name'])
-    key = bucket.new_key(key_name)
-    key.set_contents_from_string(desc['data'])
+    res = desc.copy()
+    del res['data']
+    res['size'] = len(desc['data'])
+    res['key'] = clean_key_name(desc['name'])
 
-    return dict(bucket=desc['bucket'], key=key_name, name=desc['name'], size=len(desc['data']))
+    if lazy:
+        start_new_thread(_upload, (res['bucket'], res['key'], desc['data']))
+    else:
+        _upload(res['bucket'], res['key'], desc['data'])
+
+    return res
+
+
+def _upload(bucket_name, key_name, data):
+    # Cache to avoid download to same instance
+    download_as_string.key(bucket_name, key_name).set(data)
+    # Upload
+    bucket = _get_bucket(bucket_name)
+    key = bucket.new_key(key_name)
+    key.set_contents_from_string(data)
 
 
 @file_cache.cached
-def download_as_string(desc):
-    bucket = _get_bucket(desc['bucket'])
-    key = bucket.get_key(desc['key'], validate=False)
+def download_as_string(bucket_name, key_name):
+    bucket = _get_bucket(bucket_name)
+    key = bucket.get_key(key_name, validate=False)
     return key.get_contents_as_string()
 
 

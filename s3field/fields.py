@@ -1,5 +1,6 @@
 import json
 import math
+import zlib
 
 from funcy import cached_property, func_partial
 import pandas as pd
@@ -26,16 +27,19 @@ class Resource(dict):
 
     @cached_property
     def frame(self):
-        # TODO: cache this in file locally
-        return frame_loads(ops.download_as_string(self))
+        blob = ops.download_as_string(self['bucket'], self['key'])
+        if self.get('compressed'):
+            blob = zlib.decompress(blob)
+        return frame_loads(blob)
 
 
 class S3Field(models.TextField):
     """
     A field representing an attachment stored in Amazon S3.
     """
-    def __init__(self, verbose_name=None, name=None, make_name=None, **kwargs):
+    def __init__(self, verbose_name=None, name=None, make_name=None, compress=False, **kwargs):
         self.make_name = make_name
+        self.compress = compress
         models.Field.__init__(self, verbose_name, name, **kwargs)
 
     def to_python(self, value):
@@ -72,15 +76,19 @@ class S3Field(models.TextField):
             raise ImproperlyConfigured('Please specify S3 bucket for %s' % key)
 
 
-def _upload_FIELD(self, desc, field=None):  # noqa
+def _upload_FIELD(self, desc, field=None, lazy=False):  # noqa
     # NOTE: only dataframes for now
     assert isinstance(desc, pd.DataFrame)
+    data = frame_dumps(desc)
+    if field.compress:
+        data = zlib.compress(data)
     desc = {
         'bucket': field._get_bucket(),
         'name': field.make_name(self),
-        'data': frame_dumps(desc),
+        'data': data,
+        'compressed': field.compress,
     }
-    setattr(self, field.attname, Resource(ops.upload(desc)))
+    setattr(self, field.attname, Resource(ops.upload(desc, lazy=lazy)))
 
 
 def frame_dumps(df):

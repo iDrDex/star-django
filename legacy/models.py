@@ -135,6 +135,9 @@ class SampleTag(models.Model):
 
 from s3field import S3Field
 
+def analysis_s3name(self):
+    return '%s-%s' % (self.pk, self.analysis_name)
+
 class Analysis(models.Model):
     analysis_name = models.CharField(max_length=512)
     description = models.CharField(max_length=512, blank=True, default='')
@@ -143,7 +146,8 @@ class Analysis(models.Model):
     modifier_query = models.CharField(max_length=512, blank=True, default='')
     min_samples = models.IntegerField(blank=True, null=True, default=3)
     # Reproducibility
-    df = S3Field(null=True, make_name=lambda self: '%s-%s' % (self.pk, self.analysis_name))
+    df = S3Field(null=True, make_name=analysis_s3name)
+    fold_changes = S3Field(null=True, make_name=analysis_s3name, compress=True)
     # Stats
     series_count = models.IntegerField(blank=True, null=True)
     platform_count = models.IntegerField(blank=True, null=True)

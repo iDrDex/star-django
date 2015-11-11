@@ -51,7 +51,7 @@ def perform_analysis(analysis, debug=False):
 
     # Save analysis df
     analysis.upload_df(df)
-    analysis.save()
+    analysis.save(update_fields=['df'])
 
     # Calculating stats
     analysis.series_count = len(df.series_id.unique())
@@ -72,6 +72,10 @@ def perform_analysis(analysis, debug=False):
         gses = (load_gse(df, series_id) for series_id in sorted(df.series_id.unique()))
         fold_changes = pd.concat(imap(get_fold_change_analysis, gses))
         debug and fold_changes.to_csv("%s.fc.csv" % debug)
+
+    logger.info('Saving fold changes to S3')
+    analysis.upload_fold_changes(fold_changes, lazy=True)
+    analysis.save(update_fields=['fold_changes'])
 
     logger.info('Meta-Analyzing %s', analysis.analysis_name)
     with log_durations(logger.debug, 'Meta analysis for %s' % analysis.analysis_name):
