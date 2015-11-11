@@ -15,6 +15,7 @@
         datatableview.auto_initialize = false;
         $(function(){
             datatableview.initialize($('.datatable'), {
+                scrollX: true,
                 columnDefs: [
                     {
                         render: function ( data, type, row ) {
@@ -31,7 +32,7 @@
                     },
                     {
                         render: function ( data, type, row ) {
-                            if (data.length > 25) data = data.substr(0, 22) + '...';
+                            if (data.length > 25) data = data.substr(0, 20) + '...';
                             return data;
                         },
                         targets: [3,4,5]
