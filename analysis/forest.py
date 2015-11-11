@@ -27,7 +27,7 @@ def write_gene_plot(filename, mygene_sym, fc):
     m = get_meta_analysis_from_r(meta_gene)
 
     grdevices = importr('grDevices')
-    grdevices.png(filename, width=800, height=400)
+    grdevices.png(filename, width=950, height=400)
 
     r.forest(m, pred=True)
 
