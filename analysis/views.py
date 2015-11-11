@@ -1,3 +1,4 @@
+import os
 import re
 from funcy import silent, without
 from handy.decorators import render_to
@@ -9,10 +10,12 @@ from django.db import transaction
 from django.forms import ModelForm
 from django.http import HttpResponse, JsonResponse, Http404
 from django.shortcuts import redirect, get_object_or_404
+from django.views.static import serve
 
 from core.conf import redis_client
 from legacy.models import Analysis, MetaAnalysis
 from .tasks import analysis_task
+from .forest import prepare_gene_plot
 
 
 class Index(DatatableView):
@@ -56,6 +59,11 @@ class Detail(DatatableView):
         return context
 
 detail = Detail.as_view()
+
+
+def forest(request, analysis_id, mygene_sym):
+    filename = prepare_gene_plot(analysis_id, mygene_sym)
+    return serve(request, os.path.basename(filename), os.path.dirname(filename))
 
 
 def export(request, analysis_id):

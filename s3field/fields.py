@@ -4,6 +4,7 @@ import zlib
 
 from funcy import cached_property, func_partial
 import pandas as pd
+from cacheops import file_cache
 
 from django.conf import settings
 from django.core.exceptions import ValidationError, ImproperlyConfigured
@@ -26,6 +27,7 @@ class Resource(dict):
         return '%d%s' % (math.ceil(self['size'] / 1024 ** i), ['b', 'kb', 'mb', 'gb', 'tb'][i])
 
     @cached_property
+    @file_cache.cached
     def frame(self):
         blob = ops.download_as_string(self['bucket'], self['key'])
         if self.get('compressed'):

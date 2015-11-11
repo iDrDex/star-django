@@ -46,11 +46,18 @@
 
     <script src="{{ static('js/datatableview.js') }}"></script>
     <script type="text/javascript">
+        var analysisId = {{ analysis.id }};
         datatableview.auto_initialize = false;
         $(function(){
             datatableview.initialize($('.datatable'), {
                 scrollX: true,
                 columnDefs: [
+                    {
+                        render: function ( data, type, row ) {
+                            return '<a href="/analysis/' + analysisId + '/' + data +'.png" target="_blank">' + data + '</a>';
+                        },
+                        targets: [2]
+                    },
                     {
                         render: function ( data, type, row ) {
                             return data ? Number(data).toPrecision(3) : data;

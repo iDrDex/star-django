@@ -26,3 +26,4 @@ django_pandas==0.3.0
 easydict==1.6
 django-datatable-view==0.8.3
 boto==2.38.0
+rpy2==2.5.6
