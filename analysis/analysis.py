@@ -92,6 +92,9 @@ def perform_analysis(analysis, debug=False):
         # Delete old values in case we recalculating analysis
         MetaAnalysis.objects.filter(analysis=analysis).delete()
         MetaAnalysis.objects.bulk_create(MetaAnalysis(**row) for row in rows)
+        # Mark as successful
+        analysis.success = True
+        analysis.save(update_fields=['success'])
 
     logger.info('DONE %s analysis', analysis.analysis_name)
 

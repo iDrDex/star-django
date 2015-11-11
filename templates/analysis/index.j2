@@ -18,16 +18,23 @@
                 columnDefs: [
                     {
                         render: function ( data, type, row ) {
+                            return row[1] == 'True'
+                                ? data : '<span class="text-danger">' + data + '</span>';
+                        },
+                        targets: [0]
+                    },
+                    {
+                        render: function ( data, type, row ) {
                             return '<a href="/analysis/' + row[0] + '/">' + data + '</a>';
                         },
-                        targets: [1]
+                        targets: [2]
                     },
                     {
                         render: function ( data, type, row ) {
                             if (data.length > 25) data = data.substr(0, 22) + '...';
                             return data;
                         },
-                        targets: [2,3,4]
+                        targets: [3,4,5]
                     }
                 ]
             });

@@ -21,10 +21,12 @@ class Index(DatatableView):
     datatable_options = {
         'columns': [
             'id',
+            'success',
             ('Name', 'analysis_name'),
             ('Case', 'case_query'), ('Control', 'control_query'), ('Modifier', 'modifier_query'),
             ('Series', 'series_count'), ('Platforms', 'platform_count'), ('Samples', 'sample_count')
-        ]
+        ],
+        'hidden_columns': ['success']
     }
 
     def get_queryset(self):

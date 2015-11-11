@@ -163,6 +163,7 @@ class Analysis(models.Model):
     modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
     deleted = models.CharField(max_length=1, blank=True, null=True)
+    success = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'analysis'
