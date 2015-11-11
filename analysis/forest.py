@@ -7,18 +7,16 @@ r = robjects.r
 r.options(digits=2)
 
 from django.conf import settings
-from legacy.models import Analysis
 
 
 PLOTS_DIR = os.path.join(os.path.dirname(settings.BASE_DIR), 'forest_plots')
 
 
-def prepare_gene_plot(analysis_id, mygene_sym):
-    filename = '%s/%s/%s.png' % (PLOTS_DIR, analysis_id, mygene_sym)
+def prepare_gene_plot(analysis, mygene_sym):
+    filename = '%s/%s/%s.png' % (PLOTS_DIR, analysis.id, mygene_sym)
     if not os.path.exists(filename):
         with suppress(OSError):
             os.makedirs(os.path.dirname(filename))
-        analysis = Analysis.objects.get(pk=analysis_id)
         write_gene_plot(filename, mygene_sym, analysis.fold_changes.frame)
     return filename
 

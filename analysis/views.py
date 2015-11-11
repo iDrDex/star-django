@@ -62,7 +62,10 @@ detail = Detail.as_view()
 
 
 def forest(request, analysis_id, mygene_sym):
-    filename = prepare_gene_plot(analysis_id, mygene_sym)
+    analysis = Analysis.objects.get(pk=analysis_id)
+    if not analysis.fold_changes:
+        return HttpResponse('No fold changes for this analysis. You may want to rerun it.')
+    filename = prepare_gene_plot(analysis, mygene_sym)
     return serve(request, os.path.basename(filename), os.path.dirname(filename))
 
 
