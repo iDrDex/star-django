@@ -99,7 +99,7 @@ def deploy_fast():
 
 def rsync():
     print(green('Uploading files...'))
-    local("rsync -avzL --progress --filter=':- .gitignore' . stargeo:/home/ubuntu/app")
+    local("rsync -avzL --progress --filter=':- .gitignore' -C . stargeo:/home/ubuntu/app")
 
 
 def dirty_deploy():
