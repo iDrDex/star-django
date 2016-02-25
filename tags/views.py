@@ -12,7 +12,7 @@ from django.forms import ModelForm, ValidationError
 from django.shortcuts import redirect, get_object_or_404
 
 from legacy.models import Tag, SampleTag, SeriesTag
-from .models import SampleValidation
+from .models import SampleValidation, SampleAnnotation
 from .data import get_series_columns, SQLQuerySet
 
 
@@ -119,6 +119,8 @@ def save_tag(request, form):
         SampleTag.objects.filter(series_tag__tag=tag, annotation=old_tag.tag_name) \
                  .update(annotation=tag.tag_name)
         SampleValidation.objects.filter(serie_validation__tag=tag, annotation=old_tag.tag_name) \
+                        .update(annotation=tag.tag_name)
+        SampleAnnotation.objects.filter(series_annotation__tag=tag, annotation=old_tag.tag_name) \
                         .update(annotation=tag.tag_name)
 
     messages.success(request, 'Saved tag %s' % tag.tag_name)
