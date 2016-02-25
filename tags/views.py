@@ -105,6 +105,7 @@ def tag(request, tag_id):
 
     return {
         'title': 'Edit tag',
+        'stats': tag.get_stats(),
         'form': form
     }
 

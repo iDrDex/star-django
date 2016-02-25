@@ -3,15 +3,29 @@
 {% set page_title = title %}
 
 
-{% block content %}
-<form class="form" role="form" method="post">
-    {% csrf_token %}
-    {{ form|bootstrap }}
-    <div class="form-group">
-        <input type="submit" class="btn btn-primary" value="Save" />
-    </div>
-</form>
-<script type="text/javascript">
-    $('form.form :input:visible:first').focus();
-</script>
+{% block main %}
+<div class="hpanel"><div class="panel-body">
+    <form class="form" role="form" method="post">
+        {% csrf_token %}
+        {{ form|bootstrap }}
+        <div class="form-group">
+            <input type="submit" class="btn btn-primary" value="Save" />
+        </div>
+    </form>
+    <script type="text/javascript">
+        $('form.form :input:visible:first').focus();
+    </script>
+</div></div>
+
+<div class="hpanel"><div class="panel-body">
+    <h2>Statistics</h2>
+    {% for stat in ('annotations', 'validations', 'canonical') %}
+    <table class="table table-bordered table-striped" style="width: auto; float: left; margin-right: 2em">
+        <tr><th colspan="2">{{ stat|title }}</th></tr>
+        {% for value, count in stats[stat] %}
+            <tr><td>{{ value }}</td><td>{{ count }}</td></tr>
+        {% endfor %}
+    </table>
+    {% endfor %}
+</div></div>
 {% endblock %}

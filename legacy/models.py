@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models import Count
 from django_pandas.managers import DataFrameManager
 
 
@@ -55,6 +56,18 @@ class Tag(models.Model):
 
     class Meta:
         db_table = 'tag'
+
+    def get_stats(self):
+        from tags.models import SampleValidation, SampleAnnotation
+
+        def annotate(qs):
+            return list(qs.values_list('annotation').annotate(Count('id')).order_by('annotation'))
+
+        return {
+            'annotations': annotate(SampleTag.objects.filter(series_tag__tag=self)),
+            'validations': annotate(SampleValidation.objects.filter(serie_validation__tag=self)),
+            'canonical': annotate(SampleAnnotation.objects.filter(serie_annotation__tag=self)),
+        }
 
 
 class Series(models.Model):
@@ -133,6 +146,16 @@ class SampleTag(models.Model):
         db_table = 'sample_tag'
 
 
+# class SeriesMatrix(models.Model):
+#     gse_name = models.CharField(max_length=127)
+#     gpl_name = models.CharField(max_length=127)
+#     last_updated = models.DateField()
+#     matrix = S3Field()
+
+#     class Meta:
+#         unique_together = ('gse_name', 'gpl_name', 'last_updated')
+
+
 from s3field import S3Field
 
 def analysis_s3name(self):
@@ -148,6 +171,7 @@ class Analysis(models.Model):
     # Reproducibility
     df = S3Field(null=True, make_name=analysis_s3name)
     fold_changes = S3Field(null=True, make_name=analysis_s3name, compress=True)
+    # series_matrices = S3ArrayField(bucket='series_matrices')
     # Stats
     series_count = models.IntegerField(blank=True, null=True)
     platform_count = models.IntegerField(blank=True, null=True)
