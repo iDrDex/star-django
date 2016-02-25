@@ -11,8 +11,7 @@ from django.db import transaction
 from django.forms import ModelForm, ValidationError
 from django.shortcuts import redirect, get_object_or_404
 
-from legacy.models import Tag, SampleTag, SeriesTag
-from .models import SampleValidation, SampleAnnotation
+from legacy.models import Tag, SeriesTag
 from .data import get_series_columns, SQLQuerySet
 
 
@@ -116,13 +115,7 @@ def save_tag(request, form):
     tag.modified_by_id = request.user.id
     tag.save()
 
-    if tag.tag_name != old_tag.tag_name:
-        SampleTag.objects.filter(series_tag__tag=tag, annotation=old_tag.tag_name) \
-                 .update(annotation=tag.tag_name)
-        SampleValidation.objects.filter(serie_validation__tag=tag, annotation=old_tag.tag_name) \
-                        .update(annotation=tag.tag_name)
-        SampleAnnotation.objects.filter(series_annotation__tag=tag, annotation=old_tag.tag_name) \
-                        .update(annotation=tag.tag_name)
+    tag.remap_annotations(old_tag.tag_name, tag.tag_name)
 
     messages.success(request, 'Saved tag %s' % tag.tag_name)
     return redirect(tag_control)

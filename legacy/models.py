@@ -69,6 +69,16 @@ class Tag(models.Model):
             'canonical': annotate(SampleAnnotation.objects.filter(serie_annotation__tag=self)),
         }
 
+    def remap_annotations(self, old, new):
+        from tags.models import SampleValidation, SampleAnnotation
+
+        if old != new:
+            SampleTag.objects.filter(series_tag__tag=self, annotation=old).update(annotation=new)
+            SampleValidation.objects.filter(serie_validation__tag=self, annotation=old) \
+                            .update(annotation=new)
+            SampleAnnotation.objects.filter(serie_annotation__tag=self, annotation=old) \
+                            .update(annotation=new)
+
 
 class Series(models.Model):
     gse_name = models.TextField(blank=True)
