@@ -1,3 +1,4 @@
+# TODO: separate idempotent parts into separate file?
 from operator import attrgetter
 from collections import defaultdict
 import logging
@@ -19,6 +20,7 @@ from .models import (SerieValidation, SampleValidation,
 logger = logging.getLogger(__name__)
 
 
+# TODO: get rid of flag
 @shared_task(acks_late=True)
 def validation_workflow(sv_id, is_new=True):
     series_tag_id = SerieValidation.objects.get(pk=sv_id).series_tag_id
@@ -35,6 +37,9 @@ def validation_workflow(sv_id, is_new=True):
     update_dashboard.delay()
 
 
+# TODO: get rid of recalc flag, separate function into 2 or 3:
+#           - idempotent stats calculation
+#           - stats and reschedule
 @shared_task(acks_late=True)
 @transaction.atomic
 def calc_validation_stats(serie_validation_pk, recalc=False):
