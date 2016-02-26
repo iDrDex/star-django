@@ -17,6 +17,7 @@
     </script>
 </div></div>
 
+{% if stats %}
 <div class="hpanel"><div class="panel-body">
     <h2>Statistics</h2>
     {% for stat in ('annotations', 'validations', 'canonical') %}
@@ -28,4 +29,5 @@
     </table>
     {% endfor %}
 </div></div>
+{% endif %}
 {% endblock %}
