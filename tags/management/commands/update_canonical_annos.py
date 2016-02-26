@@ -12,7 +12,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         # Create missing
-        missing_pks = set(SeriesTag.objects.exclude(obsolete='T').values_list('pk', flat=True)) \
+        missing_pks = set(SeriesTag.objects.exclude(is_active=False).values_list('pk', flat=True)) \
             - set(SerieAnnotation.objects.values_list('series_tag_id', flat=True))
         if missing_pks:
             print '> Going to create %d missing canonical annotations...' % len(missing_pks)  # noqa
