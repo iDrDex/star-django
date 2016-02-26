@@ -36,7 +36,7 @@ def annotate(request):
 
     done_tag_ids = SeriesTag.objects.filter(series_id=series_id).values('tag_id')
     done_tags = Tag.objects.filter(id__in=done_tag_ids).order_by('tag_name')
-    tags = Tag.objects.filter(is_active='T').exclude(id__in=done_tag_ids) \
+    tags = Tag.objects.filter(is_active=True).exclude(id__in=done_tag_ids) \
         .order_by('tag_name').values('id', 'tag_name')
 
     return {

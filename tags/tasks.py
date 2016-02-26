@@ -59,7 +59,7 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
             != set(r.sample_id for r in sample_annotations):
         logger.error("Sample sets mismatch for validation %d" % serie_validation_pk)
         # It's either bug when making annotation or samples set really changed
-        series_tag.obsolete = 'T'  # web2py messy booleans
+        series_tag.is_active = False
         series_tag.save()
         # TODO: notify annotation author to redo it
         return

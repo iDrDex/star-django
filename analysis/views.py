@@ -33,7 +33,7 @@ class Index(DatatableView):
     }
 
     def get_queryset(self):
-        return Analysis.objects.exclude(deleted='T').order_by('-id')
+        return Analysis.objects.filter(is_active=True).order_by('-id')
 
 index = Index.as_view()
 
@@ -137,7 +137,7 @@ def rerun(request, analysis_id):
     analysis = get_object_or_404(Analysis, pk=analysis_id)
     if request.GET.get('copy'):
         analysis.pk = None
-        analysis.deleted = None
+        analysis.is_active = True  # Undelete it
         analysis.created_by_id = analysis.modified_by_id = request.user.id
         analysis.save()
     else:
@@ -151,7 +151,7 @@ def rerun(request, analysis_id):
 def delete(request, analysis_id):
     with transaction.atomic():
         analysis = get_object_or_404(Analysis, pk=analysis_id)
-        analysis.deleted = 'T'
+        analysis.is_active = False
         analysis.save()
     messages.success(request, 'Successfully deleted %s analysis' % analysis.analysis_name)
     return redirect(index)

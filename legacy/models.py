@@ -46,7 +46,7 @@ class PlatformProbe(models.Model):
 class Tag(models.Model):
     tag_name = models.CharField(unique=True, max_length=512, blank=True)
     description = models.CharField(max_length=512, blank=True)
-    is_active = models.CharField(max_length=1, blank=True, default='T')
+    is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
                                    related_name='tags')
@@ -102,8 +102,7 @@ class SeriesTag(models.Model):
     tag = models.ForeignKey('Tag', blank=True, null=True)
     header = models.CharField(max_length=512, blank=True)
     regex = models.CharField(max_length=512, blank=True)
-    show_invariant = models.CharField(max_length=1, blank=True)
-    is_active = models.CharField(max_length=1, blank=True, default='T')
+    is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
                                    related_name='serie_annotations')
@@ -113,7 +112,6 @@ class SeriesTag(models.Model):
 
     agreed = models.IntegerField(blank=True, null=True)
     fleiss_kappa = models.FloatField(blank=True, null=True)
-    obsolete = models.CharField(max_length=1, blank=True, null=True)
 
     class Meta:
         db_table = 'series_tag'
@@ -123,6 +121,9 @@ class Sample(models.Model):
     series = models.ForeignKey('Series', blank=True, null=True)
     platform = models.ForeignKey(Platform, blank=True, null=True)
     gsm_name = models.TextField(blank=True)
+    # TODO: refactor deleted -> is_active, get rid of char boolean
+    # NOTE: leaving it as is for now to not mess with sample_view
+    # is_active = models.BooleanField(default=True)
     deleted = models.CharField(max_length=1, blank=True, null=True)
 
     class Meta:
@@ -142,7 +143,7 @@ class SampleTag(models.Model):
     sample = models.ForeignKey(Sample, blank=True, null=True)
     series_tag = models.ForeignKey('SeriesTag', blank=True, null=True, related_name='sample_tags')
     annotation = models.TextField(blank=True)
-    is_active = models.CharField(max_length=1, blank=True, default='T')
+    is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
                                    related_name='sample_annotations')
@@ -190,13 +191,12 @@ class Analysis(models.Model):
     platform_ids = models.TextField(blank=True)
     sample_ids = models.TextField(blank=True)
     # Meta
-    is_active = models.CharField(max_length=1, blank=True)
+    is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True)
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
     modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
-    deleted = models.CharField(max_length=1, blank=True, null=True)
     success = models.BooleanField(default=False)
 
     class Meta:
