@@ -78,6 +78,7 @@ def save_annotation(request):
                 defaults=dict(header=column, regex=regex, modified_by_id=user_id)
             )
 
+            # TODO: check if this can result in sample tags doubling
             # Create all sample tags
             sample_tags = SampleTag.objects.bulk_create([
                 SampleTag(sample_id=sample_id, series_tag=series_tag, annotation=annotation,
