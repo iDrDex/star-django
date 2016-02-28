@@ -17,6 +17,7 @@ urlpatterns = patterns('',  # noqa
     url(r'^tags/$', 'tags.views.tag_control', name='tag_control'),
     url(r'^tags/create/$', 'tags.views.create_tag', name='tag_create'),
     url(r'^tags/(\d+)/$', 'tags.views.tag', name='tag'),
+    url(r'^tags/(\d+)/delete/$', 'tags.views.delete_tag', name='tag_delete'),
 
     url(r'^annotate/$', 'tags.annotate_views.annotate', name='annotate'),
     url(r'^validate/$', 'tags.annotate_views.validate', name='validate'),

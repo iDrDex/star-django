@@ -35,7 +35,7 @@ def annotate(request):
     samples, columns = fetch_annotation_data(series_id)
 
     done_tag_ids = SeriesTag.objects.filter(series_id=series_id).values('tag_id')
-    done_tags = Tag.objects.filter(id__in=done_tag_ids).order_by('tag_name')
+    done_tags = Tag.objects.filter(id__in=done_tag_ids, is_active=True).order_by('tag_name')
     tags = Tag.objects.filter(is_active=True).exclude(id__in=done_tag_ids) \
         .order_by('tag_name').values('id', 'tag_name')
 
@@ -179,12 +179,14 @@ def lock_validation_job(user_id):
     # Get a job that:
     #   - not authored by this user,
     #   - either not locked or locked by this user or lock expired,
-    #   - not validated by this user.
+    #   - not validated by this user,
+    #   - with non-deleted tag.
     stale_lock = timezone.now() - timedelta(minutes=30)
     lock_cond = Q(locked_by__isnull=True) | Q(locked_by=user_id) | Q(locked_on__lt=stale_lock)
     job = ValidationJob.objects.filter(lock_cond)                            \
                        .exclude(series_tag__created_by=user_id)              \
                        .exclude(series_tag__validations__created_by=user_id) \
+                       .filter(series_tag__tag__is_active=True)              \
                        .select_for_update().earliest('priority')
     job.locked_by_id = user_id
     job.locked_on = timezone.now()

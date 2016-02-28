@@ -5,7 +5,7 @@ from collections import defaultdict
 from funcy import distinct, imapcat, join, str_join, keep, silent, split, map
 from handy.decorators import render_to, paginate
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
 from django.forms import ModelForm, ValidationError
@@ -67,7 +67,7 @@ def _parse_query(q):
 @render_to()
 def tag_control(request):
     return {
-        'tags': Tag.objects.order_by('tag_name')
+        'tags': Tag.objects.filter(is_active=True).order_by('tag_name')
     }
 
 
@@ -104,6 +104,7 @@ def tag(request, tag_id):
 
     return {
         'title': 'Edit tag',
+        'tag': tag,
         'stats': tag.get_stats(),
         'form': form
     }
@@ -118,6 +119,16 @@ def save_tag(request, form):
     tag.remap_annotations(old_tag.tag_name, tag.tag_name)
 
     messages.success(request, 'Saved tag %s' % tag.tag_name)
+    return redirect(tag_control)
+
+
+@user_passes_test(lambda u: u.is_staff)
+def delete_tag(request, tag_id):
+    with transaction.atomic():
+        tag = get_object_or_404(Tag, pk=tag_id)
+        tag.is_active = False
+        tag.save()
+    messages.success(request, 'Successfully deleted %s tag' % tag.tag_name)
     return redirect(tag_control)
 
 
@@ -158,7 +169,8 @@ def search_series_qs(query_string):
 
 
 def series_tags_data():
-    pairs = SeriesTag.objects.values_list('series_id', 'tag_id', 'tag__tag_name').distinct()
+    pairs = SeriesTag.objects.filter(tag__is_active=True) \
+                     .values_list('series_id', 'tag_id', 'tag__tag_name').distinct()
 
     serie_tags = defaultdict(list)
     tag_series = defaultdict(set)
