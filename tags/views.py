@@ -139,6 +139,7 @@ def delete_tag(request, tag_id):
     with transaction.atomic():
         tag = get_object_or_404(Tag, pk=tag_id)
         tag.is_active = False
+        tag.modified_by_id = request.user.id
         tag.save()
     messages.success(request, 'Successfully deleted %s tag' % tag.tag_name)
     return redirect(tag_control)
