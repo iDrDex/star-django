@@ -114,23 +114,28 @@ def tag(request, tag_id):
 def save_tag(request, form):
     tag = form.save(commit=False)
     old_tag = Tag.objects.select_for_update().get(pk=tag.pk)
+    tag.modified_by_id = request.user.id
 
     # Check for merge
-    merge_target = get_or_none(Tag, tag_name=tag.tag_name, is_active=True)
-    if merge_target and not request.user.is_staff:
-        messages.error(request, "You are not allowed to merge tags.")
-        return redirect('tag', tag.pk)
-
+    merge_target = None
+    if tag.tag_name != old_tag.tag_name:
+        merge_target = get_or_none(Tag, tag_name=tag.tag_name, is_active=True)
     if merge_target:
+        if not request.user.is_staff:
+            messages.error(request, "You are not allowed to merge tags.")
+            return redirect('tag', tag.pk)
+
         tag.is_active = False
-    tag.modified_by_id = request.user.id
-    tag.save()
+        tag.save()
 
-    tag.remap_annotations(old_tag.tag_name, tag.tag_name)
-    if merge_target:
+        tag.remap_annotations(old_tag.tag_name, tag.tag_name)
         tag.remap_refs(merge_target.pk)
+        messages.success(request, 'Merged tag %s to %s' % (old_tag.tag_name, tag.tag_name))
+    else:
+        tag.save()
+        tag.remap_annotations(old_tag.tag_name, tag.tag_name)
+        messages.success(request, 'Saved tag %s' % tag.tag_name)
 
-    messages.success(request, 'Saved tag %s' % tag.tag_name)
     return redirect(tag_control)
 
 
