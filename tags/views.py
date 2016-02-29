@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from funcy import distinct, imapcat, join, str_join, keep, silent, split, map
 from handy.decorators import render_to, paginate
+from handy.utils import get_or_none
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -113,10 +114,21 @@ def tag(request, tag_id):
 def save_tag(request, form):
     tag = form.save(commit=False)
     old_tag = Tag.objects.select_for_update().get(pk=tag.pk)
+
+    # Check for merge
+    merge_target = get_or_none(Tag, tag_name=tag.tag_name, is_active=True)
+    if merge_target and not request.user.is_staff:
+        messages.error(request, "You are not allowed to merge tags.")
+        return redirect('tag', tag.pk)
+
+    if merge_target:
+        tag.is_active = False
     tag.modified_by_id = request.user.id
     tag.save()
 
     tag.remap_annotations(old_tag.tag_name, tag.tag_name)
+    if merge_target:
+        tag.remap_refs(merge_target.pk)
 
     messages.success(request, 'Saved tag %s' % tag.tag_name)
     return redirect(tag_control)

@@ -70,6 +70,9 @@ class Tag(models.Model):
         }
 
     def remap_annotations(self, old, new):
+        """
+        When boolean tag changes its name we need to update all annotations.
+        """
         from tags.models import SampleValidation, SampleAnnotation
 
         if old != new:
@@ -78,6 +81,16 @@ class Tag(models.Model):
                             .update(annotation=new)
             SampleAnnotation.objects.filter(serie_annotation__tag=self, annotation=old) \
                             .update(annotation=new)
+
+    def remap_refs(self, new_pk):
+        """
+        Remap any references to this tag to other one. Used in tag merge.
+        """
+        from tags.models import SerieValidation, SerieAnnotation
+
+        SeriesTag.objects.filter(tag=self).update(tag=new_pk)
+        SerieValidation.objects.filter(tag=self).update(tag=new_pk)
+        SerieAnnotation.objects.filter(tag=self).update(tag=new_pk)
 
 
 class Series(models.Model):
