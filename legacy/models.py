@@ -44,7 +44,7 @@ class PlatformProbe(models.Model):
 
 
 class Tag(models.Model):
-    tag_name = models.CharField(unique=True, max_length=512, blank=True)
+    tag_name = models.CharField(max_length=512)
     description = models.CharField(max_length=512, blank=True)
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)

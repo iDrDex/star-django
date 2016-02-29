@@ -145,6 +145,11 @@ class TagForm(ModelForm):
             raise ValidationError('Wrong tag name format.')
         return tag_name
 
+    def clean(self):
+        tag_name = super(TagForm, self).clean()['tag_name']
+        if not self.instance.pk and Tag.objects.filter(tag_name=tag_name, is_active=True).exists():
+            self.add_error('tag_name', 'Tag with name "%s" already exists' % tag_name)
+
 
 # Data fetching utils
 
