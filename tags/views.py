@@ -159,9 +159,11 @@ class TagForm(ModelForm):
         return tag_name
 
     def clean(self):
-        tag_name = super(TagForm, self).clean()['tag_name']
-        if not self.instance.pk and Tag.objects.filter(tag_name=tag_name, is_active=True).exists():
-            self.add_error('tag_name', 'Tag with name "%s" already exists' % tag_name)
+        clean_data = super(TagForm, self).clean()
+        if 'tag_name' in clean_data and not self.instance.pk:
+            if Tag.objects.filter(tag_name=clean_data['tag_name'], is_active=True).exists():
+                self.add_error('tag_name',
+                               'Tag with name "%s" already exists' % clean_data['tag_name'])
 
 
 # Data fetching utils
