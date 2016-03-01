@@ -37,7 +37,7 @@ def perform_analysis(analysis, debug=False):
     df = filter_sources(df, query, 'as single-class')
 
     # Check for minimum number of samples
-    if analysis.min_samples:
+    if not df.empty and analysis.min_samples:
         counts = df.groupby(['series_id', 'platform_id']).sample_class.value_counts().unstack()
         query = (counts[0] >= analysis.min_samples) & (counts[1] >= analysis.min_samples)
         df = filter_sources(df, query, 'by min samples')
@@ -80,6 +80,9 @@ def perform_analysis(analysis, debug=False):
     logger.info('Meta-Analyzing %s', analysis.analysis_name)
     with log_durations(logger.debug, 'Meta analysis for %s' % analysis.analysis_name):
         balanced = getFullMetaAnalysis(fold_changes, debug=debug).reset_index()
+        if balanced is None:
+            logger.error("FAIL Got empty meta-analysis")
+            return
         debug and balanced.to_csv("%s.meta.csv" % debug)
 
     logger.info('Inserting %s analysis results', analysis.analysis_name)
@@ -238,13 +241,14 @@ def get_matrix_filename(series_id, platform_id):
 
             return mirror_filename
 
-    raise LookupError("Can't find matrix file for series %s, platform %s"
-                      % (series_id, platform_id))
+    print 'Failed loading matrix for serie %s, platform %s' % (series_id, platform_id)
 
 
 @log_durations(logger.debug)
 def get_data(series_id, platform_id):
     matrixFilename = get_matrix_filename(series_id, platform_id)
+    if not matrixFilename:
+        return pf.DataFrame()
     # setup data for specific platform
     for attempt in (0, 1):
         try:
@@ -306,19 +310,18 @@ def getFullMetaAnalysis(fcResults, debug=False):
     debug and allGeneEstimates.to_csv("%s.geneestimates.csv" % debug)
     for group, geneEstimates in allGeneEstimates.groupby(['mygene_sym', 'mygene_entrez']):
         mygene_sym, mygene_entrez = group
-        # if debug:
-        #     print i, group
-        # i += 1
         if len(geneEstimates) == 1:
             continue
-        # if i > 10:
-        #     break
+
         metaAnalysis = getMetaAnalysis(geneEstimates)
         metaAnalysis['caseDataCount'] = geneEstimates['caseDataCount'].sum()
         metaAnalysis['controlDataCount'] = geneEstimates['controlDataCount'].sum()
         metaAnalysis['mygene_sym'] = mygene_sym
         metaAnalysis['mygene_entrez'] = mygene_entrez
         all.append(metaAnalysis)
+
+    if not all:
+        return pd.DataFrame(all)
 
     allMetaAnalysis = pd.DataFrame(all).set_index(['mygene_sym', 'mygene_entrez'])
     debug and allMetaAnalysis.to_csv('allMetaAnalysis.csv')
@@ -609,7 +612,7 @@ def normalize_quantiles(df):
 import numexpr as ne
 
 def get_logged(df):
-    if is_logged(df):
+    if df.empty or is_logged(df):
         return df
 
     data = df.values
