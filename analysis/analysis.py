@@ -263,8 +263,8 @@ def get_data(series_id, platform_id):
             # Drop last line
             data = data.drop(data.index[-1]).dropna()
             break
-        except IOError as e:
-            # In case we have cirrupt file
+        except (IOError, pd.parser.CParserError) as e:
+            # In case we have corrupt file
             logger.error("Failed loading %s: %s" % (matrixFilename, e))
             os.remove(matrixFilename)
             if attempt:
