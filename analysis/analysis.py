@@ -80,7 +80,7 @@ def perform_analysis(analysis, debug=False):
     logger.info('Meta-Analyzing %s', analysis.analysis_name)
     with log_durations(logger.debug, 'Meta analysis for %s' % analysis.analysis_name):
         balanced = getFullMetaAnalysis(fold_changes, debug=debug).reset_index()
-        if balanced is None:
+        if balanced.empty:
             logger.error("FAIL Got empty meta-analysis")
             return
         debug and balanced.to_csv("%s.meta.csv" % debug)
@@ -321,7 +321,7 @@ def getFullMetaAnalysis(fcResults, debug=False):
         all.append(metaAnalysis)
 
     if not all:
-        return pd.DataFrame(all)
+        return pd.DataFrame()
 
     allMetaAnalysis = pd.DataFrame(all).set_index(['mygene_sym', 'mygene_entrez'])
     debug and allMetaAnalysis.to_csv('allMetaAnalysis.csv')
