@@ -216,6 +216,16 @@ LOGGING = {
             'handlers': ['null'],
             'propagate': False,
         },
+        'boto': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+        'requests': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
     },
 }
 
