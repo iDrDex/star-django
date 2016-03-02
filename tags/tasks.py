@@ -12,8 +12,7 @@ from django.db.models import F
 
 from core.conf import redis_client
 from core.tasks import update_dashboard
-from legacy.models import SeriesTag
-from .models import (SerieValidation, SampleValidation,
+from .models import (SeriesTag, SerieValidation, SampleValidation,
                      UserStats, ValidationJob, Payment, PaymentState)
 
 

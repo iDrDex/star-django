@@ -5,8 +5,8 @@ from datatableview.utils import DatatableOptions
 from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import get_object_or_404, redirect
 
-from legacy.models import SeriesTag
-from tags.models import SerieAnnotation, SampleAnnotation, SerieValidation, SampleValidation
+from tags.models import SeriesTag, SerieAnnotation, SerieValidation, \
+    SampleAnnotation, SampleValidation
 from .tasks import validation_workflow
 
 

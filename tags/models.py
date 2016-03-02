@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django.db import models
+from django.db.models import Count
 from handy.models import JSONField
 from django_pandas.managers import DataFrameManager
 
@@ -7,6 +8,96 @@ from django_pandas.managers import DataFrameManager
 ANNOTATION_REWARD = Decimal('0.05')
 VALIDATION_REWARD = Decimal('0.03')
 
+
+class Tag(models.Model):
+    tag_name = models.CharField(max_length=512)
+    description = models.CharField(max_length=512, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
+    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
+                                   related_name='tags')
+    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
+    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
+                                    related_name='+')
+
+    class Meta:
+        db_table = 'tag'
+
+    def get_stats(self):
+        from tags.models import SampleValidation, SampleAnnotation
+
+        def annotate(qs):
+            return list(qs.values_list('annotation').annotate(Count('id')).order_by('annotation'))
+
+        return {
+            'annotations': annotate(SampleTag.objects.filter(series_tag__tag=self)),
+            'validations': annotate(SampleValidation.objects.filter(serie_validation__tag=self)),
+            'canonical': annotate(SampleAnnotation.objects.filter(serie_annotation__tag=self)),
+        }
+
+    def remap_annotations(self, old, new):
+        """
+        When boolean tag changes its name we need to update all annotations.
+        """
+        from tags.models import SampleValidation, SampleAnnotation
+
+        if old != new:
+            SampleTag.objects.filter(series_tag__tag=self, annotation=old).update(annotation=new)
+            SampleValidation.objects.filter(serie_validation__tag=self, annotation=old) \
+                            .update(annotation=new)
+            SampleAnnotation.objects.filter(serie_annotation__tag=self, annotation=old) \
+                            .update(annotation=new)
+
+    def remap_refs(self, new_pk):
+        """
+        Remap any references to this tag to other one. Used in tag merge.
+        """
+        from tags.models import SerieValidation, SerieAnnotation
+
+        SeriesTag.objects.filter(tag=self).update(tag=new_pk)
+        SerieValidation.objects.filter(tag=self).update(tag=new_pk)
+        SerieAnnotation.objects.filter(tag=self).update(tag=new_pk)
+
+
+class SeriesTag(models.Model):
+    series = models.ForeignKey('legacy.Series', blank=True, null=True)
+    platform = models.ForeignKey('legacy.Platform', blank=True, null=True)
+    tag = models.ForeignKey(Tag, blank=True, null=True)
+    header = models.CharField(max_length=512, blank=True)
+    regex = models.CharField(max_length=512, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
+    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
+                                   related_name='serie_annotations')
+    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
+    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
+                                    related_name='+')
+
+    agreed = models.IntegerField(blank=True, null=True)
+    fleiss_kappa = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'series_tag'
+
+
+class SampleTag(models.Model):
+    sample = models.ForeignKey('legacy.Sample', blank=True, null=True)
+    series_tag = models.ForeignKey(SeriesTag, blank=True, null=True, related_name='sample_tags')
+    annotation = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
+    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
+                                   related_name='sample_annotations')
+    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
+    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
+                                    related_name='+')
+
+    objects = DataFrameManager()
+
+    class Meta:
+        db_table = 'sample_tag'
+
+###
 
 class UserStats(models.Model):
     user = models.OneToOneField('auth.User', primary_key=True, related_name='stats')
@@ -70,7 +161,7 @@ class Payment(models.Model):
 
 
 class ValidationJob(models.Model):
-    series_tag = models.ForeignKey('legacy.SeriesTag', on_delete=models.CASCADE)
+    series_tag = models.ForeignKey(SeriesTag, on_delete=models.CASCADE)
     locked_on = models.DateTimeField(blank=True, null=True)
     locked_by = models.ForeignKey('auth.User', blank=True, null=True)
     # generation = models.IntegerField(default=1)
@@ -81,11 +172,11 @@ class ValidationJob(models.Model):
 
 
 class SerieValidation(models.Model):
-    series_tag = models.ForeignKey('legacy.SeriesTag', related_name='validations',
+    series_tag = models.ForeignKey(SeriesTag, related_name='validations',
                                    blank=True, null=True, on_delete=models.SET_NULL)
     series = models.ForeignKey('legacy.Series', related_name='validations')
     platform = models.ForeignKey('legacy.Platform', related_name='validations')
-    tag = models.ForeignKey('legacy.Tag', related_name='validations')
+    tag = models.ForeignKey(Tag, related_name='validations')
     column = models.CharField(max_length=512, blank=True)
     regex = models.CharField(max_length=512, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
@@ -128,10 +219,10 @@ class SerieAnnotation(models.Model):
     This model is to store best available annotations.
     You can also restrict quality by filtering on fleiss_kappa or best_cohens_kappa.
     """
-    series_tag = models.OneToOneField('legacy.SeriesTag', related_name='canonical')
+    series_tag = models.OneToOneField(SeriesTag, related_name='canonical')
     series = models.ForeignKey('legacy.Series', blank=True, null=True)
     platform = models.ForeignKey('legacy.Platform', blank=True, null=True)
-    tag = models.ForeignKey('legacy.Tag', blank=True, null=True)
+    tag = models.ForeignKey(Tag, blank=True, null=True)
     header = models.CharField(max_length=512, blank=True)
     regex = models.CharField(max_length=512, blank=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)

@@ -11,8 +11,8 @@ import pandas as pd
 import scipy.stats as stats
 from django.db import transaction
 
-from legacy.models import Series, Platform, PlatformProbe, MetaAnalysis, Tag
-from tags.models import SampleAnnotation
+from legacy.models import Series, Platform, PlatformProbe, MetaAnalysis
+from tags.models import Tag, SampleAnnotation
 
 import logging
 logger = logging.getLogger(__name__)

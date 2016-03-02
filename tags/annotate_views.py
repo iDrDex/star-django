@@ -15,7 +15,8 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
 from core.tasks import update_dashboard
-from legacy.models import Sample, Tag, SeriesTag, SampleTag
+from legacy.models import Sample
+from tags.models import Tag, SeriesTag, SampleTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
 from .tasks import validation_workflow
 from .data import get_series_columns, get_samples_columns

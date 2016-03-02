@@ -1,24 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.models import Count
 from django_pandas.managers import DataFrameManager
-
-
-class AuthUser(models.Model):
-    first_name = models.CharField(max_length=128, blank=True)
-    last_name = models.CharField(max_length=128, blank=True)
-    email = models.CharField(max_length=512, blank=True)
-    password = models.CharField(max_length=512, blank=True)
-    registration_key = models.CharField(max_length=512, blank=True)
-    reset_password_key = models.CharField(max_length=512, blank=True)
-    registration_id = models.CharField(max_length=512, blank=True)
-
-    class Meta:
-        db_table = 'auth_user'
-
-    def __unicode__(self):
-        return self.first_name + ' ' + self.last_name
 
 
 class Platform(models.Model):
@@ -43,56 +26,6 @@ class PlatformProbe(models.Model):
         db_table = 'platform_probe'
 
 
-class Tag(models.Model):
-    tag_name = models.CharField(max_length=512)
-    description = models.CharField(max_length=512, blank=True)
-    is_active = models.BooleanField(default=True)
-    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
-                                   related_name='tags')
-    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
-                                    related_name='+')
-
-    class Meta:
-        db_table = 'tag'
-
-    def get_stats(self):
-        from tags.models import SampleValidation, SampleAnnotation
-
-        def annotate(qs):
-            return list(qs.values_list('annotation').annotate(Count('id')).order_by('annotation'))
-
-        return {
-            'annotations': annotate(SampleTag.objects.filter(series_tag__tag=self)),
-            'validations': annotate(SampleValidation.objects.filter(serie_validation__tag=self)),
-            'canonical': annotate(SampleAnnotation.objects.filter(serie_annotation__tag=self)),
-        }
-
-    def remap_annotations(self, old, new):
-        """
-        When boolean tag changes its name we need to update all annotations.
-        """
-        from tags.models import SampleValidation, SampleAnnotation
-
-        if old != new:
-            SampleTag.objects.filter(series_tag__tag=self, annotation=old).update(annotation=new)
-            SampleValidation.objects.filter(serie_validation__tag=self, annotation=old) \
-                            .update(annotation=new)
-            SampleAnnotation.objects.filter(serie_annotation__tag=self, annotation=old) \
-                            .update(annotation=new)
-
-    def remap_refs(self, new_pk):
-        """
-        Remap any references to this tag to other one. Used in tag merge.
-        """
-        from tags.models import SerieValidation, SerieAnnotation
-
-        SeriesTag.objects.filter(tag=self).update(tag=new_pk)
-        SerieValidation.objects.filter(tag=self).update(tag=new_pk)
-        SerieAnnotation.objects.filter(tag=self).update(tag=new_pk)
-
-
 class Series(models.Model):
     gse_name = models.TextField(blank=True)
 
@@ -107,27 +40,6 @@ class SeriesAttribute(models.Model):
 
     class Meta:
         db_table = 'series_attribute'
-
-
-class SeriesTag(models.Model):
-    series = models.ForeignKey(Series, blank=True, null=True)
-    platform = models.ForeignKey(Platform, blank=True, null=True)
-    tag = models.ForeignKey('Tag', blank=True, null=True)
-    header = models.CharField(max_length=512, blank=True)
-    regex = models.CharField(max_length=512, blank=True)
-    is_active = models.BooleanField(default=True)
-    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
-                                   related_name='serie_annotations')
-    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
-                                    related_name='+')
-
-    agreed = models.IntegerField(blank=True, null=True)
-    fleiss_kappa = models.FloatField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'series_tag'
 
 
 class Sample(models.Model):
@@ -150,24 +62,6 @@ class SampleAttribute(models.Model):
 
     class Meta:
         db_table = 'sample_attribute'
-
-
-class SampleTag(models.Model):
-    sample = models.ForeignKey(Sample, blank=True, null=True)
-    series_tag = models.ForeignKey('SeriesTag', blank=True, null=True, related_name='sample_tags')
-    annotation = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
-                                   related_name='sample_annotations')
-    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
-                                    related_name='+')
-
-    objects = DataFrameManager()
-
-    class Meta:
-        db_table = 'sample_tag'
 
 
 # class SeriesMatrix(models.Model):

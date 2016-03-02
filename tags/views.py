@@ -12,7 +12,7 @@ from django.db import transaction
 from django.forms import ModelForm, ValidationError
 from django.shortcuts import redirect, get_object_or_404
 
-from legacy.models import Tag, SeriesTag
+from .models import Tag, SeriesTag
 from .data import get_series_columns, SQLQuerySet
 
 
