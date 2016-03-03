@@ -94,19 +94,7 @@ Here are steps to make local deployment of this app in order to tinker it.
     IdentitiesOnly yes
     ```
 
-2. Ssh to server and create a deployment key:
-
-    ```bash
-    # On server
-    ls ~/.ssh
-    cat ~/.ssh/id_rsa.pub
-    ```
-
-    Copy a public key from `id_rsa.pub` to Github repository -> Settings -> Deploy keys.
-
-    If you don't have a key on server then generate it with `ssh-keygen`.
-
-3. Run locally:
+2. Run locally:
 
     ```bash
     # to deploy latest commited
