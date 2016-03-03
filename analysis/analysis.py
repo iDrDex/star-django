@@ -5,7 +5,7 @@ import urllib2
 import shutil
 
 from easydict import EasyDict
-from funcy import first, log_durations, imap, memoize, make_lookuper, cat, re_all
+from funcy import first, log_durations, imap, memoize, cat, re_all
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
@@ -69,7 +69,7 @@ def perform_analysis(analysis, debug=False):
     # NOTE: we are doing load_gse() lazily here to avoid loading all matrices at once.
     logger.info('Loading data and calculating fold changes for %s', analysis.analysis_name)
     with log_durations(logger.debug, 'Load/fold for %s' % analysis.analysis_name):
-        gses = (load_gse(df, series_id) for series_id in sorted(df.series_id.unique()))
+        gses = (load_gse(df, gse_name) for gse_name in sorted(df.gse_name.unique()))
         fold_changes = pd.concat(imap(get_fold_change_analysis, gses))
         debug and fold_changes.to_csv("%s.fc.csv" % debug)
 
@@ -178,27 +178,16 @@ def get_analysis_df(case_query, control_query, modifier_query):
 
 
 @log_durations(logger.debug)
-def load_gse(df, series_id):
-    gse_name = series_gse_name(series_id)
-    logger.debug('Loading data for %s, id = %d', gse_name, series_id)
+def load_gse(df, gse_name):
+    logger.debug('Loading data for %s', gse_name)
     gpl2data = {}
     gpl2probes = {}
 
-    for platform_id in df.query("""series_id == %s""" % series_id).platform_id.unique():
-        gpl_name = platform_gpl_name(platform_id)
-        gpl2data[gpl_name] = get_data(series_id, platform_id)
-        gpl2probes[gpl_name] = get_probes(platform_id)
-    samples = df.query('series_id == %s' % series_id)
+    samples = df[df.gse_name == gse_name]
+    for gpl_name in samples.gpl_name.unique():
+        gpl2data[gpl_name] = get_data(gse_name, gpl_name)
+        gpl2probes[gpl_name] = get_probes(gpl_name)
     return Gse(gse_name, samples, gpl2data, gpl2probes)
-
-
-@make_lookuper
-def series_gse_name():
-    return Series.objects.values_list('id', 'gse_name')
-
-@make_lookuper
-def platform_gpl_name():
-    return Platform.objects.values_list('id', 'gpl_name')
 
 
 def __getMatrixNumHeaderLines(inStream):
@@ -208,16 +197,12 @@ def __getMatrixNumHeaderLines(inStream):
             return i
 
 
-def matrix_filenames(series_id, platform_id):
-    gse_name = series_gse_name(series_id)
-    yield "%s/%s_series_matrix.txt.gz" % (gse_name, gse_name)
+def get_matrix_filename(gse_name, gpl_name):
+    filenames = [
+        "%s/%s_series_matrix.txt.gz" % (gse_name, gse_name),
+        "%s/%s-%s_series_matrix.txt.gz" % (gse_name, gse_name, gpl_name),
+    ]
 
-    gpl_name = platform_gpl_name(platform_id)
-    yield "%s/%s-%s_series_matrix.txt.gz" % (gse_name, gse_name, gpl_name)
-
-
-def get_matrix_filename(series_id, platform_id):
-    filenames = list(matrix_filenames(series_id, platform_id))
     mirror_filenames = (os.path.join(SERIES_MATRIX_MIRROR, filename) for filename in filenames)
     mirror_filename = first(filename for filename in mirror_filenames if os.path.isfile(filename))
     if mirror_filename:
@@ -245,8 +230,8 @@ def get_matrix_filename(series_id, platform_id):
 
 
 @log_durations(logger.debug)
-def get_data(series_id, platform_id):
-    matrixFilename = get_matrix_filename(series_id, platform_id)
+def get_data(gse_name, gpl_name):
+    matrixFilename = get_matrix_filename(gse_name, gpl_name)
     if not matrixFilename:
         return pf.DataFrame()
     # setup data for specific platform
@@ -269,7 +254,7 @@ def get_data(series_id, platform_id):
             os.remove(matrixFilename)
             if attempt:
                 raise
-            matrixFilename = get_matrix_filename(series_id, platform_id)
+            matrixFilename = get_matrix_filename(gse_name, gpl_name)
 
     data.index = data.index.astype(str)
     data.index.name = "probe"
@@ -280,9 +265,8 @@ def get_data(series_id, platform_id):
 
 
 @log_durations(logger.debug)
-def get_probes(platform_id):
-    df = PlatformProbe.objects.filter(platform=platform_id).order_by('id').to_dataframe()
-    # df = db(Platform_Probe.platform_id == platform_id).select(processor=pandas_processor)
+def get_probes(gpl_name):
+    df = PlatformProbe.objects.filter(platform__gpl_name=gpl_name).order_by('id').to_dataframe()
     df.columns = [col.lower().replace("platform_probe.", "") for col in df.columns]
     df.probe = df.probe.astype(str)  # must cast probes as str
     df = df.set_index('probe')
