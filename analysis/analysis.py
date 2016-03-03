@@ -190,7 +190,7 @@ def load_gse(df, gse_name):
     return Gse(gse_name, samples, gpl2data, gpl2probes)
 
 
-def __getMatrixNumHeaderLines(inStream):
+def get_matrix_nondata_lines(inStream):
     p = re.compile(r'^"ID_REF"')
     for i, line in enumerate(inStream):
         if p.search(line):
@@ -203,10 +203,10 @@ def get_matrix_filename(gse_name, gpl_name):
         "%s/%s-%s_series_matrix.txt.gz" % (gse_name, gse_name, gpl_name),
     ]
 
-    mirror_filenames = (os.path.join(SERIES_MATRIX_MIRROR, filename) for filename in filenames)
-    mirror_filename = first(filename for filename in mirror_filenames if os.path.isfile(filename))
-    if mirror_filename:
-        return mirror_filename
+    for filename in filenames:
+        mirror_filename = os.path.join(SERIES_MATRIX_MIRROR, filename)
+        if os.path.isfile(mirror_filename):
+            return mirror_filename
 
     for filename in filenames:
         logger.info('Loading URL %s...' % (SERIES_MATRIX_URL + filename))
@@ -226,41 +226,41 @@ def get_matrix_filename(gse_name, gpl_name):
 
             return mirror_filename
 
-    print 'Failed loading matrix for serie %s, platform %s' % (series_id, platform_id)
+    logger.error('Failed loading matrix for serie %s, platform %s', (gse_name, gpl_name))
 
 
 @log_durations(logger.debug)
 def get_data(gse_name, gpl_name):
-    matrixFilename = get_matrix_filename(gse_name, gpl_name)
-    if not matrixFilename:
-        return pf.DataFrame()
-    # setup data for specific platform
     for attempt in (0, 1):
+        matrix_filename = get_matrix_filename(gse_name, gpl_name)
+        if not matrix_filename:
+            return pf.DataFrame()
+
         try:
-            headerRows = __getMatrixNumHeaderLines(gzip.open(matrixFilename))
-            na_values = ["null", "NA", "NaN", "N/A", "na", "n/a"]
-            data = pd.io.parsers.read_table(gzip.open(matrixFilename),
-                                            skiprows=headerRows,
-                                            index_col=["ID_REF"],
-                                            na_values=na_values,
-                                            lineterminator='\n',
-                                            engine='c')
+            headerRows = get_matrix_nondata_lines(gzip.open(matrix_filename))
+            data = pd.io.parsers.read_table(
+                matrix_filename,
+                engine='c',
+                compression='gzip',
+                lineterminator='\n',
+                skiprows=headerRows,
+                index_col=["ID_REF"],
+                na_values=["null", "NA", "NaN", "N/A", "na", "n/a"],
+            )
             # Drop last line
             data = data.drop(data.index[-1]).dropna()
             break
         except (IOError, pd.parser.CParserError) as e:
             # In case we have corrupt file
-            logger.error("Failed loading %s: %s" % (matrixFilename, e))
-            os.remove(matrixFilename)
+            logger.error("Broken series matrix %s: %s" % (matrix_filename, e))
+            os.remove(matrix_filename)
             if attempt:
                 raise
-            matrixFilename = get_matrix_filename(gse_name, gpl_name)
 
     data.index = data.index.astype(str)
     data.index.name = "probe"
     for column in data.columns:
         data[column] = data[column].astype(np.float64)
-    # return data.head(100)
     return data
 
 
