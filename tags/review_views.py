@@ -2,7 +2,7 @@ from funcy import group_by, cached_property, partial
 from datatableview.views import DatatableView
 from datatableview.utils import DatatableOptions
 
-from django.contrib.auth.decorators import user_passes_test
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 
 from tags.models import SeriesTag, SerieAnnotation, SerieValidation, \
@@ -128,8 +128,10 @@ class SampleAnnotations(DatatableView):
 sample_annotations = SampleAnnotations.as_view()
 
 
-@user_passes_test(lambda u: u.is_superuser)
 def ignore(request, serie_validation_id):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     sv = get_object_or_404(SerieValidation, pk=serie_validation_id)
     sv.ignored = True
     sv.save()
