@@ -5,13 +5,13 @@
 
 
 {% block script %}
-{{ request.path }}
 {{ super() }}
 
 <style type="text/css">
 .datatable .btn-circle {padding: 4px; margin-left: 0.5em}
 </style>
 
+{% if request.user.is_staff %}
 <script src="{{ static('jquery.cookie.js') }}"></script>
 <script type="text/javascript">
 var requestPath = {{ request.path|json }};
@@ -37,4 +37,5 @@ $('.datatable thead th:gt(2)').append(ignoreHTML)
         return false;
     })
 </script>
+{% endif %}
 {% endblock %}
