@@ -16,5 +16,5 @@ if 'SECRET_KEY' not in os.environ:
 
 
 if os.environ.get('DJANGO_SETTINGS_MODULE'):
-    from django.contrib.auth.models import User, Group, Permission
+    from django.contrib.auth.models import User
     User._meta.get_field('username').max_length = 127
