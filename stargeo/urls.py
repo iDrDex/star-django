@@ -8,8 +8,11 @@ urlpatterns = patterns('',  # noqa
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout',
         {'next_page': '/'}),
     url(r'^accounts/password_reset/$', 'django.contrib.auth.views.password_reset',
-        {'password_reset_form': PasswordResetForm}),
-    url('^accounts/', include('django.contrib.auth.urls')),
+        {'post_reset_redirect': 'auth_password_reset_done',
+         'email_template_name': 'registration/password_reset_email.txt',
+         'password_reset_form': PasswordResetForm},
+        name='password_reset'),
+    url(r'^accounts/', include('registration.backends.hmac.urls')),
 
     url(r'^$', 'core.views.dashboard', name='dashboard'),
 

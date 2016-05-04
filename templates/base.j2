@@ -82,11 +82,11 @@
             <ul class="nav navbar-nav no-borders">
                 <li class="dropdown">
                     {% if request.user.is_authenticated() %}
-                        <a href="{{ url('logout') }}">
+                        <a href="{{ url('auth_logout') }}">
                             <i class="pe-7s-upload pe-rotate-90"></i>
                         </a>
                     {% else %}
-                        <a href="{{ url('login') }}">Log In</a></li>
+                        <a href="{{ url('auth_login') }}">Log In</a></li>
                     {% endif %}
                 </li>
             </ul>
@@ -103,7 +103,7 @@
                     {% if request.user.is_authenticated() %}
                         {{ request.user.first_name }} {{ request.user.last_name }}
                     {% else %}
-                        <a href="{{ url('login') }}">Log in</a>
+                        <a href="{{ url('auth_login') }}">Log in</a>
                     {% endif %}
                 </span>
 
@@ -112,7 +112,7 @@
                     <a href="{{ url('redeem') }}">
                         <small class="text-mited">Redeem</small>
                     </a>
-                    <a href="{{ url('logout') }}">
+                    <a href="{{ url('auth_logout') }}">
                         <small class="text-mited">Logout</small>
                     </a>
                 </p>
