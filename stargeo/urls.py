@@ -2,11 +2,15 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 
 from core.forms import PasswordResetForm
+from core.views import MyRegistrationView
 
 
 urlpatterns = patterns('',  # noqa
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout',
         {'next_page': '/'}),
+    url(r'^accounts/register/$',
+        MyRegistrationView.as_view(),
+        name='registration_register'),
     url(r'^accounts/password_reset/$', 'django.contrib.auth.views.password_reset',
         {'post_reset_redirect': 'auth_password_reset_done',
          'email_template_name': 'registration/password_reset_email.txt',

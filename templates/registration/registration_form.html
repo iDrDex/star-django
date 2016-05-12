@@ -1,7 +1,7 @@
 {% extends "registration/base.j2" %}
 
 
-{% set heading = 'Log in' %}
+{% set heading = 'Register' %}
 
 
 {% block content %}
@@ -11,10 +11,5 @@
         <div class="form-group">
             <input type="submit" class="btn btn-primary" value="Log in" />
         </div>
-        <p>
-            <a href="{{ url('password_reset') }}">Lost password?</a>
-            &nbsp;
-            <a href="{{ url('registration_register') }}">Register</a>
-        </p>
     </form>
 {% endblock %}
