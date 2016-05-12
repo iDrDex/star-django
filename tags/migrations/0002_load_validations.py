@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import migrations_plus
 
 
 FILL_SQL = '''
@@ -22,5 +21,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations_plus.RunSQL(FILL_SQL, reverse_sql=EMPTY_SQL),
+        migrations.RunSQL(FILL_SQL, reverse_sql=EMPTY_SQL),
     ]

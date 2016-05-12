@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 from django.db import models, migrations
 import django.db.models.deletion
-import migrations_plus
 
 
 class Migration(migrations.Migration):
@@ -20,7 +19,7 @@ class Migration(migrations.Migration):
             preserve_default=True,
         ),
 
-        migrations_plus.RunSQL(
+        migrations.RunSQL(
             """
                 ALTER TABLE validation_job
                     DROP CONSTRAINT validation_job_series_tag_id_753f178d05a7d70f_fk_series_tag_id;
@@ -37,7 +36,7 @@ class Migration(migrations.Migration):
             """
         ),
 
-        migrations_plus.RunSQL(
+        migrations.RunSQL(
             """
                 ALTER TABLE series_validation
                     DROP CONSTRAINT series_validati_series_tag_id_5a35d6201a93f3ec_fk_series_tag_id;

@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import migrations_plus
 
 
 class Migration(migrations.Migration):
@@ -12,7 +11,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations_plus.RunSQL("""
+        migrations.RunSQL("""
             update tags_userstats set earned = earned_sample_annotations * 0.05,
                                       payed = samples_payed * 0.05;
         """)
