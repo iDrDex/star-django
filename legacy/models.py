@@ -100,9 +100,9 @@ class Analysis(models.Model):
     # Meta
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True)
+    created_by = models.ForeignKey('core.User', db_column='created_by', blank=True, null=True)
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
+    modified_by = models.ForeignKey('core.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
     success = models.BooleanField(default=False)
 

@@ -13,8 +13,3 @@ def load_env(filename):
 
 if 'SECRET_KEY' not in os.environ:
     load_env('../.env')
-
-
-if os.environ.get('DJANGO_SETTINGS_MODULE'):
-    from django.contrib.auth.models import User
-    User._meta.get_field('username').max_length = 127

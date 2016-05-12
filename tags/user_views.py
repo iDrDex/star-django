@@ -1,11 +1,11 @@
 from handy.decorators import render_to, paginate, render_to_json
 
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User
 from django.contrib import messages
 from django.shortcuts import redirect
 
 from core.conf import redis_client
+from core.models import User
 import tango
 from .models import UserStats, Payment
 from .tasks import redeem_earnings, donate_earnings

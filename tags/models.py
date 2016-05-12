@@ -14,10 +14,10 @@ class Tag(models.Model):
     description = models.CharField(max_length=512, blank=True)
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
+    created_by = models.ForeignKey('core.User', db_column='created_by', blank=True, null=True,
                                    related_name='tags')
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
+    modified_by = models.ForeignKey('core.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
     class Meta:
@@ -67,10 +67,10 @@ class SeriesTag(models.Model):
     regex = models.CharField(max_length=512, blank=True)
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
+    created_by = models.ForeignKey('core.User', db_column='created_by', blank=True, null=True,
                                    related_name='serie_annotations')
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
+    modified_by = models.ForeignKey('core.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
     agreed = models.IntegerField(blank=True, null=True)
@@ -86,10 +86,10 @@ class SampleTag(models.Model):
     annotation = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    created_by = models.ForeignKey('auth.User', db_column='created_by', blank=True, null=True,
+    created_by = models.ForeignKey('core.User', db_column='created_by', blank=True, null=True,
                                    related_name='sample_annotations')
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
-    modified_by = models.ForeignKey('auth.User', db_column='modified_by', blank=True, null=True,
+    modified_by = models.ForeignKey('core.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
     objects = DataFrameManager()
@@ -100,7 +100,7 @@ class SampleTag(models.Model):
 ###
 
 class UserStats(models.Model):
-    user = models.OneToOneField('auth.User', primary_key=True, related_name='stats')
+    user = models.OneToOneField('core.User', primary_key=True, related_name='stats')
 
     serie_tags = models.IntegerField(default=0)
     sample_tags = models.IntegerField(default=0)
@@ -147,11 +147,11 @@ class PaymentState(object):
 
 
 class Payment(models.Model):
-    receiver = models.ForeignKey('auth.User', related_name='payments')
+    receiver = models.ForeignKey('core.User', related_name='payments')
     amount = models.DecimalField(max_digits=8, decimal_places=2)
     method = models.TextField()
     created_on = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey('auth.User')
+    created_by = models.ForeignKey('core.User')
     state = models.IntegerField(choices=PaymentState.choices)
     extra = JSONField(default={})
 
@@ -163,7 +163,7 @@ class Payment(models.Model):
 class ValidationJob(models.Model):
     series_tag = models.ForeignKey(SeriesTag, on_delete=models.CASCADE)
     locked_on = models.DateTimeField(blank=True, null=True)
-    locked_by = models.ForeignKey('auth.User', blank=True, null=True)
+    locked_by = models.ForeignKey('core.User', blank=True, null=True)
     # generation = models.IntegerField(default=1)
     priority = models.FloatField(default=0)
 
@@ -180,7 +180,7 @@ class SerieValidation(models.Model):
     column = models.CharField(max_length=512, blank=True)
     regex = models.CharField(max_length=512, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey('auth.User')
+    created_by = models.ForeignKey('core.User')
     on_demand = models.BooleanField(default=False)
     ignored = models.BooleanField(default=False)
 
@@ -205,7 +205,7 @@ class SampleValidation(models.Model):
     serie_validation = models.ForeignKey(SerieValidation, related_name='sample_validations')
     annotation = models.TextField(blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey('auth.User')
+    created_by = models.ForeignKey('core.User')
 
     # Calculated field
     concordant = models.NullBooleanField(null=True)
