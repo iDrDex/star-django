@@ -57,9 +57,10 @@ def redeem(request):
     last_payment = Payment.objects.filter(receiver_id=request.user.id) \
                           .order_by('created_on').last()
 
+    stats, _ = UserStats.objects.get_or_create(pk=request.user.id)
     return {
         'active': redis_client.get('redeem.samples:%d' % request.user.id),
-        'stats': UserStats.objects.get(pk=request.user.id),
+        'stats': stats,
         'last_payment': last_payment
     }
 
