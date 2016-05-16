@@ -4,7 +4,7 @@ from funcy import decorator
 
 
 @decorator
-def block_POST_for_incompetent(call):
+def block_POST_for_incompetent(call):  # noqa
     if call.request.method != 'POST' or call.request.user.is_competent:
         return call()
 
