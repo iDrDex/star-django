@@ -12,6 +12,7 @@ from django.db import transaction
 from django.forms import ModelForm, ValidationError
 from django.shortcuts import redirect, get_object_or_404
 
+from core.decorators import block_POST_for_incompetent
 from .models import Tag, SeriesTag
 from .data import get_series_columns, SQLQuerySet
 
@@ -73,6 +74,7 @@ def tag_control(request):
 
 
 @login_required
+@block_POST_for_incompetent
 @render_to('tags/tag.j2')
 def create_tag(request):
     if request.method == 'POST':
@@ -93,6 +95,7 @@ def create_tag(request):
 
 
 @login_required
+@block_POST_for_incompetent
 @render_to()
 def tag(request, tag_id):
     tag = get_object_or_404(Tag, pk=tag_id)

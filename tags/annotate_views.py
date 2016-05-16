@@ -15,6 +15,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
 from core.tasks import update_dashboard
+from core.decorators import block_POST_for_incompetent
 from legacy.models import Sample
 from tags.models import Tag, SeriesTag, SampleTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
@@ -23,6 +24,7 @@ from .data import get_series_columns, get_samples_columns
 
 
 @login_required
+@block_POST_for_incompetent
 @render_to('tags/annotate.j2')
 def annotate(request):
     if request.method == 'POST':
@@ -104,6 +106,7 @@ def save_annotation(request):
 BLIND_FIELDS = {'id', 'sample_id', 'sample_geo_accession', 'sample_platform_id', 'platform_id'}
 
 @login_required
+@block_POST_for_incompetent
 @render_to('tags/annotate.j2')
 def validate(request):
     if request.method == 'POST':
@@ -201,6 +204,7 @@ def lock_validation_job(user_id):
 
 
 @login_required
+@block_POST_for_incompetent
 @render_to('tags/annotate.j2')
 def on_demand_validate(request):
     if request.method == 'POST':
