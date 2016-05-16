@@ -99,11 +99,13 @@
     <div id="navigation">
         <div class="profile-picture">
             <div class="stats-label text-color">
-                <span class="font-extra-bold font-uppercase">
+                <span class="font-extra-bold">
                     {% if request.user.is_authenticated() %}
                         {{ request.user.first_name }} {{ request.user.last_name }}
                     {% else %}
                         <a href="{{ url('auth_login') }}">Log in</a>
+                        &nbsp;
+                        <a href="{{ url('registration_register') }}">Register</a>
                     {% endif %}
                 </span>
 
