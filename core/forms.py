@@ -3,11 +3,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import PasswordResetForm as _PasswordResetForm
 from registration.forms import RegistrationForm
 
+from core.models import User
+
 
 class MyRegistrationForm(RegistrationForm):
     error_css_class = 'error'
 
     class Meta(RegistrationForm.Meta):
+        model = User
         fields = [
             'first_name',
             'last_name',
