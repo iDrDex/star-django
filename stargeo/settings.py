@@ -141,8 +141,8 @@ TEMPLATES = [
         "OPTIONS": {
             "match_extension": None,
             # We use default template names for auth things, so we need to intercept them,
-            # we hackily exclude email and subject templates
-            "match_regex": r'(.*\.(j2|jinja)$|(^registration.*(?<!email|bject)\.\w+$))',
+            # we hackily exclude email, subject and logged_out templates
+            "match_regex": r'(.*\.(j2|jinja)$|(^registration.*(?<!email|bject|d_out)\.\w+$))',
             "context_processors": _TEMPLATE_CONTEXT_PROCESSORS,
         }
     },
