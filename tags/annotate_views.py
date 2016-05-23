@@ -1,7 +1,7 @@
 import json
 from datetime import timedelta
 
-from funcy import group_by, first, project, select_keys, filter
+from funcy import group_by, first, project, select_keys, filter, takewhile, ilen
 from handy.decorators import render_to
 from handy.db import fetch_dict, fetch_dicts
 
@@ -19,7 +19,7 @@ from core.decorators import block_POST_for_incompetent
 from legacy.models import Sample
 from tags.models import Tag, SeriesTag, SampleTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
-from .tasks import validation_workflow
+from .tasks import validation_workflow, calc_validation_stats
 from .data import get_series_columns, get_samples_columns
 
 
@@ -228,7 +228,7 @@ def on_demand_validate(request):
 
     serie = fetch_serie(series_id)
     tag = series_tag.tag
-    samples, columns = fetch_annotation_data(series_id, series_tag.platform_id)
+    samples, columns = fetch_annotation_data(series_id, series_tag.platform_id, blind=BLIND_FIELDS)
 
     return {
         'series_tag': series_tag,
@@ -281,6 +281,103 @@ def on_demand_result(request, serie_validation_id):
         return JsonResponse(data)
 
     return render(request, 'tags/on_demand_result.j2', {'serie_validation': serie_validation})
+
+
+@login_required
+@render_to('tags/annotate.j2')
+def competence(request):
+    if request.user.is_competent:
+        return redirect(validate)
+
+    if request.method == 'POST':
+        return save_competence(request)
+
+    # Check how many tries and progress = number of successful tries in a row
+    validations = SerieValidation.objects.filter(created_by=request.user).order_by('-id')[:5] \
+                                 .prefetch_related('sample_validations', 'series_tag__canonical',
+                                                   'series_tag__canonical__sample_annotations')
+    tries = len(validations)
+    progress = ilen(takewhile(lambda v: v.same_as_canonical, validations))
+
+    # 5 successful tries in a row is test pass
+    if progress >= 5:
+        request.user.is_competent = True
+        request.user.save()
+        messages.success(request, '''Congratulations! You passed competence test.<br>
+                                     You can now annotate and validate series.''')
+        return redirect(validate)
+
+    # Welcome, progress and fail messages
+    if progress == 0 and tries == 0:
+        messages.info(request, '''Welcome to competence test!<br>
+                                  You need to annotate 5 series in a row correctly to pass.''')
+    elif progress == 0 and tries > 0:
+        messages.error(request, '''This one was wrong, sorry.<br>
+                                   Starting from zero with fresh series.''')
+    elif progress == 4:
+        messages.success(request, '''You are almost there! Here is the last one.''')
+    elif progress == 3:
+        messages.success(request, '''Good progress, only 2 annotations left.''')
+    else:
+        messages.success(request, '''Correct! %d series to go.''' % (5 - progress))
+
+    # Select canonical annotation to test against
+    # NOTE: several conditions play here:
+    #         - exclude anything seen before
+    #         - only use agreed upon ones (best_cohens_kappa = 1 means there are 2 concordant annos)
+    #         - first 3 tries select non-controversial annotations (fleiss_kappa = 1)
+    #         - last 2 tries select less obvious annotations (fleiss_kappa < 1)
+    qs = SerieAnnotation.objects.exclude(series_tag__validations__created_by=request.user,
+                                         best_cohens_kappa=1)
+    qs = qs.filter(fleiss_kappa=1) if progress < 3 else qs.filter(fleiss_kappa__lt=1)
+    canonical = qs.select_related('series_tag', 'series_tag__tag').order_by('?').first()
+    if canonical is None:
+        messages.error(request, '''Too many tries, we are out of test material.''')
+        return redirect(validate)
+
+    series_tag = canonical.series_tag
+    series_id = series_tag.series_id
+
+    serie = fetch_serie(series_id)
+    tag = series_tag.tag
+    samples, columns = fetch_annotation_data(series_id, series_tag.platform_id, blind=BLIND_FIELDS)
+
+    return {
+        'series_tag': series_tag,
+        'serie': serie,
+        'tag': tag,
+        'columns': columns,
+        'samples': samples,
+        'progress': progress
+    }
+
+def save_competence(request):
+    user_id = request.user.id
+    series_tag_id = request.POST['series_tag_id']
+    column = request.POST['column']
+    regex = request.POST['regex']
+    values = dict(json.loads(request.POST['values']))
+
+    with transaction.atomic():
+        # Save validation with used column and regex
+        st = SeriesTag.objects.get(pk=series_tag_id)
+        serie_validation = SerieValidation.objects.create(
+            series_tag_id=st.id, created_by_id=user_id,
+            column=column, regex=regex,
+            series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id,
+            ignored=True, by_incompetent=True,
+        )
+
+        # Create all sample validations
+        SampleValidation.objects.bulk_create([
+            SampleValidation(sample_id=sample_id, serie_validation=serie_validation,
+                             annotation=annotation, created_by_id=user_id)
+            for sample_id, annotation in values.items()
+        ])
+
+    calc_validation_stats.delay(serie_validation.pk)
+
+    return redirect(competence)
 
 
 # Data utils

@@ -96,16 +96,17 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
     annotation_sets = [sample_annotations, sample_validations] \
         + earlier_sample_validations.values()
     series_tag.fleiss_kappa = _fleiss_kappa(annotation_sets)
-    if not serie_validation.on_demand \
+    if not serie_validation.on_demand and not serie_validation.ignored \
             and (serie_validation.concordant or serie_validation.agrees_with):
         series_tag.agreed = earlier_validations.count() + 1
     series_tag.save()
 
-    if not recalc and not serie_validation.on_demand:
+    if not recalc and not serie_validation.on_demand and not serie_validation.by_incompetent:
         _update_user_stats(serie_validation)  # including payment ones
 
     # Reschedule validation if no agreement found
-    if not series_tag.agreed and not recalc and not serie_validation.on_demand:
+    if not series_tag.agreed and not recalc and not serie_validation.on_demand \
+            and not serie_validation.by_incompetent:
         # Schedule revalidations with priority < 0, that's what new validations have,
         # to phase out garbage earlier
         _reschedule_validation(serie_validation, priority=series_tag.fleiss_kappa - 1)

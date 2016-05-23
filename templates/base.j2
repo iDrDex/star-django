@@ -141,6 +141,11 @@
             <li{% if request.path.startswith('/analysis/') %} class="active"{% endif %}>
                 <a href="/analysis/"> <span class="nav-label">Analysis</span> </a>
             </li>
+            {% if not request.user.is_competent %}
+            <li{% if request.path.startswith('/competence/') %} class="active"{% endif %}>
+                <a href="/competence/"> <span class="nav-label">Competence Test</span> </a>
+            </li>
+            {% endif %}
             {# HACK: hardcode my and Dexters ids #}
             {% if request.user.is_superuser %}
             <li{% if request.path == '/stats/' %} class="active"{% endif %}>
@@ -171,7 +176,7 @@
     <div class="content">
     {% if messages %}
       {% for message in messages %}
-          <div class="alert alert-{{ 'danger' if message.tags == 'error' else message.tags }}">{{ message }}</div>
+          <div class="alert alert-{{ 'danger' if message.tags == 'error' else message.tags }}">{{ message|safe }}</div>
       {% endfor %}
     {% endif %}
 

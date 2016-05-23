@@ -32,6 +32,7 @@ urlpatterns = patterns('',  # noqa
         name='on_demand_validate'),
     url(r'^on_demand_result/(\d+)/$', 'tags.annotate_views.on_demand_result',
         name='on_demand_result'),
+    url(r'^competence/$', 'tags.annotate_views.competence', name='competence'),
 
     url(r'^annotations/$', 'tags.review_views.series_annotations',
         name='series_annotations'),

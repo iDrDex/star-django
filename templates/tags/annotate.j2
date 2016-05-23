@@ -1,8 +1,11 @@
 {% extends "base.j2" %}
 
-{% set page_title = 'Annotate' if request.resolver_match.url_name == 'annotate' else
-                    'Validate' if request.resolver_match.url_name == 'validate' else
-                    'Validate On Demand' %}
+{% set page_title = {
+  'annotate': 'Annotate',
+  'validate': 'Validate',
+  'on_demand_validate': 'Validate On Demand',
+  'competence': 'Competence Test'
+}[request.resolver_match.url_name] %}
 
 {% block content %}
 {% if serie %}

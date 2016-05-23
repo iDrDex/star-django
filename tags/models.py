@@ -183,6 +183,7 @@ class SerieValidation(models.Model):
     created_by = models.ForeignKey('core.User')
     on_demand = models.BooleanField(default=False)
     ignored = models.BooleanField(default=False)
+    by_incompetent = models.BooleanField(default=False)
 
     # Calculated fields
     samples_total = models.IntegerField(null=True)
@@ -195,9 +196,17 @@ class SerieValidation(models.Model):
     class Meta:
         db_table = 'series_validation'
 
+    # TODO: get rid of samples_concordant and concordant field in sample validations
     @property
     def concordant(self):
         return self.samples_concordant == self.samples_total
+
+    @property
+    def same_as_canonical(self):
+        samples = dict(self.sample_validations.values_list('sample_id', 'annotation'))
+        canonical_samples = dict(self.series_tag.canonical.sample_annotations
+                                     .values_list('sample_id', 'annotation'))
+        return samples == canonical_samples
 
 
 class SampleValidation(models.Model):
