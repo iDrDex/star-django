@@ -73,6 +73,7 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
     # Compare to other validations
     earlier_validations = series_tag.validations.filter(pk__lt=serie_validation_pk, ignored=False) \
                                     .order_by('pk')
+    # TODO: use .prefetch_related()
     earlier_sample_validations = group_by(
         lambda v: v.serie_validation_id,
         SampleValidation.objects.filter(serie_validation__in=earlier_validations)
@@ -101,9 +102,11 @@ def calc_validation_stats(serie_validation_pk, recalc=False):
         series_tag.agreed = earlier_validations.count() + 1
     series_tag.save()
 
+    # TODO: make this separate task ?
     if not recalc and not serie_validation.on_demand and not serie_validation.by_incompetent:
         _update_user_stats(serie_validation)  # including payment ones
 
+    # TODO: make this separate task ?
     # Reschedule validation if no agreement found
     if not series_tag.agreed and not recalc and not serie_validation.on_demand \
             and not serie_validation.by_incompetent:
