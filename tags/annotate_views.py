@@ -293,7 +293,8 @@ def competence(request):
         return save_competence(request)
 
     # Check how many tries and progress = number of successful tries in a row
-    validations = SerieValidation.objects.filter(created_by=request.user).order_by('-id')[:5] \
+    validations = SerieValidation.objects.filter(created_by=request.user, by_incompetent=True) \
+                                 .order_by('-id')[:5] \
                                  .prefetch_related('sample_validations', 'series_tag__canonical',
                                                    'series_tag__canonical__sample_annotations')
     tries = len(validations)
@@ -323,12 +324,15 @@ def competence(request):
 
     # Select canonical annotation to test against
     # NOTE: several conditions play here:
-    #         - exclude anything seen before
+    #         - exclude annotations seen before
+    #         - exclude tags seen in this test run
     #         - only use agreed upon ones (best_cohens_kappa = 1 means there are 2 concordant annos)
     #         - first 3 tries select non-controversial annotations (fleiss_kappa = 1)
     #         - last 2 tries select less obvious annotations (fleiss_kappa < 1)
-    qs = SerieAnnotation.objects.exclude(series_tag__validations__created_by=request.user,
-                                         best_cohens_kappa=1)
+    seen_tags = [v.tag_id for v in validations]
+    qs = SerieAnnotation.objects.exclude(series_tag__validations__created_by=request.user) \
+                                .exclude(tag__in=seen_tags) \
+                                .filter(best_cohens_kappa=1)
     qs = qs.filter(fleiss_kappa=1) if progress < 3 else qs.filter(fleiss_kappa__lt=1)
     canonical = qs.select_related('series_tag', 'series_tag__tag').order_by('?').first()
     if canonical is None:
