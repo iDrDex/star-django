@@ -2,8 +2,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from tqdm import tqdm
 
-from legacy.models import SeriesTag
-from tags.models import SerieAnnotation
+from tags.models import SerieAnnotation, SeriesTag
 from tags.tasks import update_canonical_annotation
 
 

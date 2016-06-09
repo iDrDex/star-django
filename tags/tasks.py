@@ -204,15 +204,11 @@ def update_canonical_annotation(series_tag_pk):
     st = SeriesTag.objects.select_for_update().get(pk=series_tag_pk)
     validations = st.validations.filter(ignored=False).order_by('pk')
 
-    st.canonical.annotations = validations.count() + 1
-    st.canonical.authors = len(set(v.created_by_id for v in validations) | {st.created_by_id})
-    st.canonical.fleiss_kappa = st.fleiss_kappa
-    st.canonical.best_cohens_kappa = max(v.best_kappa for v in validations) if validations else None
-    st.canonical.save()
+    best_cohens_kappa = max(v.best_kappa for v in validations) if validations else None
 
     # Update samples to be canonical
     source = first(v for v in validations if v.concordant or v.agrees_with) \
-        or first(v for v in validations if v.best_kappa == st.canonical.best_cohens_kappa)
+        or first(v for v in validations if v.best_kappa == best_cohens_kappa)
 
     if source:
         current_samples = st.canonical.sample_annotations.all()
@@ -226,6 +222,15 @@ def update_canonical_annotation(series_tag_pk):
             for sample_anno in current_samples:
                 sample_anno.annotation = anno_by_sample[sample_anno.sample_id]
                 sample_anno.save()
+
+    # Update canonical stats
+    st.canonical.header = source.column if source else st.header
+    st.canonical.regex = source.regex if source else (st.regex or '')
+    st.canonical.annotations = validations.count() + 1
+    st.canonical.authors = len(set(v.created_by_id for v in validations) | {st.created_by_id})
+    st.canonical.fleiss_kappa = st.fleiss_kappa
+    st.canonical.best_cohens_kappa = best_cohens_kappa
+    st.canonical.save()
 
 
 from tango import place_order

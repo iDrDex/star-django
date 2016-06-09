@@ -1,3 +1,4 @@
+import re
 from decimal import Decimal
 from django.db import models
 from django.db.models import Count
@@ -73,6 +74,8 @@ class SeriesTag(models.Model):
     modified_by = models.ForeignKey('core.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
 
+    # Number of validation, which led to first agreement
+    # (with whatever previous one, not necessarily initial)
     agreed = models.IntegerField(blank=True, null=True)
     fleiss_kappa = models.FloatField(blank=True, null=True)
 
@@ -242,6 +245,7 @@ class SerieAnnotation(models.Model):
     fleiss_kappa = models.FloatField(blank=True, null=True)
     best_cohens_kappa = models.FloatField(blank=True, null=True)
     samples = models.IntegerField(default=0)
+    captive = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'series_annotation'
@@ -263,6 +267,10 @@ class SerieAnnotation(models.Model):
                              sample_id=obj.sample_id, annotation=obj.annotation or '')
             for obj in sample_annos
         ])
+
+    def save(self, **kwargs):
+        self.captive = re.compile(self.regex or '').groups > 0
+        super(SerieAnnotation, self).save(**kwargs)
 
 
 class SampleAnnotation(models.Model):
