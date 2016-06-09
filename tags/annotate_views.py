@@ -1,7 +1,8 @@
 import json
+import random
 from datetime import timedelta
 
-from funcy import group_by, first, project, select_keys, filter, takewhile, ilen
+from funcy import group_by, first, project, select_keys, filter, takewhile
 from handy.decorators import render_to
 from handy.db import fetch_dict, fetch_dicts
 
@@ -297,8 +298,9 @@ def competence(request):
                                  .order_by('-id')[:5] \
                                  .prefetch_related('sample_validations', 'series_tag__canonical',
                                                    'series_tag__canonical__sample_annotations')
-    tries = len(validations)
-    progress = ilen(takewhile(lambda v: v.same_as_canonical, validations))
+    first_try = len(validations) == 0
+    validations = list(takewhile(lambda v: v.same_as_canonical, validations))
+    progress = len(validations)
 
     # 5 successful tries in a row is test pass
     if progress >= 5:
@@ -309,10 +311,10 @@ def competence(request):
         return redirect(validate)
 
     # Welcome, progress and fail messages
-    if progress == 0 and tries == 0:
+    if progress == 0 and first_try:
         messages.info(request, '''Welcome to competence test!<br>
                                   You need to annotate 5 series in a row correctly to pass.''')
-    elif progress == 0 and tries > 0:
+    elif progress == 0 and not first_try:
         messages.error(request, '''This one was wrong, sorry.<br>
                                    Starting from zero with fresh series.''')
     elif progress == 4:
@@ -329,12 +331,23 @@ def competence(request):
     #         - only use agreed upon ones (best_cohens_kappa = 1 means there are 2 concordant annos)
     #         - first 3 tries select non-controversial annotations (fleiss_kappa = 1)
     #         - last 2 tries select less obvious annotations (fleiss_kappa < 1)
-    seen_tags = [v.tag_id for v in validations]
+    #         - 2 of all tests should use captive tags
     qs = SerieAnnotation.objects.exclude(series_tag__validations__created_by=request.user) \
-                                .exclude(tag__in=seen_tags) \
-                                .filter(best_cohens_kappa=1)
-    qs = qs.filter(fleiss_kappa=1) if progress < 3 else qs.filter(fleiss_kappa__lt=1)
-    canonical = qs.select_related('series_tag', 'series_tag__tag').order_by('?').first()
+                                .filter(best_cohens_kappa=1) \
+                                .select_related('series_tag', 'series_tag__tag')
+
+    # These conds are lifted until some test material is found
+    conds = [Q(fleiss_kappa=1) if progress < 3 else Q(fleiss_kappa__lt=1)]
+    seen_tags = [v.tag_id for v in validations]
+    if seen_tags:
+        conds += [~Q(tag__in=seen_tags)]
+    if progress == 0:
+        conds += [Q(captive=False)]
+    else:
+        captive_left = 2 - sum(v.series_tag.canonical.captive for v in validations)
+        conds += [Q(captive=random.randint(0, 5 - progress) < captive_left)]
+
+    canonical = get_sample(qs, conds)
     if canonical is None:
         messages.error(request, '''Too many tries, we are out of test material.''')
         return redirect(validate)
@@ -354,6 +367,20 @@ def competence(request):
         'samples': samples,
         'progress': progress
     }
+
+def get_sample(qs, optional_conds=()):
+    """
+    Get a random sample from given queryset.
+    Optional conditions are lifted starting from the last one until we get some result.
+    """
+    while True:
+        canonical = qs.filter(*optional_conds).order_by('?').first()
+        if canonical is not None:
+            return canonical
+        elif optional_conds:
+            optional_conds.pop()
+        else:
+            return None
 
 def save_competence(request):
     user_id = request.user.id
