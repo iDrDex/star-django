@@ -11,6 +11,7 @@ from cStringIO import StringIO
 
 from funcy import re_finder, group_by, log_errors, cached_property, cut_prefix
 from cacheops import file_cache
+from cacheops.utils import debug_cache_key
 from ftptool import FTPHost
 from termcolor import colored, cprint
 import pandas as pd
@@ -228,7 +229,7 @@ class DataRefreshThread(threading.Thread):
 
     @log_errors(lambda msg: cprint(msg, 'red'), stack=False)
     def do_dir(self, dirname):
-        @file_cache.cached(timeout=CACHE_TIMEOUT)
+        @file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key)
         def listdir(d):
             return self.conn.listdir(d)
 
@@ -262,7 +263,7 @@ class DataRefreshThread(threading.Thread):
 
 from gzip_reader import GzipReader
 
-@file_cache.cached(timeout=CACHE_TIMEOUT)
+@file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key)
 def peek_matrix(host, filename):
     """
     Peek into gzipped serie matrix file over ftp,
