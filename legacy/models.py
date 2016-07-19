@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django_pandas.managers import DataFrameManager
+from handy.models import JSONField
 
 
 class Platform(models.Model):
@@ -28,6 +29,7 @@ class PlatformProbe(models.Model):
 
 class Series(models.Model):
     gse_name = models.TextField(blank=True)
+    attrs = JSONField(default={})
 
     class Meta:
         db_table = 'series'
@@ -46,6 +48,7 @@ class Sample(models.Model):
     series = models.ForeignKey('Series', blank=True, null=True)
     platform = models.ForeignKey(Platform, blank=True, null=True)
     gsm_name = models.TextField(blank=True)
+    attrs = JSONField(default={})
     # TODO: refactor deleted -> is_active, get rid of char boolean
     # NOTE: leaving it as is for now to not mess with sample_view
     # is_active = models.BooleanField(default=True)

@@ -9,7 +9,7 @@ from optparse import make_option
 from Queue import PriorityQueue
 from cStringIO import StringIO
 
-from funcy import re_finder, group_by, silent_lookuper, log_errors, cached_property
+from funcy import re_finder, group_by, log_errors, cached_property, cut_prefix
 from cacheops import file_cache
 from ftptool import FTPHost
 from termcolor import colored, cprint
@@ -70,7 +70,10 @@ def load_data(header):
     gse_name = series_df['series_geo_accession'][0]
 
     # Check if series updated
-    old_last_update = series_last_update(gse_name)
+    try:
+        old_last_update = Series.objects.get(gse_name=gse_name).attrs.get('last_update_date')
+    except Series.DoesNotExist:
+        old_last_update = None
     new_last_update = series_df['series_last_update_date'][0]
     if new_last_update == old_last_update:
         print colored('%s not changed since %s' % (gse_name, old_last_update), 'yellow')
@@ -91,19 +94,8 @@ def insert_or_update_data(series_df, samples_df):
     gse_name = series_df['series_geo_accession'][0]
 
     # Create series and its attributes
-    series, created = Series.objects.select_for_update().get_or_create(gse_name=gse_name)
-    # Delete old attributes
-    if not created:
-        SeriesAttribute.objects.filter(series=series).delete()
-    # ... and insert new ones
-    SeriesAttribute.objects.bulk_create([
-        SeriesAttribute(
-            series=series,
-            attribute_name=name,
-            attribute_value=uni_cat(series_df[name])
-        )
-        for name in series_df.columns
-    ])
+    attrs = {cut_prefix(name, 'series_'): uni_cat(series_df[name]) for name in series_df.columns}
+    series, created = Series.objects.update_or_create(gse_name=gse_name, defaults={'attrs': attrs})
 
     # Create platform
     gpls = samples_df['sample_platform_id'].unique()
@@ -127,18 +119,11 @@ def insert_or_update_data(series_df, samples_df):
 
     # Create/update samples and their attributes
     for gsm_name in samples_df.index:
-        sample, sample_created = Sample.objects.get_or_create(
-            gsm_name=gsm_name, series=series, platform=platform, deleted=None)
-        if not sample_created:
-            SampleAttribute.objects.filter(sample=sample).delete()
-        SampleAttribute.objects.bulk_create([
-            SampleAttribute(
-                sample=sample,
-                attribute_name=name,
-                attribute_value=value.strip(),
-            )
-            for name, value in samples_df.ix[gsm_name].to_dict().items()
-        ])
+        attrs = {cut_prefix(name, 'sample_'): value.strip()
+                 for name, value in samples_df.ix[gsm_name].to_dict().items()}
+        Sample.objects.update_or_create(
+            gsm_name=gsm_name, series=series, platform=platform, deleted=None,
+            defaults={'attrs': attrs})
 
     action = 'inserted' if created else 'updated'
     print colored('  %s %s, %d samples' % (action, gse_name, len(samples_df)),
@@ -167,12 +152,6 @@ def get_df_from_lines(lines, entity):
     df = df.reset_index()  # may want to store title
     df.columns = get_clean_columns(df.columns)
     return df
-
-
-@silent_lookuper
-def series_last_update():
-    return SeriesAttribute.objects.filter(attribute_name='series_last_update_date') \
-                          .values_list('series__gse_name', 'attribute_value')
 
 
 def check_dir(dirname):
