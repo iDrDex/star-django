@@ -1,0 +1,1 @@
+15 0 * * 0 cd /home/ubuntu/app && ../venv/bin/python manage.py cleanfilecache

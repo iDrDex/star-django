@@ -41,6 +41,7 @@ INSTALLED_APPS = (
     'django_jinja.contrib._humanize',
     'bootstrapform_jinja',
     'datatableview',
+    'cacheops',
 
     'core',
     'legacy',

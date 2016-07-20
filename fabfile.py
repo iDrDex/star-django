@@ -82,8 +82,8 @@ def deploy():
     print(green('Collecting static files...'))
     execute(collect_static)
 
-    # print(green('Installing new crontab...'))
-    # execute(install_crontab)
+    print(green('Installing new crontab...'))
+    execute(install_crontab)
 
     execute(restart)
 
