@@ -9,7 +9,7 @@ from optparse import make_option
 from Queue import PriorityQueue
 from cStringIO import StringIO
 
-from funcy import re_finder, group_by, log_errors, cached_property, cut_prefix
+from funcy import re_finder, group_by, log_errors, cached_property, cut_prefix, memoize
 from cacheops import file_cache
 from cacheops.utils import debug_cache_key
 from ftptool import FTPHost
@@ -161,15 +161,28 @@ def check_dir(dirname):
 
 find_value = re_finder(r'"(.*)"')
 
-def check_line(line):
+def check_line(line, acc):
+    # Start of data, end of header. Stop and pass header
+    if line.startswith('!series_matrix_table_begin'):
+        return True
+
+    # If serie is known then always update
+    if line.startswith('!Series_geo_accession') and find_value(line) in known_gses():
+        acc['known'] = True
+    if acc.get('known'):
+        return None
+
+    # Only fetch this type of studies
     if line.startswith('!Series_type') and find_value(line) != "Expression profiling by array":
         return False
 
+    # Only fetch human studies
     if line.startswith('!Series_sample_taxid') and find_value(line) != "9606":
         return False
 
-    if line.startswith('!series_matrix_table_begin'):
-        return True
+@memoize
+def known_gses():
+    return set(Series.objects.values_list('gse_name', flat=True))
 
 
 # Job/data managing utilities
@@ -278,9 +291,10 @@ def peek_matrix(host, filename):
 
     try:
         lines = []
+        acc = {}
         for line in fd:
             lines.append(line)
-            check = check_line(line)
+            check = check_line(line, acc)
             if check is not None:
                 if check:
                     return lines
