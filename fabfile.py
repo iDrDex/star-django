@@ -59,7 +59,7 @@ def install_requirements():
 
 
 def install_crontab():
-    run('crontab stuff/crontab.txt')
+    run('crontab stuff/crontab')
 
 
 def deploy():
