@@ -1,6 +1,7 @@
 import re
 import posixpath
 import urlparse
+import json
 import socket
 import ftplib
 import threading
@@ -9,7 +10,7 @@ from optparse import make_option
 from Queue import PriorityQueue
 from cStringIO import StringIO
 
-from funcy import re_finder, group_by, log_errors, cached_property, cut_prefix, memoize
+from funcy import re_finder, re_iter, group_by, log_errors, cached_property, cut_prefix, memoize
 from cacheops import file_cache
 from cacheops.utils import debug_cache_key
 from ftptool import FTPHost
@@ -40,11 +41,29 @@ class Command(BaseCommand):
             default=DEFAULT_NUMBER_OF_THREADS,
             help='Number of threads'
         ),
+        make_option(
+            '--cond',
+            action='store', dest='cond',
+            help='Update series satisfying condition'
+        ),
     )
 
     def handle(self, *args, **options):
+        def gse_file(name):
+            truncated = re.sub(r'\d{1,3}$', 'nnn', name)
+            return '%s%s/%s/matrix/' % (SERIES_MATRIX_URL.path, truncated, name)
+
         queue = DataQueue()
-        queue.put_dirs([SERIES_MATRIX_URL.path])
+        if options['cond']:
+            cond = dict(re_iter(r'(\w+)=([^;]+)', options['cond']))
+            if 'attrs' in cond:
+                cond['attrs'] = json.loads(cond['attrs'])
+
+            gse_names = Series.objects.filter(**cond).values_list('gse_name', flat=True)
+            print colored('Going to update %d series...' % len(gse_names), attrs=['bold'])
+            queue.put_dirs(gse_file(name) for name in gse_names)
+        else:
+            queue.put_dirs([SERIES_MATRIX_URL.path])
 
         # Launch worker threads
         for index in range(options['threads']):
