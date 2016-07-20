@@ -45,7 +45,7 @@ class SeriesAttribute(models.Model):
 
 
 class Sample(models.Model):
-    series = models.ForeignKey('Series', blank=True, null=True)
+    series = models.ForeignKey('Series', blank=True, null=True, related_name='samples')
     platform = models.ForeignKey(Platform, blank=True, null=True)
     gsm_name = models.TextField(blank=True)
     attrs = JSONField(default={})
