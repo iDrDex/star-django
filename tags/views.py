@@ -2,7 +2,7 @@ import re
 from operator import itemgetter
 from collections import defaultdict
 
-from funcy import distinct, imapcat, join, str_join, keep, silent, split, map
+from funcy import distinct, imapcat, join, keep, silent, split, map
 from handy.decorators import render_to, paginate
 from handy.utils import get_or_none
 
@@ -13,8 +13,8 @@ from django.forms import ModelForm, ValidationError
 from django.shortcuts import redirect, get_object_or_404
 
 from core.decorators import block_POST_for_incompetent
+from legacy.models import Series
 from .models import Tag, SeriesTag
-from .data import get_series_columns, SQLQuerySet
 
 
 @render_to()
@@ -40,7 +40,7 @@ def search(request):
         q_tag_ids = keep(tag_ids.get(t.lower()) for t in q_tags)
         include_series = reduce(set.intersection, (tag_series[t] for t in q_tag_ids))
         if include_series:
-            qs = qs.where('series_id in (%s)' % str_join(',', include_series))
+            qs = qs.filter(id__in=include_series)
         else:
             message = 'No series annotated with %s.' \
                 % (q_tags[0] if len(q_tags) == 1 else 'all these tags simultaneously')
@@ -48,10 +48,11 @@ def search(request):
             return {'series': []}
     if exclude_tags:
         exclude_series = join(tag_series[t] for t in exclude_tags)
-        qs = qs.where('series_id not in (%s)' % str_join(',', exclude_series))
+        qs = qs.exclude(id__in=exclude_series)
 
-    series_ids = qs.values_list('series_id', flat=True)
+    series_ids = qs.values_list('id', flat=True)
     tags = distinct(imapcat(serie_tags, series_ids), key=itemgetter('id'))
+    # TODO: do not hide excluded tags
 
     return {
         'series': qs,
@@ -178,22 +179,15 @@ class TagForm(ModelForm):
 
 def search_series_qs(query_string):
     if query_string:
-        sql = """
-                 select S.gse_name, {}, ts_rank_cd(doc, q) as rank
-                 from series_view SV join series S on (SV.series_id = S.id)
-                 , plainto_tsquery('english', %s) as q
-                 where doc @@ q order by rank desc, S.id
-              """.format(', '.join(get_series_columns()))
-        params = (query_string,)
+        return Series.objects.extra(
+            select={'rank': 'ts_rank(tsv, plainto_tsquery(%s))'},
+            select_params=[query_string],
+            where=["plainto_tsquery(%s) @@ tsv"],
+            params=[query_string],
+            order_by=['-rank', 'id']
+        )
     else:
-        # HACK: we use `where true` here to make SQLQuerySet.where() to work
-        sql = """
-                 select S.gse_name, {}
-                 from series_view SV join series S on (SV.series_id = S.id)
-                 where true order by S.id
-              """.format(', '.join(get_series_columns()))
-        params = ()
-    return SQLQuerySet(sql, params)
+        return Series.objects.all()
 
 
 def series_tags_data():

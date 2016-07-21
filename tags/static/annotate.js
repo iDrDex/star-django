@@ -31,7 +31,7 @@ function updateDerivedState() {
   })
 }
 
-var sampleIds = _.pluck(samples, 'sample_id');
+var sampleIds = _.pluck(samples, 'id');
 
 function updateUI() {
   updateDerivedState();
@@ -83,7 +83,7 @@ function updateUI() {
 
     var mark = ds.regexValid ? getRowMarker(state.regex) : function (s) {return s};
     var cells = visibleColumns.map(function (col) {
-      return '<td>' + (col == 'sample_id' ? sample[col] : mark(sample[col])) + '</td>';
+      return '<td>' + (col == 'id' ? sample[col] : mark(sample[col])) + '</td>';
     });
 
     // Tag value input
@@ -129,7 +129,7 @@ function getStats(regex) {
   var re = new RegExp(regex);
   var reG = new RegExp(regex, 'g');
   var reports = [];
-  var cols = state.column? [state.column] : _.without(columns, 'sample_id');
+  var cols = state.column? [state.column] : _.without(columns, 'id');
 
   // Count matches
   samples.forEach(function (sample) {
@@ -214,7 +214,7 @@ $('#facets').on('click', 'a', function () {
 
 $('#data-table').on('click', '.select', function () {
   var col = this.innerText.trim();
-  state.column = col != 'sample_id' ? col : '';
+  state.column = col != 'id' ? col : '';
   updateUI()
 })
 

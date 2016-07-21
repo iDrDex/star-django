@@ -50,26 +50,26 @@
     <div class="panel-body search-result">
         <div class="row">
             <div class="col-md-1 forum-info" style="width: 4.5em">
-                <a class="btn btn-success btn-sm" href="{{ url('annotate') }}?series_id={{ serie.series_id }}">Tag</a>
+                <a class="btn btn-success btn-sm" href="{{ url('annotate') }}?series_id={{ serie.id }}">Tag</a>
             </div>
             <div class="col-md-10 forum-heading">
-                <h4>{{ serie.series_title }}</h4>
-                <div class="desc">{{ serie.series_summary|truncate(300, True) }}</div>
+                <h4>{{ serie.attrs.title }}</h4>
+                <div class="desc">{{ serie.attrs.summary|truncate(300, True) }}</div>
                 <p style="margin: 0.5em 0 0">
                     Serie: {{ serie.gse_name }},
-                    {% with platforms = serie.series_platform_id.split('---') %}
+                    {% with platforms = serie.attrs.platform_id.split('---') %}
                         Platform{{ platforms|count|pluralize }}: {{ platforms|join(', ') }}
                     {%- endwith -%}
-                    {%- if serie_tags[serie.series_id] -%}
+                    {%- if serie_tags[serie.id] -%}
                         , Tags done:
-                        {%- for tag in serie_tags[serie.series_id] %}
-                            <a href="{{ url('on_demand_validate') }}?series_id={{ serie.series_id }}&amp;tag_id={{ tag.id }}" class="label label-success">{{ tag.name }}</a>
+                        {%- for tag in serie_tags[serie.id] %}
+                            <a href="{{ url('on_demand_validate') }}?series_id={{ serie.id }}&amp;tag_id={{ tag.id }}" class="label label-success">{{ tag.name }}</a>
                         {% endfor %}
                     {% endif %}
                 </p>
             </div>
             <div class="col-md-1 forum-info">
-                <span class="number">{{ serie.series_sample_id.split()|count }}</span>
+                <span class="number">{{ serie.attrs.sample_id.split()|count }}</span>
                 <small>Samples</small>
             </div>
         </div>

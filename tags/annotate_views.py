@@ -2,9 +2,8 @@ import json
 import random
 from datetime import timedelta
 
-from funcy import group_by, first, project, select_keys, filter, takewhile
+from funcy import group_by, first, project, select_keys, takewhile, without, distinct, merge, icat
 from handy.decorators import render_to
-from handy.db import fetch_dict, fetch_dicts
 
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
@@ -17,11 +16,10 @@ from django.utils import timezone
 
 from core.tasks import update_dashboard
 from core.decorators import block_POST_for_incompetent
-from legacy.models import Sample
+from legacy.models import Series, Sample
 from tags.models import Tag, SeriesTag, SampleTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
 from .tasks import validation_workflow, calc_validation_stats
-from .data import get_series_columns, get_samples_columns
 
 
 @login_required
@@ -35,7 +33,7 @@ def annotate(request):
     if not series_id:
         raise Http404
 
-    serie = fetch_serie(series_id)
+    serie = Series.objects.get(pk=series_id)
     samples, columns = fetch_annotation_data(series_id)
 
     done_tag_ids = SeriesTag.objects.filter(series_id=series_id).values('tag_id')
@@ -104,7 +102,7 @@ def save_annotation(request):
     return redirect(reverse(annotate) + '?series_id=' + series_id)
 
 
-BLIND_FIELDS = {'id', 'sample_id', 'sample_geo_accession', 'sample_platform_id', 'platform_id'}
+BLIND_FIELDS = {'id', 'gsm_name', 'platform_id'}
 
 @login_required
 @block_POST_for_incompetent
@@ -124,7 +122,7 @@ def validate(request):
 
     return {
         'job': job,
-        'serie': fetch_serie(job.series_tag.series_id),
+        'serie': job.series_tag.series,
         'tag': tag,
         'columns': columns,
         'samples': samples,
@@ -227,7 +225,7 @@ def on_demand_validate(request):
         else:
             series_tag = series_tags[0]
 
-    serie = fetch_serie(series_id)
+    serie = Series.objects.get(pk=series_id)
     tag = series_tag.tag
     samples, columns = fetch_annotation_data(series_id, series_tag.platform_id, blind=BLIND_FIELDS)
 
@@ -355,7 +353,7 @@ def competence(request):
     series_tag = canonical.series_tag
     series_id = series_tag.series_id
 
-    serie = fetch_serie(series_id)
+    serie = Series.objects.get(pk=series_id)
     tag = series_tag.tag
     samples, columns = fetch_annotation_data(series_id, series_tag.platform_id, blind=BLIND_FIELDS)
 
@@ -428,32 +426,28 @@ def remove_constant_fields(rows):
 
 # Data fetching utils
 
-def fetch_annotation_data(series_id, platform_id=None, blind={'id'}):
-    samples = fetch_samples(series_id, platform_id=platform_id)
+def fetch_annotation_data(series_id, platform_id=None, blind=['id']):
+    samples = fetch_samples(series_id, platform_id)
     samples = remove_constant_fields(samples)
-    columns = get_samples_columns()
-    if samples:
-        desired = set(samples[0].keys()) - blind
-        columns = filter(desired, columns)
-
+    columns = without(get_samples_columns(samples), *blind)
     return samples, columns
 
 
-def fetch_serie(series_id):
-    cols = ', '.join(get_series_columns())
-    return fetch_dict(
-        '''select ''' + cols + ''', S.gse_name from series_view V
-            join series S on (V.series_id = S.id)
-            where V.series_id = %s''',
-        (series_id,)
-    )
-
-
 def fetch_samples(series_id, platform_id=None):
-    cols = ', '.join(get_samples_columns())
-    sql = 'select ' + cols + ' from sample_view where series_id = %s'
-    params = (series_id,)
-    if platform_id:
-        sql += ' and platform_id = %s'
-        params += (platform_id,)
-    return fetch_dicts(sql, params)
+    qs = Sample.objects.filter(series=series_id)
+    if platform_id is not None:
+        qs = qs.filter(platform=platform_id)
+
+    return [merge(d, json.loads(d['attrs'])) for d in qs.values()]
+
+
+def get_samples_columns(samples):
+    preferred = ['id', 'description', 'characteristics_ch1', 'characteristics_ch2']
+    exclude = ['attrs', 'supplementary_file', 'geo_accession']
+
+    columns = distinct(icat(s.keys() for s in samples))
+    return lift(preferred, without(columns, *exclude))
+
+
+def lift(preferred, seq):
+    return [col for col in preferred if col in seq] + without(seq, *preferred)
