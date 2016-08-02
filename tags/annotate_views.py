@@ -434,7 +434,7 @@ def fetch_annotation_data(series_id, platform_id=None, blind=['id']):
 
 
 def fetch_samples(series_id, platform_id=None):
-    qs = Sample.objects.filter(series=series_id)
+    qs = Sample.objects.filter(series=series_id).exclude(deleted='T')
     if platform_id is not None:
         qs = qs.filter(platform=platform_id)
 
