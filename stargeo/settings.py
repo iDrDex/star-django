@@ -170,6 +170,7 @@ CACHEOPS_REDIS = {
 }
 
 
+CELERY_TASK_TIME_LIMIT = 60 * 60 * 12
 CELERY_SEND_TASK_ERROR_EMAILS = True
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
