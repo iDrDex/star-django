@@ -9,7 +9,7 @@ from handy.utils import get_or_none
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
-from django.forms import ModelForm, ValidationError
+from django.forms import ModelForm, ValidationError, HiddenInput
 from django.shortcuts import redirect, get_object_or_404
 
 from core.decorators import block_POST_for_incompetent
@@ -157,7 +157,14 @@ def delete_tag(request, tag_id):
 class TagForm(ModelForm):
     class Meta:
         model = Tag
-        fields = ['tag_name', 'description']
+        fields = ['tag_name', 'description',
+                  'concept_name', 'ontology_id', 'concept_full_id']
+
+    def __init__(self, *args, **kwargs):
+        super(TagForm, self).__init__(*args, **kwargs)
+        self.fields['concept_name'].widget.attrs['class'] = 'bp_form_complete-MESH-name'
+        self.fields['ontology_id'].widget = HiddenInput()
+        self.fields['concept_full_id'].widget = HiddenInput()
 
     def clean_tag_name(self):
         tag_name = self.cleaned_data['tag_name']

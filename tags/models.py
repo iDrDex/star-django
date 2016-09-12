@@ -13,6 +13,11 @@ VALIDATION_REWARD = Decimal('0.03')
 class Tag(models.Model):
     tag_name = models.CharField(max_length=512)
     description = models.CharField(max_length=512, blank=True)
+
+    ontology_id = models.CharField(max_length=127, blank=True)
+    concept_full_id = models.CharField(max_length=512, blank=True)
+    concept_name = models.CharField(max_length=512, blank=True)
+
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey('core.User', db_column='created_by', blank=True, null=True,

@@ -2,6 +2,12 @@
 
 {% set page_title = title %}
 
+
+{% block script %}
+    <script src="{{ static('bioontology.form_complete.js') }}"></script>
+{% endblock %}
+
+
 {% block header %}
     {% if request.user.is_staff and tag %}
     <div class="pull-right">
@@ -23,6 +29,40 @@
     </form>
     <script type="text/javascript">
         $('form.form :input:visible:first').focus();
+
+        $('#id_concept_name').after('<span id="ontology_helper">No ontology</span>');
+
+        function updateTagFormFields() {
+            // Clear if no concept
+            if (!$('#id_concept_name').val()) {
+                $('#concept_name_bioportal_ontology_id').val('');
+                $('#concept_name_bioportal_full_id').val('');
+            }
+            // Fill db hiddens from bioportal ones
+            $('#id_ontology_id').val($('#concept_name_bioportal_ontology_id').val())
+            $('#id_concept_full_id').val($('#concept_name_bioportal_full_id').val())
+
+            $('#ontology_helper').text($('#concept_name_bioportal_full_id').val()
+                                       || 'No ontology')
+        }
+
+        $(function () {
+            waitForElement('#concept_name_bioportal_ontology_id', function () {
+                // Fill bioportal hiddens from db ones
+                $('#concept_name_bioportal_ontology_id').val($('#id_ontology_id').val())
+                $('#concept_name_bioportal_full_id').val($('#id_concept_full_id').val())
+
+                // Set up filling back
+                updateTagFormFields();
+                setInterval(updateTagFormFields, 200);
+                $('form.form').submit(updateTagFormFields);
+            })
+        })
+
+        function waitForElement(selector, func) {
+            if (document.querySelector(selector)) func();
+            else setTimeout(function() {waitForElement(selector, func)}, 200);
+        }
     </script>
 </div></div>
 
