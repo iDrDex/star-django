@@ -15,9 +15,9 @@ requests==2.7.0
 ftptool==0.7.1
 django-cacheops==2.4.2
 gzip-reader==0.1
-pandas==0.16.2
+pandas==0.18.1
 termcolor==1.1.0
-numpy==1.9.2
+numpy==1.11.1
 numexpr==2.4.3
 scipy==0.16.0
 statsmodels==0.6.1
