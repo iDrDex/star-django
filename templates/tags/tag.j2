@@ -30,7 +30,9 @@
     <script type="text/javascript">
         $('form.form :input:visible:first').focus();
 
-        $('#id_concept_name').after('<span id="ontology_helper">No ontology</span>');
+        $('#id_concept_name').after(
+            '<b>Ontology: </b><span id="ontology_helper">None</span> &nbsp;'
+            + '<b>Concept: </b><span id="concept_helper">None</span>');
 
         function updateTagFormFields() {
             // Clear if no concept
@@ -42,8 +44,10 @@
             $('#id_ontology_id').val($('#concept_name_bioportal_ontology_id').val())
             $('#id_concept_full_id').val($('#concept_name_bioportal_full_id').val())
 
-            $('#ontology_helper').text($('#concept_name_bioportal_full_id').val()
-                                       || 'No ontology')
+            $('#ontology_helper').text($('#concept_name_bioportal_ontology_id').val()
+                                       || 'None')
+            $('#concept_helper').text($('#concept_name_bioportal_full_id').val()
+                                       || 'None')
         }
 
         $(function () {
