@@ -105,7 +105,6 @@ function bpFormCompleteOnLoad() {
 
 // Formats the search results
 function formComplete_formatItem(row) {
-
     var input = this.extraParams.input;
     var BP_include_definitions = jQuery(input).attr("data-bp_include_definitions");
     if (typeof BP_include_definitions === "undefined") {
@@ -160,7 +159,7 @@ function formComplete_formatItem(row) {
     // Markup the search keywords.
     var resultClass = row[0].replace(regex, "<b><span style='color:#006600;'>$1</span></b>");
     // Set wider class name column
-    var resultClassWidth = "350px";
+    var resultClassWidth = "450px"; // Wider than bioportal default
     if (BP_include_definitions) {
         resultClassWidth = "150px";
     } else if (ontology_id == "") {
@@ -176,25 +175,17 @@ function formComplete_formatItem(row) {
     // row[7] is the ontology_id, only included when searching multiple ontologies
     var result_ont_version = row[3],
         result_uri = row[4];
-    if (ontology_id !== "") {
-        if (BP_include_definitions) {
-            resultDiv.append(definitionDiv(result_ont_version, result_uri));
-        }
-        resultDiv.append(resultClassDiv);
-        resultDiv.append(resultTypeSpan.attr("style", "overflow: hidden; float: none;"));
-    } else {
-        resultDiv.append(resultClassDiv);
-        if (BP_include_definitions) {
-            resultDiv.append(definitionDiv(result_ont_version, result_uri));
-        }
-        resultDiv.append(resultTypeSpan);
-        var resultOnt = row[7];
-        var resultOntDiv = jQuery("<div>");
-        resultOntDiv.addClass("result_ontology");
-        resultOntDiv.attr("style", "overflow: hidden;");
-        resultOntDiv.html(truncateText(resultOnt, 30));
-        resultDiv.append(resultOntDiv);
+
+    resultDiv.append(resultClassDiv);
+    if (BP_include_definitions) {
+        resultDiv.append(definitionDiv(result_ont_version, result_uri));
     }
+    resultDiv.append(resultTypeSpan);
+    var resultOnt = row[7];
+    // NOTE: Hardcoding ontology to the right of the item.
+    //       Bioportal formatting hadn't really worked.
+    resultClassDiv.append('<span style="float:right;width:180px;font-size:90%">' + resultOnt + '</span>')
+
     return obsolete_prefix + resultDiv.html() + obsolete_suffix;
 }
 
