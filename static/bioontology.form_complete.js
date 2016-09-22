@@ -184,7 +184,7 @@ function formComplete_formatItem(row) {
     var resultOnt = row[7];
     // NOTE: Hardcoding ontology to the right of the item.
     //       Bioportal formatting hadn't really worked.
-    resultClassDiv.append('<span style="float:right;width:180px;font-size:90%">' + resultOnt + '</span>')
+    resultClassDiv.append('<span style="float:right;width:240px;font-size:90%">' + resultOnt + '</span>')
 
     return obsolete_prefix + resultDiv.html() + obsolete_suffix;
 }

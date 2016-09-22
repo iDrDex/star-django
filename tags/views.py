@@ -162,7 +162,7 @@ class TagForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(TagForm, self).__init__(*args, **kwargs)
-        self.fields['concept_name'].widget.attrs['class'] = 'bp_form_complete-DOID,EFO,MESH-name'
+        self.fields['concept_name'].widget.attrs['class'] = 'bp_form_complete-all-name'
         self.fields['ontology_id'].widget = HiddenInput()
         self.fields['concept_full_id'].widget = HiddenInput()
 
