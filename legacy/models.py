@@ -35,15 +35,6 @@ class Series(models.Model):
         db_table = 'series'
 
 
-class SeriesAttribute(models.Model):
-    series = models.ForeignKey(Series, blank=True, null=True)
-    attribute_value = models.TextField(blank=True)
-    attribute_name = models.TextField(blank=True)
-
-    class Meta:
-        db_table = 'series_attribute'
-
-
 class Sample(models.Model):
     series = models.ForeignKey('Series', blank=True, null=True, related_name='samples')
     platform = models.ForeignKey(Platform, blank=True, null=True)
@@ -56,15 +47,6 @@ class Sample(models.Model):
 
     class Meta:
         db_table = 'sample'
-
-
-class SampleAttribute(models.Model):
-    sample = models.ForeignKey(Sample, blank=True, null=True)
-    attribute_value = models.TextField(blank=True)
-    attribute_name = models.TextField(blank=True)
-
-    class Meta:
-        db_table = 'sample_attribute'
 
 
 # class SeriesMatrix(models.Model):

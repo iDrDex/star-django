@@ -20,7 +20,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 
-from legacy.models import Series, SeriesAttribute, Platform, Sample, SampleAttribute
+from legacy.models import Series, Platform, Sample
 
 
 # TODO: verbosity levels
@@ -185,7 +185,7 @@ def check_line(line, acc):
     if line.startswith('!series_matrix_table_begin'):
         return True
 
-    # If serie is known then always update
+    # If serie is known then ignore filters below
     if line.startswith('!Series_geo_accession') and find_value(line) in known_gses():
         acc['known'] = True
     if acc.get('known'):
