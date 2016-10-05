@@ -134,25 +134,26 @@ def pull_db(dump='app'):
     remote_db = dj_database_url.parse(app_env['REAL_DATABASE_URL'])
     local_db = dj_database_url.parse(app_env['DATABASE_URL'])
 
+    DUMP_COMMAND = 'PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s ' \
+                   '| gzip --rsyncable > stargeo.sql.gz' % remote_db
+
     # Make and download database dump
     if dump == 'direct':
         # Dump directly from remote database with local pg_dump
         print('Making database dump...')
-        local('PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s > stargeo.sql'
-                % remote_db)
+        local(DUMP_COMMAND)
     elif dump == 'app':
         # Alternative: dump to app-server than rsync here,
-        #              useful with slow or flaky internet connection
+        #              useful with slow or flaky internet connection.
         print('Making database dump...')
-        run('PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s > stargeo.sql'
-                % remote_db)
+        run(DUMP_COMMAND)
         print('Downloading dump...')
-        local('rsync -avz --progress stargeo:/home/ubuntu/app/stargeo.sql stargeo.sql')
-        run('rm stargeo.sql')
+        local('rsync -av --progress stargeo:/home/ubuntu/app/stargeo.sql.gz stargeo.sql.gz')
+        run('rm stargeo.sql.gz')
     elif dump == 'local':
         print('Using local dump...')
-        if not os.path.exists('stargeo.sql'):
-            print(red('Local database dump not found (stargeo.sql).\n'
+        if not os.path.exists('stargeo.sql.gz'):
+            print(red('Local database dump not found (stargeo.sql.gz).\n'
                       'Please use "remote" or "app" dump.'))
             return
 
@@ -167,4 +168,4 @@ def pull_db(dump='app'):
             return
 
     # Load dump
-    local('psql -Upostgres -f stargeo.sql')
+    local('gzip -cd stargeo.sql.gz | psql -Upostgres -f -')
