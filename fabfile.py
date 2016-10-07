@@ -135,7 +135,7 @@ def pull_db(dump='app'):
     local_db = dj_database_url.parse(app_env['DATABASE_URL'])
 
     DUMP_COMMAND = 'PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s ' \
-                   '| gzip --rsyncable > stargeo.sql.gz' % remote_db
+                   '| gzip --fast --rsyncable > stargeo.sql.gz' % remote_db
 
     # Make and download database dump
     if dump == 'direct':
