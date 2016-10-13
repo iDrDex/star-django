@@ -5,13 +5,13 @@ import urllib2
 import shutil
 
 from easydict import EasyDict
-from funcy import first, log_durations, imap, memoize, cat, re_all
+from funcy import log_durations, imap, memoize, cat, re_all
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 from django.db import transaction
 
-from legacy.models import Series, Platform, PlatformProbe, MetaAnalysis
+from legacy.models import PlatformProbe, MetaAnalysis
 from tags.models import Tag, SampleAnnotation
 
 import logging

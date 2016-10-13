@@ -40,13 +40,13 @@ def download_as_string(bucket_name, key_name):
     return key.get_contents_as_string()
 
 
-def download_to_filename(desc, to_filename):
+def download_to_filename(desc, to_filename):  # flaw: never used
     bucket = _get_bucket(desc['bucket'])
     key = bucket.get_key(desc['key'], validate=False)
     key.get_contents_to_filename(to_filename)
 
 
-def remove_files(bucket_name, key_names):
+def remove_files(bucket_name, key_names):  # flaw: never used
     if not key_names:
         return
     _get_bucket(bucket_name).delete_keys(key_names)

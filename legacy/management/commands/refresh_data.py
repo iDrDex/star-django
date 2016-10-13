@@ -48,7 +48,7 @@ class Command(BaseCommand):
         ),
     )
 
-    def handle(self, *args, **options):
+    def handle(self, **options):
         def gse_file(name):
             truncated = re.sub(r'\d{1,3}$', 'nnn', name)
             return '%s%s/%s/matrix/' % (SERIES_MATRIX_URL.path, truncated, name)

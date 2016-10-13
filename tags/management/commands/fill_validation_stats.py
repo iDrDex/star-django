@@ -28,7 +28,7 @@ class Command(BaseCommand):
         ),
     )
 
-    def handle(self, *args, **options):
+    def handle(self, **options):
         if options['full']:
             raise NotImplementedError('Not updated since earnings scheme change')
 

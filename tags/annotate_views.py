@@ -75,7 +75,7 @@ def save_annotation(request):
         # Save all annotations and used regexes
         for platform_id, annotations in groups.items():
             # Do not allow for same user to annotate same serie twice
-            series_tag, created = SeriesTag.objects.get_or_create(
+            series_tag, _ = SeriesTag.objects.get_or_create(
                 series_id=series_id, platform_id=platform_id, tag_id=tag_id, created_by_id=user_id,
                 defaults=dict(header=column, regex=regex, modified_by_id=user_id)
             )

@@ -19,7 +19,7 @@ CC_TOKEN = '30032544'
 
 
 @retry(2, requests.ConnectionError)
-def make_request(method, url, data=None, silent=False):
+def make_request(method, url, data=None):
     request_func = getattr(requests, method)
     r = request_func(API_URL + url, data=json.dumps(data), auth=(PLATFORM_NAME, PLATFORM_KEY))
     return r.json()
