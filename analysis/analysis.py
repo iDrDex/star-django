@@ -234,7 +234,7 @@ def get_data(gse_name, gpl_name):
     for attempt in (0, 1):
         matrix_filename = get_matrix_filename(gse_name, gpl_name)
         if not matrix_filename:
-            return pf.DataFrame()
+            return pd.DataFrame()
 
         try:
             headerRows = get_matrix_nondata_lines(gzip.open(matrix_filename))
