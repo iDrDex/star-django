@@ -7,6 +7,7 @@ from handy.models import JSONField
 
 class Platform(models.Model):
     gpl_name = models.TextField(blank=True)
+    specie = models.CharField(max_length=127, blank=False, default='human')
     scopes = models.CharField(max_length=512, blank=True)
     identifier = models.CharField(max_length=512, blank=True)
     datafile = models.TextField(blank=True)
@@ -16,7 +17,7 @@ class Platform(models.Model):
 
 
 class PlatformProbe(models.Model):
-    platform = models.ForeignKey(Platform, blank=True, null=True)
+    platform = models.ForeignKey(Platform, blank=True, null=True, related_name='probes')
     probe = models.TextField(blank=True)
     mygene_sym = models.TextField(blank=True)
     mygene_entrez = models.IntegerField(blank=True, null=True)

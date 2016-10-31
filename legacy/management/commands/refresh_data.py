@@ -25,6 +25,7 @@ from legacy.models import Series, Platform, Sample
 
 # TODO: verbosity levels
 
+SPECIES = {'9606': 'human', '10090': 'mouse', '10116': 'rat'}
 DEFAULT_NUMBER_OF_THREADS = 20
 SERIES_MATRIX_URL = urlparse.urlparse('ftp://ftp.ncbi.nih.gov/geo/series/')
 SOCKET_TIMEOUT = 20
@@ -115,6 +116,7 @@ def insert_or_update_data(series_df, samples_df):
 
     # Create series and its attributes
     attrs = {cut_prefix(name, 'series_'): uni_cat(series_df[name]) for name in series_df.columns}
+    assert attrs['sample_taxid'] == attrs['platform_taxid']
     series, created = Series.objects.update_or_create(gse_name=gse_name, defaults={'attrs': attrs})
 
     # Create platform
@@ -122,7 +124,8 @@ def insert_or_update_data(series_df, samples_df):
     assert len(gpls) == 1
     gpl_name = gpls[0]
     print "  %s" % gpl_name
-    platform, _ = Platform.objects.get_or_create(gpl_name=gpl_name)
+    platform, _ = Platform.objects.get_or_create(
+        gpl_name=gpl_name, defaults={'specie': SPECIES[attrs['platform_taxid']]})
 
     # If updating check if some samples no longer present,
     # mark disappeared samples as deleted.
@@ -196,7 +199,7 @@ def check_line(line, acc):
         return False
 
     # Only fetch human studies
-    if line.startswith('!Series_sample_taxid') and find_value(line) != "9606":
+    if line.startswith('!Series_sample_taxid') and find_value(line) not in SPECIES:
         return False
 
 @memoize
