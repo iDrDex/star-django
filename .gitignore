@@ -7,3 +7,5 @@ stargeo.sql*
 .pdb-pyhist
 *.lprof
 *.pyxbldc
+_errors
+_files/*
