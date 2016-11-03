@@ -58,7 +58,8 @@ class Command(BaseCommand):
                 ipdb.pm()
             sys.excepthook = info
 
-        platform_pks = Platform.objects.filter(datafile='').values_list('pk', flat=True)
+        platform_pks = Platform.objects.filter(datafile='').values_list('pk', flat=True) \
+                                       .order_by('-pk')
         for pk in platform_pks:
             fill_probes(pk)
 
