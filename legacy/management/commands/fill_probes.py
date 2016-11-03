@@ -246,6 +246,7 @@ def _ensure_blat():
     return blat_file
 
 
+@retry(50, errors=requests.HTTPError, timeout=30)
 def _ensure_refmrna(specie):
     specie_refmrna = os.path.join(settings.BASE_DIR, '_files/%s.fa' % specie)
     if not os.path.isfile(specie_refmrna):
@@ -256,6 +257,7 @@ def _ensure_refmrna(specie):
     return specie_refmrna
 
 
+@retry(50, errors=requests.HTTPError, timeout=30)
 def http_to_file(url, filename):
     response = requests.get(url, stream=True)
     with open(filename, 'wb') as f:
@@ -297,7 +299,7 @@ shared = Shared()
 
 @decorator
 def ftp_retry(call):
-    tries = 5
+    tries = 50
     for attempt in xrange(tries):
         try:
             try:
