@@ -192,7 +192,7 @@ def mygene_fetch(platform, probes, col, scopes):
 def _mygene_fetch(queries, scopes, specie):
     fields = ['entrezgene', 'symbol']
     mg = mygene.MyGeneInfo()
-    cprint('> Going to fetch %d genes...' % len(queries), 'cyan')
+    cprint('> Going to query %d genes in %s...' % (len(queries), scopes), 'cyan')
     data = mg.querymany(queries, scopes=scopes, fields=fields,
                         species=specie, email='suor.web@gmail.com')
     return {item['query']: (item['entrezgene'], item['symbol'])
