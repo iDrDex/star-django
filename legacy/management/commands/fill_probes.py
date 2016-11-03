@@ -284,7 +284,8 @@ def read_table(table, filename):
 
     df.index = df.index.map(str)
     df.columns = [re.sub(r'\W+', '_', col).lower() for col in df.columns]
-    return df
+    # Drop columns with same name
+    return df.ix[:, ~df.columns.duplicated()]
 
 
 # FTP utils
