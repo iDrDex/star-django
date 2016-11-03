@@ -126,9 +126,9 @@ SCOPE_COLUMNS = (
     ('entrezgene, retired, ensemblgene, symbol', ['orf']),
     # ('unigene', []),  # Hs.12391
     ('accession', ['gb_acc', 'gene_bank_acc', 'gene_bank_accession', 'gen_bank_accession',
-                   'gb_list']),
-    ('symbol', ['gene_symbol']),
-    ('symbol,refseq', ['spot_id']),
+                   'genbank_accession', 'gb_list']),
+    ('symbol,alias', ['gene_symbol']),
+    ('symbol,alias,refseq', ['spot_id']),
 )
 
 @collecting
