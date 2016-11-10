@@ -89,6 +89,8 @@ def fill_probes(platform_id):
 
     if not any(tables):
         cprint('No data for %s' % gpl_name, 'red')
+        platform.datafile = '<no data>'
+        platform.save()
         return
 
     # Read tables in
@@ -115,7 +117,8 @@ def fill_probes(platform_id):
             break  # Stop on first match
     else:
         cprint('Nothing matched for %s' % gpl_name, 'red')
-        # import ipdb; ipdb.set_trace()
+        platform.datafile = '<nothing matched>'
+        platform.save()
 
 
 # Ordered by priority
