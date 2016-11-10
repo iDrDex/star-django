@@ -124,15 +124,15 @@ def fill_probes(platform_id):
 # Ordered by priority
 SCOPE_COLUMNS = (
     ('dna', ['sequence', 'platform_sequence', 'probe_sequence', 'probeseq']),
-    ('entrezgene, retired', ['entrez', 'entrez_id', 'entrez_gene', 'entrez_gene_id']),
+    ('entrezgene,retired', ['entrez', 'entrez_id', 'entrez_gene', 'entrez_gene_id']),
     ('ensemblgene', ['ensembl', 'ensembl_id', 'ensembl_gene', 'ensembl_gene_id', 'ensg_id']),
-    ('entrezgene, retired, ensemblgene', ['gene_id']),
-    ('entrezgene, retired, ensemblgene, symbol', ['orf']),
+    ('entrezgene,retired,ensemblgene', ['gene_id']),
+    ('entrezgene,retired,ensemblgene,symbol,alias', ['orf']),
     # ('unigene', []),  # Hs.12391
     ('accession', ['gb_acc', 'gene_bank_acc', 'gene_bank_accession', 'gen_bank_accession',
                    'genbank_accession', 'gb_list']),
     ('symbol,alias', ['gene_symbol']),
-    ('symbol,alias,refseq', ['spot_id']),
+    ('symbol,alias,refseq,ensemblgene', ['spot_id']),
 )
 
 @collecting
