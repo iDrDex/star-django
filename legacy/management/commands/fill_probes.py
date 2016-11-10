@@ -279,9 +279,9 @@ def read_table(table, filename):
 
     # Try reading table
     try:
-        df = pd.read_table(StringIO(table), index_col=0, dtype=str)
-    except pd.parser.CParserError:
-        cprint('Failed to parse %s' % filename, 'red')
+        df = pd.read_table(StringIO(table), index_col=0, dtype=str, engine='c')
+    except Exception as e:
+        cprint('Failed to parse %s: %s' % (filename, e), 'red')
         dump_error('read_table', {filename: _original_table})
         return None
 
