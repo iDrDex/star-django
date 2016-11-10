@@ -278,6 +278,7 @@ def http_to_file(url, filename):
 
 
 def read_table(table, filename):
+    print '  reading %s' % filename
     _original_table = table
     # Strip leading comments
     if table[0] in '#^':
