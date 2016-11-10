@@ -218,6 +218,7 @@ def get_dna_probes(platform, probes, col):
     # Match sequences
     probes_fa = probes_name + ".fa"
     probes_psl = probes_name + "-refMrna.psl"
+    psl_written = False
     if not os.path.isfile(probes_psl):  # Simple caching
         cmd = """{blat}
                  {refmrna}
@@ -229,14 +230,22 @@ def get_dna_probes(platform, probes, col):
         print "BLATTING RefSeq mRNAs..."
         with print_durations('blatting %s' % platform.gpl_name):
             output = subprocess.check_call(cmd.split(), stdout=sys.stdout, stderr=sys.stderr)
+            psl_written = True
 
     # Parse results
-    print "Parsing %s psl..." % platform.gpl_name
-    parser = SearchIO.parse(probes_psl, "blat-psl")
-    data = []
-    for result in parser:
-        best_hit = max(result, key=lambda hit: max(hsp.score for hsp in hit))
-        data.append((best_hit.query_id, best_hit.id))
+    try:
+        print "Parsing %s psl..." % platform.gpl_name
+        parser = SearchIO.parse(probes_psl, "blat-psl")
+        data = []
+        for result in parser:
+            best_hit = max(result, key=lambda hit: max(hsp.score for hsp in hit))
+            data.append((best_hit.query_id, best_hit.id))
+    except AssertionError:
+        # Failed parsing, probably broken psl
+        if psl_written:
+            raise
+        os.remove(probes_psl)
+        return get_dna_probes(platform, probes, col)
 
     return pd.DataFrame(data, columns=['id', 'refMrna']).set_index('id')
 
