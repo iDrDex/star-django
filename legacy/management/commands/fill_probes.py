@@ -13,6 +13,7 @@ from itertools import compress
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 from django.conf import settings
 
 from funcy import *  # noqa
@@ -72,6 +73,8 @@ def fill_probes(platform_id):
     assert not platform.datafile
     assert platform.specie
 
+    stats = {}
+
     annot_file = '/pub/geo/DATA/annotation/platforms/%s.annot.gz' % gpl_name
     family_file = '/pub/geo/DATA/SOFT/by_platform/%s/%s_family.soft.gz' % (gpl_name, gpl_name)
     files = [annot_file, family_file]
@@ -86,38 +89,70 @@ def fill_probes(platform_id):
     files.extend(supplementary_files)
     tables.extend(decompress(download('%s%s' % (supplementary_dir, f)))
                   for f in supplementary_files)
+    stats['files'] = keep(files)
 
     if not any(tables):
         cprint('No data for %s' % gpl_name, 'red')
         platform.datafile = '<no data>'
+        platform.last_filled = timezone.now()
+        platform.stats = stats
         platform.save()
         return
 
     # Read tables in
     df = pd.concat(read_table(table, file) for table, file in zip(tables, files) if table)
     # del tables  # free memory
+    stats['probes'] = len(set(df.index))
 
     # Try to resolve probes starting from best scopes
-    for col, scopes in with_scopes(df.columns):
-        probes = df.dropna(subset=[col])
-        mygene_probes = mygene_fetch(platform, probes, col, scopes)
+    mygene_probes = []
+    stats['matches'] = []
+    for scopes, cols in SCOPE_COLUMNS:
+        cols = list(set(cols) & set(df.columns))
+        if not cols:
+            continue
 
-        if mygene_probes:
+        probes = pd.concat(df[col].dropna() for col in cols)
+        new_matches = mygene_fetch(platform, probes, scopes)
+        mygene_probes.extend(new_matches)
+
+        # Drop matched probes
+        if new_matches:
+            counts = count_by(lambda d: bool(d.get('dup')), new_matches)
+            stats['matches'].append({
+                'scopes': scopes, 'cols': cols,
+                'found': counts[False], 'dups': counts[True],
+            })
+
+            df = df.drop(pluck('probe', new_matches))
+            if df.empty:
+                    break
+
+    # Insert found genes
+    if mygene_probes:
+        dups, to_insert = split(lambda d: d.get('dup'), mygene_probes)
+        stats['probes_matched'] = len(to_insert)
+        stats['probes_dup'] = len(dups)
+        if to_insert:
             with transaction.atomic():
-                platform.scopes = scopes
-                platform.identifier = col
                 platform.datafile = datafile
+                platform.last_filled = timezone.now()
+                platform.stats = stats
                 platform.save()
 
+                platform.probes.delete()
                 PlatformProbe.objects.bulk_create([
                     PlatformProbe(platform=platform, **probe_info)
-                    for probe_info in mygene_probes
+                    for probe_info in to_insert
                 ])
-                cprint('Inserted %d probes for %s' % (len(mygene_probes), gpl_name), 'green')
-            break  # Stop on first match
+        cprint('Inserted %d probes for %s' % (len(to_insert), gpl_name), 'green')
+        cprint('    skipped %d duplicate matches' % len(dups), 'yellow')
+
     else:
         cprint('Nothing matched for %s' % gpl_name, 'red')
         platform.datafile = '<nothing matched>'
+        platform.last_filled = timezone.now()
+        platform.stats = stats
         platform.save()
 
 
@@ -125,32 +160,26 @@ def fill_probes(platform_id):
 SCOPE_COLUMNS = (
     ('dna', ['sequence', 'platform_sequence', 'probe_sequence', 'probeseq']),
     ('entrezgene,retired', ['entrez', 'entrez_id', 'entrez_gene', 'entrez_gene_id']),
-    ('ensemblgene', ['ensembl', 'ensembl_id', 'ensembl_gene', 'ensembl_gene_id', 'ensg_id']),
+    ('ensemblgene', ['ensembl', 'ensembl_id', 'ensembl_gene', 'ensembl_gene_id', 'ensg_id',
+                     'transcript_id']),
     ('entrezgene,retired,ensemblgene', ['gene_id']),
-    ('entrezgene,retired,ensemblgene,symbol,alias', ['orf']),
-    # ('unigene', []),  # Hs.12391
+    ('entrezgene,retired,ensemblgene,symbol,alias', ['orf', 'orf_list']),
+    ('unigene', ['unigene_id']),
+    ('refseq', ['refseq', 'refseq_transcript_id', 'representative_public_id']),
     ('accession', ['gb_acc', 'gene_bank_acc', 'gene_bank_accession', 'gen_bank_accession',
                    'genbank_accession', 'gb_list']),
-    ('symbol,alias', ['gene_symbol']),
+    ('symbol,alias', ['gene_symbol', 'unigene_symbol']),
     ('symbol,alias,refseq,ensemblgene', ['spot_id']),
 )
 
-@collecting
-def with_scopes(columns):
-    for scope, fields in SCOPE_COLUMNS:
-        for f in fields:
-            if f in columns:
-                yield f, scope
 
-
-def mygene_fetch(platform, probes, col, scopes):
+def mygene_fetch(platform, probes, scopes):
     """Queries mygene.info for current entrezid and sym, given an identifier."""
     if scopes == "dna":
-        probes = get_dna_probes(platform, probes, col)
-        col = "refMrna"
+        probes = get_dna_probes(platform, probes)
         scopes = "accession"
 
-    _parsed_queries = probes[col].map(lambda v: re_all(r'[\w.-]+', v))
+    _parsed_queries = probes.map(lambda v: re_all(r'[\w.-]+', v))
     queries_by_probe = _parsed_queries.groupby(level=0).sum()
 
     # Collect all possible queries to make a single request to mygene
@@ -161,32 +190,22 @@ def mygene_fetch(platform, probes, col, scopes):
     queries = {query.decode('unicode_escape').encode('ascii', 'ignore')
                for query in queries}
 
+    if not queries:
+        return []
     mygenes = _mygene_fetch(queries, scopes, platform.specie)
 
     # Form results into rows
     results = []
-    warnings = []
     for probe, queries in queries_by_probe.iteritems():
         matches = distinct(keep(mygenes.get, queries))
         if len(matches) > 1:
-            warnings.append((probe, queries))
-        if matches:
+            results.append({'probe': probe, 'dup': True})
+        elif matches:
             # Select first for now
             entrez, sym = matches[0]
             results.append({
                 'probe': probe, 'mygene_sym': sym, 'mygene_entrez': entrez
             })
-
-    # Save if more than 1 gene matched
-    if warnings:
-        probe_warns = []
-        for probe, queries in warnings:
-            resolved = [mygenes.get(q, (None, None)) for q in queries]
-            explain = ''.join('    query: %s, symbol: %s, entrez: %s\n' % (q, symbol, entrez)
-                              for q, (entrez, symbol) in zip(queries, resolved))
-            probe_warns.append('Probe %s matches:\n%s' % (probe, explain))
-        dump_error('extra_mygene_match',
-                   {'%s-%s' % (platform.gpl_name, col): ''.join(probe_warns)})
 
     return results
 
@@ -196,6 +215,7 @@ def _mygene_fetch(queries, scopes, specie):
     fields = ['entrezgene', 'symbol']
     mg = mygene.MyGeneInfo()
     cprint('> Going to query %d genes in %s...' % (len(queries), scopes), 'cyan')
+    cprint('>     sample queries: %s' % ', '.join(take(5, queries)), 'cyan')
     data = mg.querymany(queries, scopes=scopes, fields=fields,
                         species=specie, email='suor.web@gmail.com')
     return {item['query']: (item['entrezgene'], item['symbol'])
@@ -203,7 +223,7 @@ def _mygene_fetch(queries, scopes, specie):
             if not item.get('notfound') and 'entrezgene' in item and 'symbol' in item}
 
 
-def get_dna_probes(platform, probes, col):
+def get_dna_probes(platform, probes):
     from Bio import SearchIO
 
     blat = _ensure_blat()
@@ -212,7 +232,7 @@ def get_dna_probes(platform, probes, col):
     # Write probes file
     probes_name = os.path.join(settings.BASE_DIR, "_files/%s.probes" % platform.gpl_name)
     with open(probes_name + ".fa", "w") as f:
-        fasta = ">" + probes.index.map(str) + "\n" + probes[col]
+        fasta = ">" + probes.index.map(str) + "\n" + probes
         f.write("\n".join(fasta))
 
     # Match sequences
@@ -236,18 +256,18 @@ def get_dna_probes(platform, probes, col):
     try:
         print "Parsing %s psl..." % platform.gpl_name
         parser = SearchIO.parse(probes_psl, "blat-psl")
-        data = []
+        data = {}
         for result in parser:
             best_hit = max(result, key=lambda hit: max(hsp.score for hsp in hit))
-            data.append((best_hit.query_id, best_hit.id))
+            data[best_hit.query_id] = best_hit.id
     except AssertionError:
         # Failed parsing, probably broken psl
         if psl_written:
             raise
         os.remove(probes_psl)
-        return get_dna_probes(platform, probes, col)
+        return get_dna_probes(platform, probes)
 
-    return pd.DataFrame(data, columns=['id', 'refMrna']).set_index('id')
+    return pd.Series(data)
 
 
 def _ensure_blat():

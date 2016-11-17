@@ -11,6 +11,8 @@ class Platform(models.Model):
     scopes = models.CharField(max_length=512, blank=True)
     identifier = models.CharField(max_length=512, blank=True)
     datafile = models.TextField(blank=True)
+    last_filled = models.DateTimeField(blank=True, null=True)
+    stats = JSONField(default={})
 
     class Meta:
         db_table = 'platform'
