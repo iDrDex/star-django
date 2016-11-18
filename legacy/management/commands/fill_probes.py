@@ -46,6 +46,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--ipdb', action='store_true', help='Drop into ipdb in error')
+        parser.add_argument('--id', type=int, help='Fill platform with this id')
         # parser.add_argument('-n', '--threads', type=int)
 
     def handle(self, **options):
@@ -59,6 +60,10 @@ class Command(BaseCommand):
                 ipdb.pm()
             sys.excepthook = info
 
+        if options['id']:
+            fill_probes(options['id'])
+            return
+
         platform_pks = Platform.objects.filter(datafile='').values_list('pk', flat=True) \
                                        .order_by('-pk')
         for pk in platform_pks:
@@ -70,7 +75,6 @@ def fill_probes(platform_id):
     platform = Platform.objects.get(pk=platform_id)
     gpl_name = platform.gpl_name
     print '%s %s %s' % (platform.pk, platform.gpl_name, platform.specie)
-    assert not platform.datafile
     assert platform.specie
 
     stats = {}
