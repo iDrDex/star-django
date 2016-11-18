@@ -163,17 +163,17 @@ def fill_probes(platform_id):
 # Ordered by priority
 SCOPE_COLUMNS = (
     ('dna', ['sequence', 'platform_sequence', 'probe_sequence', 'probeseq']),
-    ('entrezgene,retired', ['entrez', 'entrez_id', 'entrez_gene', 'entrez_gene_id']),
-    ('ensemblgene', ['ensembl', 'ensembl_id', 'ensembl_gene', 'ensembl_gene_id', 'ensg_id',
-                     'transcript_id']),
-    ('entrezgene,retired,ensemblgene', ['gene_id']),
-    ('entrezgene,retired,ensemblgene,symbol,alias', ['orf', 'orf_list']),
-    ('unigene', ['unigene_id']),
+    ('unigene', ['unigene_id', 'clusterid']),
     ('refseq', ['refseq', 'refseq_transcript_id', 'representative_public_id']),
     ('accession', ['gb_acc', 'gene_bank_acc', 'gene_bank_accession', 'gen_bank_accession',
                    'genbank_accession', 'gb_list']),
-    ('symbol,alias', ['gene_symbol', 'unigene_symbol']),
-    ('symbol,alias,refseq,ensemblgene', ['spot_id']),
+    ('symbol,alias', ['gene_symbol', 'unigene_symbol', 'symbol']),
+    ('entrezgene,retired', ['entrez', 'entrez_id', 'entrez_gene', 'entrez_gene_id']),
+    ('ensemblgene', ['ensembl', 'ensembl_id', 'ensembl_gene', 'ensembl_gene_id', 'ensg_id',
+                     'transcript_id']),
+    ('entrezgene,retired,ensemblgene', ['gene_id', 'geneid_locusid_']),
+    ('entrezgene,retired,ensemblgene,symbol,alias', ['orf', 'orf_list']),
+    ('symbol,alias,refseq,ensemblgene,unigene', ['spot_id']),
 )
 
 
@@ -320,9 +320,14 @@ def read_table(table, filename):
         return None
 
     df.index = df.index.map(str)
-    df.columns = [re.sub(r'\W+', '_', col).lower() for col in df.columns]
+    df.columns = df.columns.map(simplify_colname)
     # Drop columns with same name
     return df.ix[:, ~df.columns.duplicated()]
+
+
+def simplify_colname(col):
+    col = re_find(r'^Composite Element Database Entry\[(.*)\]$', col) or col
+    return re.sub(r'\W+', '_', col).lower()
 
 
 # FTP utils
