@@ -77,7 +77,9 @@ def fill_probes(platform_id):
     print '%s %s %s' % (platform.pk, platform.gpl_name, platform.specie)
     assert platform.specie
 
-    stats = {}
+    platform.datafile = ''
+    platform.stats = {}
+    platform.last_filled = timezone.now()
 
     annot_file = '/pub/geo/DATA/annotation/platforms/%s.annot.gz' % gpl_name
     family_file = '/pub/geo/DATA/SOFT/by_platform/%s/%s_family.soft.gz' % (gpl_name, gpl_name)
@@ -93,24 +95,23 @@ def fill_probes(platform_id):
     files.extend(supplementary_files)
     tables.extend(decompress(download('%s%s' % (supplementary_dir, f)))
                   for f in supplementary_files)
-    stats['files'] = keep(files)
+    platform.stats['files'] = keep(files)
 
     if not any(tables):
         cprint('No data for %s' % gpl_name, 'red')
         platform.datafile = '<no data>'
-        platform.last_filled = timezone.now()
-        platform.stats = stats
         platform.save()
         return
 
     # Read tables in
     df = pd.concat(read_table(table, file) for table, file in zip(tables, files) if table)
     # del tables  # free memory
-    stats['probes'] = len(set(df.index))
+    platform.stats['probes'] = len(set(df.index))
+    # import ipdb; ipdb.set_trace()
 
     # Try to resolve probes starting from best scopes
     mygene_probes = []
-    stats['matches'] = []
+    platform.stats['matches'] = []
     for scopes, cols in SCOPE_COLUMNS:
         cols = list(set(cols) & set(df.columns))
         if not cols:
@@ -123,25 +124,25 @@ def fill_probes(platform_id):
         # Drop matched probes
         if new_matches:
             counts = count_by(lambda d: bool(d.get('dup')), new_matches)
-            stats['matches'].append({
+            platform.stats['matches'].append({
                 'scopes': scopes, 'cols': cols,
                 'found': counts[False], 'dups': counts[True],
             })
 
             df = df.drop(pluck('probe', new_matches))
             if df.empty:
-                    break
+                break
+    else:
+        platform.datafile = '<no clue>'
 
     # Insert found genes
     if mygene_probes:
         dups, to_insert = split(lambda d: d.get('dup'), mygene_probes)
-        stats['probes_matched'] = len(to_insert)
-        stats['probes_dup'] = len(dups)
+        platform.stats['probes_matched'] = len(to_insert)
+        platform.stats['probes_dup'] = len(dups)
         if to_insert:
             with transaction.atomic():
                 platform.datafile = datafile
-                platform.last_filled = timezone.now()
-                platform.stats = stats
                 platform.save()
 
                 platform.probes.delete()
@@ -154,9 +155,8 @@ def fill_probes(platform_id):
 
     else:
         cprint('Nothing matched for %s' % gpl_name, 'red')
-        platform.datafile = '<nothing matched>'
-        platform.last_filled = timezone.now()
-        platform.stats = stats
+        if not platform.datafile:
+            platform.datafile = '<nothing matched>'
         platform.save()
 
 
