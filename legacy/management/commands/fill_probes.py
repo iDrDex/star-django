@@ -9,7 +9,6 @@ import threading
 import gzip
 import time
 from cStringIO import StringIO
-from itertools import compress
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -64,7 +63,7 @@ class Command(BaseCommand):
             fill_probes(options['id'])
             return
 
-        platform_pks = Platform.objects.filter(datafile='').values_list('pk', flat=True) \
+        platform_pks = Platform.objects.filter(verdict='').values_list('pk', flat=True) \
                                        .order_by('-pk')
         for pk in platform_pks:
             fill_probes(pk)
@@ -77,7 +76,7 @@ def fill_probes(platform_id):
     print '%s %s %s' % (platform.pk, platform.gpl_name, platform.specie)
     assert platform.specie
 
-    platform.datafile = ''
+    platform.verdict = ''
     platform.stats = {}
     platform.last_filled = timezone.now()
 
@@ -85,7 +84,6 @@ def fill_probes(platform_id):
     family_file = '/pub/geo/DATA/SOFT/by_platform/%s/%s_family.soft.gz' % (gpl_name, gpl_name)
     files = [annot_file, family_file]
     tables = map(peek_platform, files)
-    datafile = first(compress(files, tables))  # Select first file with platform
 
     # TODO: check other supplementary files formats
     supplementary_dir = '/pub/geo/DATA/supplementary/platforms/%s/' % gpl_name
@@ -99,7 +97,7 @@ def fill_probes(platform_id):
 
     if not any(tables):
         cprint('No data for %s' % gpl_name, 'red')
-        platform.datafile = '<no data>'
+        platform.verdict = 'no data'
         platform.save()
         return
 
@@ -112,12 +110,12 @@ def fill_probes(platform_id):
     # Try to resolve probes starting from best scopes
     mygene_probes = []
     platform.stats['matches'] = []
-    platform.datafile = '<no clue>'
+    platform.verdict = 'no clue'
     for scopes, cols in SCOPE_COLUMNS:
         cols = list(set(cols) & set(df.columns))
         if not cols:
             continue
-        platform.datafile = '<nothing matched>'
+        platform.verdict = 'nothing matched'
 
         probes = pd.concat(df[col].dropna() for col in cols)
         new_matches = mygene_fetch(platform, probes, scopes)
@@ -142,7 +140,7 @@ def fill_probes(platform_id):
         platform.stats['probes_dup'] = len(dups)
         if to_insert:
             with transaction.atomic():
-                platform.datafile = datafile
+                platform.verdict = 'ok'
                 platform.save()
 
                 platform.probes.delete()
