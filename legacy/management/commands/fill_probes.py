@@ -77,6 +77,8 @@ def fill_probes(platform_id):
     assert platform.specie
 
     platform.verdict = ''
+    platform.probes_total = None
+    platform.probes_matched = None
     platform.stats = {}
     platform.last_filled = timezone.now()
 
@@ -104,8 +106,8 @@ def fill_probes(platform_id):
     # Read tables in
     df = pd.concat(read_table(table, file) for table, file in zip(tables, files) if table)
     # del tables  # free memory
-    platform.stats['probes'] = len(set(df.index))
-    # import ipdb; ipdb.set_trace()
+    platform.probes_total = len(set(df.index))
+    # import ipdb; ipdb.set_trace()  # noqa
 
     # Try to resolve probes starting from best scopes
     mygene_probes = []
@@ -132,10 +134,17 @@ def fill_probes(platform_id):
             if df.empty:
                 break
 
+    # Update stats and history
+    platform.probes_matched = len(mygene_probes)
+    platform.history.append({
+        'time': timezone.now().strftime('%Y-%m-%d %T'),
+        'probes_total': platform.probes_total,
+        'probes_matched': platform.probes_matched,
+    })
+
     # Insert found genes
     if mygene_probes:
         with transaction.atomic():
-            platform.stats['probes_matched'] = len(mygene_probes)
             platform.verdict = 'ok'
             platform.save()
 

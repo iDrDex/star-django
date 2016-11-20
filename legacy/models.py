@@ -8,12 +8,12 @@ from handy.models import JSONField
 class Platform(models.Model):
     gpl_name = models.TextField(blank=True)
     specie = models.CharField(max_length=127, blank=False, default='human')
-    scopes = models.CharField(max_length=512, blank=True)
-    identifier = models.CharField(max_length=512, blank=True)
-    datafile = models.TextField(blank=True)
+    probes_total = models.IntegerField(null=True)
+    probes_matched = models.IntegerField(null=True)
     verdict = models.CharField(max_length=127, blank=True)
     last_filled = models.DateTimeField(blank=True, null=True)
     stats = JSONField(default={})
+    history = JSONField(default=[])
 
     class Meta:
         db_table = 'platform'
