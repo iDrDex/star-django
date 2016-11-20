@@ -186,16 +186,17 @@ def mygene_fetch(platform, probes, scopes):
         probes = get_dna_probes(platform, probes)
         scopes = "accession"
 
-    _parsed_queries = probes.map(lambda v: re_all(r'[\w.-]+', v))
-    queries_by_probe = _parsed_queries.groupby(level=0).sum()
+    def extract_queries(lines):
+        queries = icat(re_iter(r'[\w+.-]+', l) for l in lines)
+        # Clean unicode for mygene
+        # http://stackoverflow.com/questions/15321138/removing-unicode-u2026-like-characters
+        return [q.decode('unicode_escape').encode('ascii', 'ignore') for q in queries]
+
+    _by_probe = group_values(probes.iteritems())
+    queries_by_probe = walk_values(extract_queries, _by_probe)
 
     # Collect all possible queries to make a single request to mygene
-    queries = set(icat(queries_by_probe))
-
-    # Clean unicode for mygene
-    # http://stackoverflow.com/questions/15321138/removing-unicode-u2026-like-characters
-    queries = {query.decode('unicode_escape').encode('ascii', 'ignore')
-               for query in queries}
+    queries = set(icat(queries_by_probe.itervalues()))
 
     if not queries:
         return []
