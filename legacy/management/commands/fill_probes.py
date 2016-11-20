@@ -123,10 +123,9 @@ def fill_probes(platform_id):
 
         # Drop matched probes
         if new_matches:
-            counts = count_by(lambda d: bool(d.get('dup')), new_matches)
             platform.stats['matches'].append({
                 'scopes': scopes, 'cols': cols,
-                'found': counts[False], 'dups': counts[True],
+                'found': len(new_matches),
             })
 
             df = df.drop(pluck('probe', new_matches))
@@ -135,22 +134,17 @@ def fill_probes(platform_id):
 
     # Insert found genes
     if mygene_probes:
-        dups, to_insert = split(lambda d: d.get('dup'), mygene_probes)
-        platform.stats['probes_matched'] = len(to_insert)
-        platform.stats['probes_dup'] = len(dups)
-        if to_insert:
-            with transaction.atomic():
-                platform.verdict = 'ok'
-                platform.save()
+        with transaction.atomic():
+            platform.stats['probes_matched'] = len(mygene_probes)
+            platform.verdict = 'ok'
+            platform.save()
 
-                platform.probes.delete()
-                PlatformProbe.objects.bulk_create([
-                    PlatformProbe(platform=platform, **probe_info)
-                    for probe_info in to_insert
-                ])
-        cprint('Inserted %d probes for %s' % (len(to_insert), gpl_name), 'green')
-        cprint('    skipped %d duplicate matches' % len(dups), 'yellow')
-
+            platform.probes.delete()
+            PlatformProbe.objects.bulk_create([
+                PlatformProbe(platform=platform, **probe_info)
+                for probe_info in mygene_probes
+            ])
+        cprint('Inserted %d probes for %s' % (len(mygene_probes), gpl_name), 'green')
     else:
         cprint('Nothing matched for %s' % gpl_name, 'red')
         platform.save()
@@ -202,15 +196,12 @@ def mygene_fetch(platform, probes, scopes):
     results = []
     for probe, queries in queries_by_probe.iteritems():
         matches = distinct(keep(mygenes.get, queries))
-        if len(matches) > 1:
-            results.append({'probe': probe, 'dup': True})
-        elif matches:
-            # Select first for now
+        # Skip dups
+        if len(matches) == 1:
             entrez, sym = matches[0]
             results.append({
                 'probe': probe, 'mygene_sym': sym, 'mygene_entrez': entrez
             })
-
     return results
 
 
