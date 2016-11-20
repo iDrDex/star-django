@@ -112,10 +112,12 @@ def fill_probes(platform_id):
     # Try to resolve probes starting from best scopes
     mygene_probes = []
     platform.stats['matches'] = []
+    platform.datafile = '<no clue>'
     for scopes, cols in SCOPE_COLUMNS:
         cols = list(set(cols) & set(df.columns))
         if not cols:
             continue
+        platform.datafile = '<nothing matched>'
 
         probes = pd.concat(df[col].dropna() for col in cols)
         new_matches = mygene_fetch(platform, probes, scopes)
@@ -132,8 +134,6 @@ def fill_probes(platform_id):
             df = df.drop(pluck('probe', new_matches))
             if df.empty:
                 break
-    else:
-        platform.datafile = '<no clue>'
 
     # Insert found genes
     if mygene_probes:
@@ -155,8 +155,6 @@ def fill_probes(platform_id):
 
     else:
         cprint('Nothing matched for %s' % gpl_name, 'red')
-        if not platform.datafile:
-            platform.datafile = '<nothing matched>'
         platform.save()
 
 
