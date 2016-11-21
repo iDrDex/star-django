@@ -77,17 +77,20 @@ AUTH_USER_MODEL = 'core.User'
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
 import dj_database_url
+import os
+
 DATABASES = {
     'default': dj_database_url.config(),
 }
 
 
 REDIS = {
-    'host': 'localhost',
+    'host': os.environ.get('REDIS_HOST', 'localhost'),
     'port': 6379,
     'db': 3,
     'socket_timeout': 3,
 }
+BROKER_URL = os.environ.get('BROKER_URL', 'amqp://guest:@127.0.0.1:5672')
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
