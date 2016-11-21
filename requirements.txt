@@ -1,9 +1,9 @@
 dj-database-url==0.3.0
 Django==1.8.13
-django-debug-toolbar==1.3.2
 django-jinja==1.4.1
 django-jinja-bootstrap-form==4.0.3
 funcy==1.7.2
+django-model-utils==1.3.1
 handy==0.5.3
 honcho==0.6.4
 Jinja2==2.7.3
