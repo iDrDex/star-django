@@ -187,9 +187,9 @@ class TagForm(ModelForm):
 def search_series_qs(query_string):
     if query_string:
         return Series.objects.extra(
-            select={'rank': 'ts_rank(tsv, plainto_tsquery(%s))'},
+            select={'rank': "ts_rank(tsv, plainto_tsquery('english', %s))"},
             select_params=[query_string],
-            where=["plainto_tsquery(%s) @@ tsv"],
+            where=["plainto_tsquery('english', %s) @@ tsv"],
             params=[query_string],
             order_by=['-rank', 'id']
         )
