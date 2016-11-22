@@ -109,7 +109,7 @@ def fill_probes(platform_id):
 
     # Read tables in
     df = pd.concat(read_table(table, file) for table, file in zip(tables, files) if table)
-    # del tables  # free memory
+    del tables  # free memory
     platform.probes_total = len(set(df.index))
     # import ipdb; ipdb.set_trace()  # noqa
 
@@ -224,7 +224,7 @@ def mygene_fetch(platform, probes, scopes):
                 'probe': probe, 'mygene_sym': sym, 'mygene_entrez': entrez
             })
     if dups:
-        cprint('-> Got %d dups' % dups, 'red')
+        cprint('-> Produced %d dups' % dups, 'red')
     return results
 
 
