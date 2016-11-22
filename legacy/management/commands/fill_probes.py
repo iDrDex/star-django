@@ -117,6 +117,7 @@ def fill_probes(platform_id):
         cols = list(set(cols) & set(df.columns))
         if not cols:
             continue
+        cprint('> Looking into %s' % ', '.join(sorted(cols)), 'cyan')
         platform.verdict = 'nothing matched'
 
         probes = pd.concat(df[col].dropna() for col in cols)
