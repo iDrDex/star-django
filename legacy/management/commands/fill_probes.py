@@ -227,9 +227,11 @@ def _mygene_fetch(queries, scopes, specie):
     cprint('>     sample queries: %s' % ', '.join(take(5, queries)), 'cyan')
     data = mg.querymany(queries, scopes=scopes, fields=fields,
                         species=specie, email='suor.web@gmail.com')
-    return {item['query']: (item['entrezgene'], item['symbol'])
-            for item in data
-            if not item.get('notfound') and 'entrezgene' in item and 'symbol' in item}
+    res = {item['query']: (item['entrezgene'], item['symbol'])
+           for item in data
+           if not item.get('notfound') and 'entrezgene' in item and 'symbol' in item}
+    cprint('-> Got %d matches' % len(res), 'cyan', attrs=['bold'])
+    return res
 
 
 def get_dna_probes(platform, probes):
