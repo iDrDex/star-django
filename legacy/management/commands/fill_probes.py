@@ -46,6 +46,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--ipdb', action='store_true', help='Drop into ipdb in error')
         parser.add_argument('--id', type=int, help='Fill platform with this id')
+        parser.add_argument('--recheck', action='store_true', help='Try to refill failed platforms')
         # parser.add_argument('-n', '--threads', type=int)
 
     def handle(self, **options):
@@ -63,9 +64,12 @@ class Command(BaseCommand):
             fill_probes(options['id'])
             return
 
-        platform_pks = Platform.objects.filter(verdict='').values_list('pk', flat=True) \
-                                       .order_by('-pk')
-        for pk in platform_pks:
+        if options['recheck']:
+            qs = Platform.objects.exclude(verdict='ok')
+        else:
+            qs = Platform.objects.filter(verdict='')
+
+        for pk in qs.values_list('pk', flat=True).order_by('-pk'):
             fill_probes(pk)
 
 
