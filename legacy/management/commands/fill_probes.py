@@ -203,14 +203,19 @@ def mygene_fetch(platform, probes, scopes):
 
     # Form results into rows
     results = []
+    dups = 0
     for probe, queries in queries_by_probe.iteritems():
         matches = distinct(keep(mygenes.get, queries))
         # Skip dups
-        if len(matches) == 1:
+        if len(matches) > 1:
+            dups += 1
+        elif matches:
             entrez, sym = matches[0]
             results.append({
                 'probe': probe, 'mygene_sym': sym, 'mygene_entrez': entrez
             })
+    if dups:
+        cprint('-> Got %d dups' % dups, 'red')
     return results
 
 
