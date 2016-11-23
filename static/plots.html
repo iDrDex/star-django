@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TEST</title>
+    <script type="text/javascript" src="lodash.min.js"></script>
+    <script type="text/javascript" src="d3.min.js"></script>
+    <script src="https://d3js.org/d3-array.v1.min.js"></script>
+    <script src="https://d3js.org/d3-collection.v1.min.js"></script>
+    <script src="https://d3js.org/d3-color.v1.min.js"></script>
+    <script src="https://d3js.org/d3-format.v1.min.js"></script>
+    <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+    <script src="https://d3js.org/d3-time.v1.min.js"></script>
+    <script src="https://d3js.org/d3-time-format.v2.min.js"></script>
+    <script src="https://d3js.org/d3-scale.v1.min.js"></script>
+<style>
+svg { border: 1px solid black; }
+svg text {
+    font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 14px;
+}
+svg .header text {font-weight: bold}
+</style>
+</head>
+<body>
+</body>
+<script type="text/javascript">
+
+var series = [
+    {
+        md: 1.26,
+        left: -0.3,
+        right: 2.82,
+        total: 20
+    },
+    {
+        md: 0.08,
+        left: -0.07,
+        right: 0.23,
+        total: 40
+    },
+    {
+        md: -0.5,
+        left: -0.67,
+        right: -0.33,
+        total: 25
+    }
+
+];
+
+var effects = [
+    {
+        type: "fixed",
+        md: 0.0,
+        left: -0.21,
+        right: 0.21,
+    },
+     {
+        type: "random",
+        md: -0.22,
+        left: -0.88,
+        right: 0.34,
+    },
+];
+
+var positions = series.length + effects.length + 1;
+var room = 100;
+
+var margin = {top: 20, right: 20, bottom: 20, left: 20},
+    outerWidth = 960,
+    outerHeight = room * positions;
+    width = outerWidth - margin.left - margin.right,
+    height = outerHeight - margin.top - margin.bottom;
+
+var x = d3.scaleLinear()
+    .domain([-3, 3])
+    .range([0, width])
+
+var y = d3.scaleLinear()
+    .domain([0, positions])
+    .range([0, height])
+
+var total = d3.scaleLinear()
+    .domain([20, 40])
+    .range([1,10])
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .ticks("")
+    .orient("left");
+
+var svg = d3.select("body").append("svg")
+        .attr("width", outerWidth)
+        .attr("height", outerHeight);
+
+    svg.append("g")
+        .attr("transform", "translate("+margin.left+","+ height +")")
+        .call(xAxis);
+
+    svg.append("g")
+        .attr("transform", "translate("+ (margin.left + width/2) + ",0)")
+        .call(yAxis);
+
+    svg.append("g").selectAll("line").data(series)
+        .enter()
+        .append("line")
+            .attr("x1", d => x(d.left))
+            .attr("y1", (d,i) => y(i+1))
+            .attr("x2", d=>x(d.right))
+            .attr("y2", (d,i) => y(i+1))
+            .attr("style", "stroke:rgb(0,0,0);stroke-width:1");
+
+    svg.append("g").selectAll("circle").data(series)
+        .enter()
+        .append("circle")
+            .attr("cx", d => x(d.md))
+            .attr("cy", (d,i) => y(i+1))
+            .attr("r", d => total(d.total))
+
+    svg.append("g").selectAll("polygon").data(effects)
+        .enter()
+        .append("polygon")
+            .attr("points", getPoints);
+
+    function getPoints(d, i){
+        var index = i + series.length + 1;
+
+        var x1 = x(d.left);
+        var y1 = y(index);
+
+        var x2 = x(d.md);
+        var y2 = y(index + 0.1);
+
+        var x3 = x(d.right);
+        var y3 = y(index);
+
+        var x4 = x(d.md);
+        var y4 = y(index - 0.1);
+
+        return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
+    }
+
+</script>
+</html>
