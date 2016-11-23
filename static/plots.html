@@ -36,14 +36,21 @@ var series = [
         md: 0.08,
         left: -0.07,
         right: 0.23,
-        total: 40
+        total: 50
     },
     {
         md: -0.5,
         left: -0.67,
         right: -0.33,
-        total: 25
+        total: 40
+    },
+    {
+        md: 0.5,
+        left: 0.2,
+        right: 0.8,
+        total: 60
     }
+
 
 ];
 
@@ -79,9 +86,10 @@ var y = d3.scaleLinear()
     .domain([0, positions])
     .range([0, height])
 
+var maxTotal = _.max(_.map(series,'total'));
 var total = d3.scaleLinear()
-    .domain([20, 40])
-    .range([1,10])
+    .domain([0, maxTotal])
+    .range([0,10])
 
 var xAxis = d3.svg.axis()
     .scale(x)
