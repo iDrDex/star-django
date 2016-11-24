@@ -258,6 +258,7 @@ def _mygene_fetch(queries, scopes, specie):
 def get_dna_probes(platform, probes):
     from Bio import SearchIO
 
+    _ensure_files_dir()
     blat = _ensure_blat()
     refmrna = _ensure_refmrna(platform.specie)
 
@@ -300,6 +301,12 @@ def get_dna_probes(platform, probes):
         return get_dna_probes(platform, probes)
 
     return pd.Series(data)
+
+
+def _ensure_files_dir():
+    _files_dir = os.path.join(settings.BASE_DIR, '_files')
+    if not os.path.exists(_files_dir):
+        os.mkdir(_files_dir)
 
 
 def _ensure_blat():
