@@ -85,7 +85,7 @@ class Command(BaseCommand):
 def fill_probes(platform_id):
     platform = Platform.objects.get(pk=platform_id)
     gpl_name = platform.gpl_name
-    print '%s %s %s' % (platform.pk, platform.gpl_name, platform.specie)
+    cprint('%s %s %s' % (platform.pk, platform.gpl_name, platform.specie), attrs=['bold'])
     assert platform.specie
 
     platform.verdict = ''
