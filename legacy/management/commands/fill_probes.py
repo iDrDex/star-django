@@ -111,6 +111,7 @@ def fill_probes(platform_id):
     df = pd.concat(read_table(table, file) for table, file in zip(tables, files) if table)
     del tables  # free memory
     platform.probes_total = len(set(df.index))
+    cprint('Found %d probes to match' % platform.probes_total, 'yellow')
     # import ipdb; ipdb.set_trace()  # noqa
 
     # Try to resolve probes starting from best scopes
@@ -239,7 +240,7 @@ def _mygene_fetch(queries, scopes, specie):
     res = {item['query']: (item['entrezgene'], item['symbol'])
            for item in data
            if not item.get('notfound') and 'entrezgene' in item and 'symbol' in item}
-    cprint('-> Got %d matches' % len(res), 'cyan', attrs=['bold'])
+    cprint('-> Got %d matches' % len(res), 'yellow')
     return res
 
 
