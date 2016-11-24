@@ -9,11 +9,13 @@ import threading
 import gzip
 import time
 from cStringIO import StringIO
+from datetime import timedelta
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
+from django.db.models import Q
 
 from funcy import *  # noqa
 from cacheops import file_cache
@@ -47,6 +49,7 @@ class Command(BaseCommand):
         parser.add_argument('--ipdb', action='store_true', help='Drop into ipdb in error')
         parser.add_argument('--id', type=int, help='Fill platform with this id')
         parser.add_argument('--recheck', action='store_true', help='Try to refill failed platforms')
+        parser.add_argument('--redo', type=int, help='Refill the oldest REDO platforms')
         # parser.add_argument('-n', '--threads', type=int)
 
     def handle(self, **options):
@@ -64,12 +67,16 @@ class Command(BaseCommand):
             fill_probes(options['id'])
             return
 
-        if options['recheck']:
-            qs = Platform.objects.exclude(verdict='ok')
+        if options['redo']:
+            old = timezone.now() - timedelta(days=120)
+            qs = Platform.objects.filter(Q(last_filled=None) | Q(last_filled__lt=old)) \
+                                 .order_by('pk')[:options['redo']]
+        elif options['recheck']:
+            qs = Platform.objects.exclude(verdict='ok').order_by('-pk')
         else:
-            qs = Platform.objects.filter(verdict='')
+            qs = Platform.objects.filter(verdict='').order_by('-pk')
 
-        for pk in qs.values_list('pk', flat=True).order_by('-pk'):
+        for pk in qs.values_list('pk', flat=True):
             fill_probes(pk)
 
 
