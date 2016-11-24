@@ -4,7 +4,8 @@ from fabric.contrib import django
 from fabric.colors import green, red
 
 
-__all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast', 'shell', 'ssh',
+__all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
+           'shell', 'ssh', 'config',
            'restart', 'manage', 'install_requirements', 'migrate',
            'pull_db')
 
@@ -51,6 +52,9 @@ def ssh(command=''):
             run(command)
         else:
             smart_shell()
+
+def config():
+    local("vim sftp://%s/%s" % (env.host_string, 'app/.env'))
 
 
 def install_requirements():
