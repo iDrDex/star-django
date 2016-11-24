@@ -8,6 +8,7 @@ import socket
 import threading
 import gzip
 import time
+from itertools import compress
 from cStringIO import StringIO
 from datetime import timedelta
 
@@ -97,6 +98,9 @@ def fill_probes(platform_id):
     family_file = '/pub/geo/DATA/SOFT/by_platform/%s/%s_family.soft.gz' % (gpl_name, gpl_name)
     files = [annot_file, family_file]
     tables = map(peek_platform, files)
+    # Skip empty
+    files = list(compress(files, tables))
+    tables = keep(tables)
 
     # TODO: check other supplementary files formats
     supplementary_dir = '/pub/geo/DATA/supplementary/platforms/%s/' % gpl_name
@@ -115,7 +119,7 @@ def fill_probes(platform_id):
         return
 
     # Read tables in
-    df = pd.concat(read_table(table, file) for table, file in zip(tables, files) if table)
+    df = pd.concat(read_table(table, file) for table, file in zip(tables, files))
     del tables  # free memory
     platform.probes_total = len(set(df.index))
     cprint('Found %d probes to match' % platform.probes_total, 'yellow')
