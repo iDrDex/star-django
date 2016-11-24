@@ -1,0 +1,16 @@
+server:
+  volumes:
+  - .:/app/user
+  environment:
+    REDIS_HOST: redis
+    BROKER_URL: redis://redis/1
+
+celery:
+  volumes:
+  - .:/app/user
+  environment:
+    REDIS_HOST: redis
+    BROKER_URL: redis://redis/1
+    C_FORCE_ROOT: "True"
+
+
