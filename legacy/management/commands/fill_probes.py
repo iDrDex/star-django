@@ -258,6 +258,8 @@ def _mygene_fetch(queries, scopes, specie):
 def get_dna_probes(platform, probes):
     from Bio import SearchIO
 
+    cprint('> Going to blat %d sequences' % len(probes), 'cyan')
+
     _ensure_files_dir()
     blat = _ensure_blat()
     refmrna = _ensure_refmrna(platform.specie)
