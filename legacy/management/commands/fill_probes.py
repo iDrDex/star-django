@@ -178,10 +178,9 @@ def fill_probes(platform_id):
 
 # Ordered by priority
 SCOPE_COLUMNS = (
-    ('dna', ['sequence', 'platform_sequence', 'probe_sequence', 'probeseq', 'mature_sequence']),
-    # 'probeset_target_sequence' ???
-    ('unigene', ['unigene_id', 'unigene', 'clusterid', 'cluster_id', 'cluster_id_unigene',
-                 'compositesequence_identifier', 'compositesequence_name']),
+    ('dna', ['sequence', 'platform_sequence', 'probe_sequence', 'probeseq', 'mature_sequence',
+             'probeset_target_sequence']),
+    ('unigene', ['unigene_id', 'unigene', 'clusterid', 'cluster_id', 'cluster_id_unigene']),
     ('refseq', ['refseq', 'refseq_transcript_id', 'representative_public_id']),
     ('accession', ['gb_acc', 'gene_bank_acc', 'gene_bank_accession', 'gen_bank_accession',
                    'genbank_accession', 'gb_list', 'acc_no', 'accession']),
@@ -190,6 +189,7 @@ SCOPE_COLUMNS = (
     ('entrezgene,retired', ['entrez', 'entrez_id', 'entrez_gene', 'entrez_gene_id']),
     ('ensemblgene', ['ensembl', 'ensembl_id', 'ensembl_gene', 'ensembl_gene_id', 'ensg_id',
                      'transcript_id', 'geneids_ensmusg']),
+    ('unigene,symbol,alias', ['compositesequence_identifier', 'compositesequence_name']),
     ('entrezgene,retired,ensemblgene', ['gene_id', 'gene_ids', 'geneid_locusid']),
     ('entrezgene,retired,ensemblgene,symbol,alias', ['orf', 'orf_list']),
     ('ensembltranscript', ['ensemblid']),
