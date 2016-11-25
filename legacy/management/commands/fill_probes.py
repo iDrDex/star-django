@@ -245,7 +245,7 @@ def _mygene_fetch(queries, scopes, specie):
     fields = ['entrezgene', 'symbol']
     mg = mygene.MyGeneInfo()
     cprint('> Going to query %d genes in %s...' % (len(queries), scopes), 'cyan')
-    cprint('>     sample queries: %s' % ', '.join(take(5, queries)), 'cyan')
+    cprint('>     sample queries: %s' % ', '.join(take(8, queries)), 'cyan')
     data = mg.querymany(queries, scopes=scopes, fields=fields,
                         species=specie, email='suor.web@gmail.com')
     res = {item['query']: (item['entrezgene'], item['symbol'])
