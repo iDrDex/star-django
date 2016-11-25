@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>TEST</title>
-    <script type="text/javascript" src="lodash.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/lodash/4.17.2/lodash.min.js"></script>
     <script type="text/javascript" src="d3.min.js"></script>
     <script src="https://d3js.org/d3-array.v1.min.js"></script>
     <script src="https://d3js.org/d3-collection.v1.min.js"></script>
@@ -19,6 +19,14 @@ svg text {
     font-size: 10px;
 }
 svg .header text {font-weight: bold}
+svg path.domain {
+    stroke-width: 1px;
+    fill: none;
+    stroke: rgb(97,97,97);
+}
+svg g.legend text {
+    font-weight: bold;
+}
 </style>
 </head>
 <body>
@@ -34,7 +42,7 @@ var groupedData = data[keys[0]].map(function (v, i) {
 
 var series = _.map(groupedData, function(d) {
     return {
-        title: "GS123321",
+        title: d.studlab,
         md: d.TE,
         left: d.lower,
         right: d.upper,
@@ -55,16 +63,21 @@ var series = _.map(groupedData, function(d) {
 
 var effects = [
     {
-        type: "fixed",
+        type: "Fixed",
         md: 0.0,
         left: -0.21,
         right: 0.21,
+        experimentalTotal: _.sum(_.map(series,'experimental.total')),
+        controlTotal: _.sum(_.map(series,'control.total')),
     },
      {
-        type: "random",
+        type: "Random",
         md: -0.22,
         left: -0.88,
         right: 0.34,
+        experimentalTotal: _.sum(_.map(series,'experimental.total')),
+        controlTotal: _.sum(_.map(series,'control.total')),
+
     },
 ];
 
@@ -72,10 +85,10 @@ var effects = [
 var f2format = d3.format('.2f');
 var p1format = d3.format('.1%');
 var positions = series.length + effects.length + 1;
-var room = 30;
 
-var margin = {top: 60, right: 300, bottom: 20, left: 300},
-    width = 300,
+var width = 300,
+    room = 30;
+    margin = {top: 60, right: width, bottom: 20, left:width},
     outerWidth = margin.left + width + margin.right,
     outerHeight = room * positions,
     height = outerHeight - margin.top - margin.bottom;
@@ -86,16 +99,20 @@ var xMax = _.max(_.flatten([_.map(series, 'right'),_.map(effects, 'right')]));
 
 var x = d3.scaleLinear()
     .domain([xMin, xMax])
-    .range([0, width])
+    .range([0, width]);
 
 var y = d3.scaleLinear()
     .domain([0, positions])
-    .range([0, height])
+    .range([0, height]);
 
 var maxTotal = _.max(_.map(series,d => d.experimental.total + d.control.total));
 var total = d3.scaleLinear()
     .domain([0, maxTotal])
-    .range([0,3])
+    .range([1,5]);
+
+var legendScale = d3.scaleLinear()
+    .domain([0, 90])
+    .range([0, width]);
 
 var xAxis = d3.svg.axis()
     .scale(x)
@@ -107,19 +124,115 @@ var yAxis = d3.svg.axis()
     .ticks("")
     .orient("left");
 
+
+    function legendLeft(selection) {
+        selection.append("text")
+            .attr("x", legendScale(0))
+            .attr("y", margin.top/2+ margin.top/4)
+            .text("Study")
+
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(45))
+            .attr("y", margin.top/2)
+            .text("Experemantal")
+
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(25))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("Total")
+
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(35))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("Mean")
+
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(45))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("SD")
+
+
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(80))
+            .attr("y", margin.top/2)
+            .text("Control")
+
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(60))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("Total")
+
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(70))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("Mean")
+
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(80))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("SD")
+
+    }
+
+function legendRight(selection) {
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(15))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("MD")
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(35))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("95%-CI")
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(55))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("w(fixed)")
+        selection.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(75))
+            .attr("y", margin.top/2 + margin.top/4)
+            .text("w(random)")
+
+
+
+
+
+
+
+
+}
+
 var svg = d3.select("body").append("svg")
         .attr("width", outerWidth)
         .attr("height", outerHeight);
 
     svg.append("g")
         .attr("transform", "translate("+margin.left+","+ (height + margin.top) +")")
-        .style({ stroke: 'Black', fill: 'none', 'stroke-width': '1px'})
         .call(xAxis);
 
     svg.append("g")
         .attr("transform", "translate("+ (margin.left + x(0)) + ","+  margin.top +")")
-        .style({ stroke: 'Black', fill: 'none', 'stroke-dasharray': '3,3', 'stroke-width': '1px'})
         .call(yAxis);
+
+    svg.append("g")
+        .attr("class", "legend")
+        .call(legendLeft);
+
+    svg.append("g")
+        .attr("transform", "translate("+ (margin.left + width) + ",0)")
+        .attr("class", "legend")
+        .call(legendRight);
 
 
 var plots = svg.selectAll("g.plot")
@@ -137,57 +250,56 @@ line.append("line")
     .attr("y1", (d,i) => y(i+0.5))
     .attr("x2", d=>x(d.right))
     .attr("y2", (d,i) => y(i+0.5))
-    .attr("style", "stroke:cyan;stroke-width:1");
+    .style({stroke: "rgb(1,164,164)", "stroke-width": 1});
 
 line.append("circle")
     .attr("cx", d => x(d.md))
     .attr("cy", (d,i) => y(i+0.5))
     .attr("r", d => total(d.experimental.total + d.control.total))
-    .attr("style", "fill:blue;stroke:blue;stroke-width:1");
+    .style({fill: "rgb(17,63,164)", stroke: "rgb(17.63.164)", "stroke-width" :1});
 
 
 var texts = plots.append("g")
     .attr("transform", "translate(0,"+margin.top+")");
 
 texts.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", 50)
+    .attr("x", legendScale(0))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d =>d.title)
 
 texts.append("text")
     .attr("text-anchor", "end")
-    .attr("x", 100)
+    .attr("x", legendScale(25))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d => d.experimental.total)
 
 texts.append("text")
     .attr("text-anchor", "end")
-    .attr("x", 130)
+    .attr("x", legendScale(35))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d =>f2format(d.experimental.mean))
 
 texts.append("text")
     .attr("text-anchor", "end")
-    .attr("x", 160)
+    .attr("x", legendScale(45))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d =>f2format(d.experimental.sd))
 
 texts.append("text")
     .attr("text-anchor", "end")
-    .attr("x", 200)
+    .attr("x", legendScale(60))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d =>d.control.total)
 
 texts.append("text")
     .attr("text-anchor", "end")
-    .attr("x", 230)
+    .attr("x", legendScale(70))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d =>f2format(d.control.mean))
 
 texts.append("text")
     .attr("text-anchor", "end")
-    .attr("x", 260)
+    .attr("x", legendScale(80))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d =>f2format(d.control.sd))
 
@@ -202,43 +314,77 @@ effect_plots.append("g")
         .attr("transform", "translate("+ margin.left + ","+margin.top+")")
         .append("polygon")
             .attr("points", getPoints)
-            .attr("style", "fill:orange;stroke:orange;stroke-width:1");
+            .style({fill: "rgb(241,141,5)", stroke: "rgb(241,141,5)", "stroke-width":1});
 
 
-effect_plots.append("g")
-        .attr("transform", "translate(0,"+margin.top+")")
-        .append("text")
-            .attr("text-anchor", "end")
-            .attr("x", margin.left-10)
-            .attr("y", (d,i)=> y(i+series.length + 1))
+var effect_texts = effect_plots.append("g")
+        .attr("transform", "translate(0,"+ (margin.top + y(series.length + 1)) +")");
+
+effect_texts.append("text")
+            .attr("x", legendScale(0))
+            .attr("y", (d,i)=> y(i))
+            .style({"font-weight": "bold"})
             .text(d =>d.type)
 
+effect_texts.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(25))
+            .attr("y", (d,i)=> y(i))
+            .text(d =>d.experimentalTotal)
+
+effect_texts.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(60))
+            .attr("y", (d,i)=> y(i))
+            .text(d =>d.controlTotal)
+
+
+
+
+
 texts_rigth = plots.append("g")
-        .attr("transform", "translate(0,"+margin.top+")");
+        .attr("transform", "translate("+ (margin.left + width) + ","+margin.top+")");
 
 texts_rigth.append("text")
     .attr("text-anchor", "end")
-    .attr("x", margin.left + width + 40)
+    .attr("x", legendScale(15))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d =>f2format(d.md))
 
 texts_rigth.append("text")
     .attr("text-anchor", "end")
-    .attr("x", margin.left + width + 100)
+    .attr("x", legendScale(35))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d =>"[" + f2format(d.left) + "," + f2format(d.right) + "]")
 
 texts_rigth.append("text")
     .attr("text-anchor", "end")
-    .attr("x", margin.left + width + 150)
+    .attr("x", legendScale(55))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d => p1format(d.fixedWeight))
 
 texts_rigth.append("text")
     .attr("text-anchor", "end")
-    .attr("x", margin.left + width + 200)
+    .attr("x", legendScale(75))
     .attr("y", (d,i)=> y(i+0.5))
     .text(d => p1format(d.randomWeight))
+
+var effect_texts_rigth = effect_plots.append("g")
+        .attr("transform", "translate("+ (margin.left + width) + ","+ (margin.top + y(series.length + 1)) +")");
+
+effect_texts_rigth.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(15))
+            .attr("y", (d,i)=> y(i+0.5))
+            .text(d =>f2format(d.md))
+
+effect_texts_rigth.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", legendScale(35))
+            .attr("y", (d,i)=> y(i+0.5))
+            .text(d =>"[" + f2format(d.left) + "," + f2format(d.right) + "]")
+
+
 
     function getPoints(d, i){
         var index = i + series.length + 1;
