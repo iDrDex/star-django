@@ -86,8 +86,8 @@ var f2format = d3.format('.2f');
 var p1format = d3.format('.1%');
 var positions = series.length + effects.length + 1;
 
-var width = 300,
-    room = 30;
+var width = (window.innerWidth -30) / 3,
+    room = (window.innerHeight - 30) / positions,
     margin = {top: 60, right: width, bottom: 20, left:width},
     outerWidth = margin.left + width + margin.right,
     outerHeight = room * positions,
