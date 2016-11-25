@@ -241,6 +241,7 @@ def mygene_fetch(platform, probes, scopes):
 
 
 @file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key, extra=1)
+@retry(50, errors=requests.HTTPError, timeout=60)
 def _mygene_fetch(queries, scopes, specie):
     fields = ['entrezgene', 'symbol']
     mg = mygene.MyGeneInfo()
