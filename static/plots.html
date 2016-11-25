@@ -16,7 +16,6 @@
 svg { border: 1px solid black; }
 svg text {
     font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 10px;
 }
 svg .header text {font-weight: bold}
 svg path.domain {
@@ -86,9 +85,9 @@ var f2format = d3.format('.2f');
 var p1format = d3.format('.1%');
 var positions = series.length + effects.length + 1;
 
-var width = (window.innerWidth -30) / 3,
-    room = (window.innerHeight - 30) / positions,
-    margin = {top: 60, right: width, bottom: 20, left:width},
+var width = _.max([(window.innerWidth -30) / 3, 300]),
+    room = width / 10,
+    margin = {top: width/5, right: width, bottom: width/10, left:width},
     outerWidth = margin.left + width + margin.right,
     outerHeight = room * positions,
     height = outerHeight - margin.top - margin.bottom;
@@ -105,14 +104,27 @@ var y = d3.scaleLinear()
     .domain([0, positions])
     .range([0, height]);
 
-var maxTotal = _.max(_.map(series,d => d.experimental.total + d.control.total));
-var total = d3.scaleLinear()
-    .domain([0, maxTotal])
-    .range([1,5]);
-
 var legendScale = d3.scaleLinear()
     .domain([0, 90])
     .range([0, width]);
+
+var fontScale = d3.scaleLinear()
+    .domain([300, 5120])
+    .range([10, 170])
+
+var circleScale = d3.scaleLinear()
+    .domain([300, 5120])
+    .range([1, 17])
+
+var lineScale = d3.scaleLinear()
+    .domain([300, 5120])
+    .range([1, 17])
+
+var maxTotal = _.max(_.map(series,d => d.experimental.total + d.control.total));
+var total = d3.scaleLinear()
+    .domain([0, maxTotal])
+    .range([circleScale(width),5*circleScale(width)]);
+
 
 var xAxis = d3.svg.axis()
     .scale(x)
@@ -203,19 +215,12 @@ function legendRight(selection) {
             .attr("x", legendScale(75))
             .attr("y", margin.top/2 + margin.top/4)
             .text("w(random)")
-
-
-
-
-
-
-
-
 }
 
 var svg = d3.select("body").append("svg")
         .attr("width", outerWidth)
-        .attr("height", outerHeight);
+        .attr("height", outerHeight)
+        .style({"font-size": fontScale(width)+"px"});
 
     svg.append("g")
         .attr("transform", "translate("+margin.left+","+ (height + margin.top) +")")
@@ -250,7 +255,7 @@ line.append("line")
     .attr("y1", (d,i) => y(i+0.5))
     .attr("x2", d=>x(d.right))
     .attr("y2", (d,i) => y(i+0.5))
-    .style({stroke: "rgb(1,164,164)", "stroke-width": 1});
+    .style({stroke: "rgb(1,164,164)", "stroke-width": lineScale(width)});
 
 line.append("circle")
     .attr("cx", d => x(d.md))
