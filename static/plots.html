@@ -19,7 +19,7 @@ svg text {
 }
 svg .header text {font-weight: bold}
 svg path.domain {
-    stroke-width: 1px;
+    stroke-width: 0.5px;
     fill: none;
     stroke: rgb(97,97,97);
 }
@@ -63,29 +63,36 @@ var series = _.map(groupedData, function(d) {
 var effects = [
     {
         type: "Fixed",
-        md: 0.0,
-        left: -0.21,
-        right: 0.21,
+        md: data['TE.fixed'],
+        left: data['lower.fixed'],
+        right: data['upper.fixed'],
         experimentalTotal: _.sum(_.map(series,'experimental.total')),
         controlTotal: _.sum(_.map(series,'control.total')),
     },
-     {
+    {
         type: "Random",
-        md: -0.22,
-        left: -0.88,
-        right: 0.34,
+        md: data['TE.random'],
+        left: data['lower.random'],
+        right: data['upper.random'],
         experimentalTotal: _.sum(_.map(series,'experimental.total')),
         controlTotal: _.sum(_.map(series,'control.total')),
 
+    },
+    {
+        type: "Prediction interval",
+        md: 0,
+        left: data['lower.predict'],
+        right: data['upper.predict'],
     },
 ];
 
 
 var f2format = d3.format('.2f');
 var p1format = d3.format('.1%');
+var p0format = d3.format('.0%');
 var positions = series.length + effects.length + 1;
 
-var width = _.max([(window.innerWidth -30) / 3, 300]),
+var width = 450;//_.max([(window.innerWidth -30) / 3, 300]),
     room = width / 10,
     margin = {top: width/5, right: width, bottom: width/10, left:width},
     outerWidth = margin.left + width + margin.right,
@@ -137,84 +144,107 @@ var yAxis = d3.svg.axis()
     .orient("left");
 
 
+
+var leftTable = [
+    {
+        title: "Study",
+        getter: d => d.title,
+        x: legendScale(0),
+        effectsPlot: d => d.type,
+        "text-anchor": "start",
+        "font-weight": "bold",
+    },
+    {
+        title: "Total",
+        getter: d => d.experimental.total,
+        x: legendScale(25),
+        effectsPlot: d => d.experimentalTotal,
+    },
+    {
+        title: "Mean",
+        getter: d => f2format(d.experimental.mean),
+        x: legendScale(35),
+    },
+    {
+        title: "SD",
+        getter: d => f2format(d.experimental.sd),
+        x: legendScale(45),
+    },
+    {
+        title: "Total",
+        getter: d => d.control.total,
+        x: legendScale(60),
+        effectsPlot: d => d.controlTotal,
+    },
+    {
+        title: "Mean",
+        getter: d => f2format(d.control.mean),
+        x: legendScale(70),
+    },
+    {
+        title: "SD",
+        getter: d => f2format(d.control.sd),
+        x: legendScale(80),
+    },
+];
+
+
+var rightTable = [
+    {
+        title: "MD",
+        getter: d => f2format(d.md),
+        x: legendScale(15),
+        effectsPlot: d => f2format(d.md),
+    },
+    {
+        title: p0format(data["level.predict"]) +"-CI",
+        getter: d =>"[" + f2format(d.left) + "," + f2format(d.right) + "]",
+        x: legendScale(35),
+        effectsPlot: d => "[" + f2format(d.left) + "," + f2format(d.right) + "]",
+    },
+    {
+        title: "w(fixed)",
+        getter: d => p1format(d.fixedWeight),
+        x: legendScale(55),
+    },
+    {
+        title: "w(random)",
+        getter: d => p1format(d.randomWeight),
+        x: legendScale(75),
+    },
+]
+
+
     function legendLeft(selection) {
-        selection.append("text")
-            .attr("x", legendScale(0))
-            .attr("y", margin.top/2+ margin.top/4)
-            .text("Study")
+        _.map(leftTable, item => {
+            selection.append("text")
+                .attr("text-anchor", _.get(item, "text-anchor", "end"))
+                .attr("x", item.x)
+                .attr("y", margin.top/2+ margin.top/4)
+                .text(item.title)
+        });
 
         selection.append("text")
             .attr("text-anchor", "end")
             .attr("x", legendScale(45))
             .attr("y", margin.top/2)
-            .text("Experemantal")
-
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(25))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("Total")
-
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(35))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("Mean")
-
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(45))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("SD")
-
+            .text("Experemental")
 
         selection.append("text")
             .attr("text-anchor", "end")
             .attr("x", legendScale(80))
             .attr("y", margin.top/2)
             .text("Control")
-
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(60))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("Total")
-
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(70))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("Mean")
-
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(80))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("SD")
-
     }
 
 function legendRight(selection) {
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(15))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("MD")
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(35))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("95%-CI")
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(55))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("w(fixed)")
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(75))
-            .attr("y", margin.top/2 + margin.top/4)
-            .text("w(random)")
+        _.map(rightTable, item => {
+            selection.append("text")
+                .attr("text-anchor", "end")
+                .attr("x", item.x)
+                .attr("y", margin.top/2 + margin.top/4)
+                .text(item.title)
+        });
 }
 
 var svg = d3.select("body").append("svg")
@@ -267,53 +297,20 @@ line.append("circle")
 var texts = plots.append("g")
     .attr("transform", "translate(0,"+margin.top+")");
 
-texts.append("text")
-    .attr("x", legendScale(0))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d =>d.title)
 
-texts.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(25))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d => d.experimental.total)
-
-texts.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(35))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d =>f2format(d.experimental.mean))
-
-texts.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(45))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d =>f2format(d.experimental.sd))
-
-texts.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(60))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d =>d.control.total)
-
-texts.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(70))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d =>f2format(d.control.mean))
-
-texts.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(80))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d =>f2format(d.control.sd))
+_.map(leftTable, item => {
+    texts.append("text")
+        .attr("text-anchor", _.get(item, "text-anchor", "end"))
+        .attr("x", item.x)
+        .attr("y", (d,i)=> y(i+0.5))
+        .text(item.getter);
+});
 
 var effect_plots = svg.selectAll("g.effect_plots")
                 .data(effects)
                 .enter()
                 .append("g")
                 .attr("class", "effect_plots")
-
 
 effect_plots.append("g")
         .attr("transform", "translate("+ margin.left + ","+margin.top+")")
@@ -325,70 +322,41 @@ effect_plots.append("g")
 var effect_texts = effect_plots.append("g")
         .attr("transform", "translate(0,"+ (margin.top + y(series.length + 1)) +")");
 
-effect_texts.append("text")
-            .attr("x", legendScale(0))
-            .attr("y", (d,i)=> y(i))
-            .style({"font-weight": "bold"})
-            .text(d =>d.type)
-
-effect_texts.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(25))
-            .attr("y", (d,i)=> y(i))
-            .text(d =>d.experimentalTotal)
-
-effect_texts.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(60))
-            .attr("y", (d,i)=> y(i))
-            .text(d =>d.controlTotal)
-
-
-
+_.map(leftTable, item => {
+    if (!!item.effectsPlot) {
+        effect_texts.append("text")
+                    .attr("text-anchor", _.get(item, "text-anchor", "end"))
+                    .attr("x", item.x)
+                    .attr("y", (d,i)=> y(i))
+                    .style({"font-weight": _.get(item, "font-weight", "normal")})
+                    .text(item.effectsPlot);
+    }
+});
 
 
 texts_rigth = plots.append("g")
         .attr("transform", "translate("+ (margin.left + width) + ","+margin.top+")");
 
-texts_rigth.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(15))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d =>f2format(d.md))
-
-texts_rigth.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(35))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d =>"[" + f2format(d.left) + "," + f2format(d.right) + "]")
-
-texts_rigth.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(55))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d => p1format(d.fixedWeight))
-
-texts_rigth.append("text")
-    .attr("text-anchor", "end")
-    .attr("x", legendScale(75))
-    .attr("y", (d,i)=> y(i+0.5))
-    .text(d => p1format(d.randomWeight))
+_.map(rightTable, item => {
+    texts_rigth.append("text")
+        .attr("text-anchor", "end")
+        .attr("x", item.x)
+        .attr("y", (d,i)=> y(i+0.5))
+        .text(item.getter);
+});
 
 var effect_texts_rigth = effect_plots.append("g")
         .attr("transform", "translate("+ (margin.left + width) + ","+ (margin.top + y(series.length + 1)) +")");
 
-effect_texts_rigth.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(15))
-            .attr("y", (d,i)=> y(i+0.5))
-            .text(d =>f2format(d.md))
-
-effect_texts_rigth.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", legendScale(35))
-            .attr("y", (d,i)=> y(i+0.5))
-            .text(d =>"[" + f2format(d.left) + "," + f2format(d.right) + "]")
-
+_.map(rightTable, item => {
+    if (!!item.effectsPlot) {
+        effect_texts_rigth.append("text")
+                    .attr("text-anchor", "end")
+                    .attr("x", item.x)
+                    .attr("y", (d,i)=> y(i+0.5))
+            .text(item.effectsPlot);
+    }
+});
 
 
     function getPoints(d, i){
