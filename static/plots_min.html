@@ -95,10 +95,10 @@ var p1format = d3.format('.1%');
 var p0format = d3.format('.0%');
 var positions = series.length + effects.length + 1;
 
-var right = 250,
-    left = 300,
+var right = 0,
+    left = 120,
     //width = window.innerWidth - (right + left) - 20;
-    width = 300,// window.innerWidth - (right + left) - 20;
+    width = 400,// window.innerWidth - (right + left) - 20;
     room = 30,
     margin = {top: 40, right: right, bottom: 20, left:left},
     outerWidth = margin.left + width + margin.right,
@@ -165,66 +165,10 @@ var leftTable = [
         "text-anchor": "start",
         "font-weight": "bold",
     },
-    {
-        title: "Total",
-        getter: d => d.experimental.total,
-        x: leftLegendScale(31),
-        effectsPlot: d => d.experimentalTotal,
-    },
-    {
-        title: "Mean",
-        getter: d => f2format(d.experimental.mean),
-        x: leftLegendScale(44),
-    },
-    {
-        title: "SD",
-        getter: d => f2format(d.experimental.sd),
-        x: leftLegendScale(57),
-    },
-    {
-        title: "Total",
-        getter: d => d.control.total,
-        x: leftLegendScale(72),
-        effectsPlot: d => d.controlTotal,
-    },
-    {
-        title: "Mean",
-        getter: d => f2format(d.control.mean),
-        x: leftLegendScale(85),
-    },
-    {
-        title: "SD",
-        getter: d => f2format(d.control.sd),
-        x: leftLegendScale(98),
-    },
 ];
 
 
-var rightTable = [
-    {
-        title: "MD",
-        getter: d => f2format(d.md),
-        x: rightLegendScale(15),
-        effectsPlot: d => f2format(d.md),
-    },
-    {
-        title: p0format(data["level.predict"]) +"-CI",
-        getter: d =>"[" + f2format(d.left) + "," + f2format(d.right) + "]",
-        x: rightLegendScale(49),
-        effectsPlot: d => "[" + f2format(d.left) + "," + f2format(d.right) + "]",
-    },
-    {
-        title: "w(fixed)",
-        getter: d => p1format(d.fixedWeight),
-        x: rightLegendScale(72),
-    },
-    {
-        title: "w(random)",
-        getter: d => p1format(d.randomWeight),
-        x: rightLegendScale(100),
-    },
-]
-
+var rightTable = [];
 
     function legendLeft(selection) {
         _.map(leftTable, item => {
@@ -234,18 +178,6 @@ var rightTable = [
                 .attr("y", 30)
                 .text(item.title)
         });
-
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", leftLegendScale(45))
-            .attr("y", 10)
-            .text("Experemental")
-
-        selection.append("text")
-            .attr("text-anchor", "end")
-            .attr("x", leftLegendScale(80))
-            .attr("y", 10)
-            .text("Control")
     }
 
 function legendRight(selection) {
