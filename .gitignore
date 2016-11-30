@@ -9,3 +9,4 @@ stargeo.sql*
 *.pyxbldc
 _errors
 _files/*
+frontend/node_modules
