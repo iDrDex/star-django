@@ -78,20 +78,6 @@ function drawLegendItem(selection) {
 }
 
 function updateLegend(legendGroup, legendData) {
-    if (legendData.length > 6) {
-        legendGroup.append('text')
-            .attr('text-anchor', 'end')
-            .attr('x', legendData[3].x)
-            .attr('y', 10)
-            .text('Experemental');
-
-        legendGroup.append('text')
-            .attr('text-anchor', 'end')
-            .attr('x', legendData[6].x)
-            .attr('y', 10)
-            .text('Control');
-    }
-
     const legend = legendGroup.selectAll('text')
         .data(legendData)
         .call(drawLegendItem);
@@ -223,6 +209,21 @@ export default function(elem, series, effects, levelPredict) {
     svg.append('g')
         .attr('transform', 'translate(' + (margin.left + xScale(0)) + ',' +  margin.top + ')')
         .call(yAxis);
+
+    const topLegend = svg.append('g');
+    topLegend.append('text')
+        .attr('text-anchor', 'end')
+        .attr('x', leftTable[3].x)
+        .attr('y', 10)
+        .style({ 'font-weight': 'bold' })
+        .text('Experemental');
+
+    topLegend.append('text')
+        .attr('text-anchor', 'end')
+        .attr('x', leftTable[6].x)
+        .attr('y', 10)
+        .style({ 'font-weight': 'bold' })
+        .text('Control');
 
     const leftLegendGroup = svg.append('g')
         .attr('class', 'legend');
