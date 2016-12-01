@@ -1,5 +1,6 @@
 svg text {
     font-family: 'Ubuntu', 'Helvetica Neue', Helvetica, 'Open Sans', Arial, sans-serif;
+    fill: #555;
 }
 svg .header text {font-weight: bold}
 svg path.domain, svg g.tick line {
