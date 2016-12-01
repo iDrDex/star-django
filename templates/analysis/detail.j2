@@ -54,7 +54,7 @@
                 columnDefs: [
                     {
                         render: function ( data, type, row ) {
-                            return '<a href="/analysis/' + analysisId + '/' + data +'.png" target="_blank">' + data + '</a>';
+                            return '<a href="javascript:addForestTab(\'' + data + '\')">' + data + '</a>';
                         },
                         targets: [2]
                     },
@@ -67,5 +67,26 @@
                 ]
             });
         });
+
+        function addForestTab(mygene) {
+            console.log(mygene);
+            $('#tab-results').after('<li id="tab-{mygene}"><a href="#{mygene}" aria-controls="{mygene}" role="tab" data-toggle="tab">{mygene}</a></li>'.replace(/{mygene}/g, mygene));
+            $('#analysis-tabs-content').append('<div id="' + mygene + '" class="tab-pane"><div class="panel-body">Loading...</div></div>');
+            $('#tab-' + mygene + ' a').tab('show');
+
+            $.ajax({
+                url: '/analysis/' + analysisId + '/' + mygene + '.json',
+                dataType: 'json'
+            }).done(function (data) {
+                // drawForestGraph(mygene, data);
+                drawForestGraph($('#' + mygene + ' .tab-pane'), data);
+            }).fail(function () {
+                alert('Something went wrong. Try reloading the page.')
+            })
+        }
+
+        function drawForestGraph(data) {
+
+        }
     </script>
 {% endblock %}
