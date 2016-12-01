@@ -1,7 +1,7 @@
 import draw from './plots';
 import _ from 'lodash';
 
-window.initWidget = function (data) {
+window.initWidget = function (elem, data) {
     const keys = [
         'studlab', 'TE', 'lower', 'upper', 'n.e',
         'mean.e', 'sd.e', 'n.c', 'mean.c', 'sd.c',
@@ -58,5 +58,5 @@ window.initWidget = function (data) {
         },
     ];
 
-    draw(window.innerWidth, series, effects, data['level.predict']);
+    draw(elem, series, effects, data['level.predict']);
 };

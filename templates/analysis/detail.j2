@@ -33,6 +33,7 @@
 
 {% block style %}
     <link rel="stylesheet" href="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.css') }}" />
+    <script type="text/javascript" src="http://localhost:8082/bundle.js"></script>
     <style type="text/css">
         table.dataTable th, table.dataTable td {white-space: nowrap;}
         .dataTables_scrollBody table.dataTable thead *:after {display: none !important}
@@ -78,15 +79,15 @@
                 url: '/analysis/' + analysisId + '/' + mygene + '.json',
                 dataType: 'json'
             }).done(function (data) {
-                // drawForestGraph(mygene, data);
-                drawForestGraph($('#' + mygene + ' .tab-pane'), data);
+                drawForestGraph($('#' + mygene + ' .panel-body'), data);
             }).fail(function () {
                 alert('Something went wrong. Try reloading the page.')
             })
         }
 
-        function drawForestGraph(data) {
-
+        function drawForestGraph(elem, data) {
+            elem.html('');
+            window.initWidget(elem.get(0), data.data);
         }
     </script>
 {% endblock %}

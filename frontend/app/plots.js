@@ -167,7 +167,8 @@ function getTable(series, tableShape) {
     });
 };
 
-export default function(svgWidth, series, effects, levelPredict) {
+export default function(elem, series, effects, levelPredict) {
+    const svgWidth = elem.offsetWidth;
     const leftTable = getTable(series, leftTableShape);
     const rightTable = getTable(series, rightTableShape(levelPredict));
 
@@ -210,7 +211,7 @@ export default function(svgWidth, series, effects, levelPredict) {
         .ticks(0)
         .orient('left');
 
-    const svg = d3.select('body').append('svg')
+    const svg = d3.select(elem).append('svg')
         .attr('width', outerWidth)
         .attr('height', outerHeight)
         .style({ 'font-size': fontSize + 'px' });
