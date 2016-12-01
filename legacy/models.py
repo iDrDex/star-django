@@ -6,7 +6,7 @@ from handy.models import JSONField
 
 
 class Platform(models.Model):
-    gpl_name = models.TextField(blank=True)
+    gpl_name = models.TextField()
     specie = models.CharField(max_length=127, blank=False, default='human')
     probes_total = models.IntegerField(null=True)
     probes_matched = models.IntegerField(null=True)
@@ -20,10 +20,10 @@ class Platform(models.Model):
 
 
 class PlatformProbe(models.Model):
-    platform = models.ForeignKey(Platform, blank=True, null=True, related_name='probes')
-    probe = models.TextField(blank=True)
-    mygene_sym = models.TextField(blank=True)
-    mygene_entrez = models.IntegerField(blank=True, null=True)
+    platform = models.ForeignKey(Platform, related_name='probes', db_index=True)
+    probe = models.TextField()
+    mygene_sym = models.TextField()
+    mygene_entrez = models.IntegerField()
 
     objects = DataFrameManager()
 
@@ -32,7 +32,7 @@ class PlatformProbe(models.Model):
 
 
 class Series(models.Model):
-    gse_name = models.TextField(blank=True)
+    gse_name = models.TextField()
     attrs = JSONField(default={})
 
     class Meta:
@@ -40,9 +40,9 @@ class Series(models.Model):
 
 
 class Sample(models.Model):
-    series = models.ForeignKey('Series', blank=True, null=True, related_name='samples')
-    platform = models.ForeignKey(Platform, blank=True, null=True)
-    gsm_name = models.TextField(blank=True)
+    series = models.ForeignKey('Series', related_name='samples', db_index=True)
+    platform = models.ForeignKey(Platform, db_index=False)
+    gsm_name = models.TextField()
     attrs = JSONField(default={})
     # TODO: refactor deleted -> is_active, get rid of char boolean
     # NOTE: leaving it as is for now to not mess with sample_view
@@ -108,13 +108,13 @@ class Analysis(models.Model):
 
 
 class MetaAnalysis(models.Model):
-    analysis = models.ForeignKey(Analysis, blank=True, null=True)
-    mygene_sym = models.CharField("sym", max_length=512, blank=True)
-    mygene_entrez = models.IntegerField("entrez", blank=True, null=True)
-    direction = models.CharField(max_length=512, blank=True)
-    k = models.IntegerField(blank=True, null=True)
-    casedatacount = models.IntegerField('cases', blank=True, null=True)
-    controldatacount = models.IntegerField('controls', blank=True, null=True)
+    analysis = models.ForeignKey(Analysis, db_index=True)
+    mygene_sym = models.CharField("sym", max_length=512)
+    mygene_entrez = models.IntegerField("entrez")
+    direction = models.CharField(max_length=512)
+    k = models.IntegerField()
+    casedatacount = models.IntegerField('cases')
+    controldatacount = models.IntegerField('controls')
     random_pval = models.FloatField(blank=True, null=True)
     random_te = models.FloatField(blank=True, null=True)
     random_se = models.FloatField(blank=True, null=True)
