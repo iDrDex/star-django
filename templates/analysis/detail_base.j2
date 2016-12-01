@@ -18,11 +18,17 @@
     <div class="col-lg-12">
         <div class="hpanel">
             <ul class="nav nav-tabs">
-                <li id="tab-results" {% if active == "results" %} class="active"{% endif %}>
-                    <a href="{{ url('analysis_results', analysis.pk) }}">Results</a>
+                {% if active == "results" %}
+                <li id="tab-results" class="active">
+                    <a id="results-tab-link" href="#results" aria-controls="results" role="tab" data-toggle="tab">Results</a>
                 </li>
+                {% else %}
+                <li id="tab-results">
+                    <a id="results-tab-link" href="{{ url('analysis_results', analysis.pk) }}">Results</a>
+                </li>
+                {% endif %}
                 {% if analysis.df %}
-                    <li{% if active == "frame" %} class="active"{% endif %}>
+                    <li id="tab-frame"{% if active == "frame" %} class="active"{% endif %}>
                         <a href="{{ url('analysis_frame', analysis.pk) }}">Source frame</a>
                     </li>
                 {% endif %}
@@ -31,7 +37,7 @@
                 </li>
             </ul>
             <div id="analysis-tabs-content" class="tab-content">
-                <div class="tab-pane active">
+                <div id="results" class="tab-pane active">
                     <div class="panel-body">
                         {% block content %}{% endblock %}
                     </div>

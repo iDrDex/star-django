@@ -70,8 +70,14 @@
         });
 
         function addForestTab(mygene) {
-            console.log(mygene);
-            $('#tab-results').after('<li id="tab-{mygene}"><a href="#{mygene}" aria-controls="{mygene}" role="tab" data-toggle="tab">{mygene}</a></li>'.replace(/{mygene}/g, mygene));
+            var $geneTabLink = $('#tab-' + mygene + ' a');
+
+            if ($geneTabLink.length) {
+                $geneTabLink.tab('show');
+                return;
+            }
+
+            $('#tab-frame').before('<li id="tab-{mygene}"><a href="#{mygene}" aria-controls="{mygene}" role="tab" data-toggle="tab">{mygene}<span class="close-tab" onclick="removeForestTab(\'{mygene}\')"> &times;</span></a></li>'.replace(/{mygene}/g, mygene));
             $('#analysis-tabs-content').append('<div id="' + mygene + '" class="tab-pane"><div class="panel-body">Loading...</div></div>');
             $('#tab-' + mygene + ' a').tab('show');
 
@@ -83,6 +89,12 @@
             }).fail(function () {
                 alert('Something went wrong. Try reloading the page.')
             })
+        }
+
+        function removeForestTab(mygene) {
+            $("#tab-" + mygene).remove();
+            $("#" + mygene).remove();
+            $('#results-tab-link').tab('show');
         }
 
         function drawForestGraph(elem, data) {

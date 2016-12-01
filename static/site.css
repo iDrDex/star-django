@@ -1,3 +1,12 @@
 .table a {
     text-decoration: underline;
 }
+
+.close-tab {
+    cursor: pointer;
+    position: relative;
+    padding: 0px 5px 0px 0px;
+    right: -6px;
+    color: #ea6557;
+    font-size: 13px
+}
