@@ -58,5 +58,5 @@ window.initWidget = function (data) {
         },
     ];
 
-    draw(series, effects);
+    draw(window.innerWidth, series, effects, data['level.predict']);
 };

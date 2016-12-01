@@ -4,8 +4,7 @@ import { scaleLinear } from 'd3-scale';
 import format from './format';
 import './style/style.css';
 
-function leftTable(spaceLen, titleLen, valueLen) {
-    let title = [
+const leftTableShape = [
         {
             title: 'Study',
             getter: d => d.title,
@@ -14,8 +13,6 @@ function leftTable(spaceLen, titleLen, valueLen) {
             'text-anchor': 'start',
             'font-weight': 'bold',
         },
-    ];
-    let values = _.map([
         {
             title: 'Total',
             getter: d => d.experimental.total,
@@ -42,67 +39,63 @@ function leftTable(spaceLen, titleLen, valueLen) {
             title: 'SD',
             getter: d => format.f2(d.control.sd),
         },
-    ], (item, index) => _.merge(item, { x: titleLen + spaceLen * index + valueLen * index }));
-    return [...title, ...values];
-};
+];
 
-function rightTable() {
+function rightTableShape(levelPredict) {
+
     return [
         {
             title: 'MD',
             getter: d => format.f2(d.md),
-            x: 0,
             effectsPlot: d => format.f2(d.md),
         },
         {
-            title: format.p0(data['level.predict']) + '-CI',
+            title: format.p0(levelPredict) + '-CI',
             getter: d =>'[' + format.f2(d.left) + ',' + format.f2(d.right) + ']',
-            x: 80,
             effectsPlot: d => '[' + format.f2(d.left) + ',' + format.f2(d.right) + ']',
         },
         {
             title: 'w(fixed)',
             getter: d => format.p1(d.fixedWeight),
-            x: 140,
         },
         {
             title: 'w(random)',
             getter: d => format.p1(d.randomWeight),
-            x: 200,
         },
     ];
 };
 
-function legendLeft(selection) {
-    _.map(leftTable(10, 100, 50), item => {
-        selection.append('text')
-            .attr('text-anchor', _.get(item, 'text-anchor', 'end'))
-            .attr('x', item.x)
-            .attr('y', 30)
-            .text(item.title);
-    });
-
-    selection.append('text')
-        .attr('text-anchor', 'end')
-        .attr('x', 220)
-        .attr('y', 10)
-        .text('Experemental');
-
-    selection.append('text')
-        .attr('text-anchor', 'end')
-        .attr('x', 400)
-        .attr('y', 10)
-        .text('Control');
+function drawLegendItem(selection) {
+    selection.attr('text-anchor', d => _.get(d, 'text-anchor', 'end'))
+        .attr('x', d => d.x)
+        .attr('y', 30)
+        .text(d => d.title);
 }
 
-function legendRight(selection) {
-    _.map(rightTable(), item => {
-        selection.append('text')
+function updateLegend(legendGroup, legendData) {
+    if (legendData.length > 7) {
+        legendGroup.append('text')
             .attr('text-anchor', 'end')
-            .attr('x', item.x)
+            .attr('x', leftTable[3].x)
             .attr('y', 10)
-            .text(item.title);
-    });
+            .text('Experemental');
+
+        legendGroup.append('text')
+            .attr('text-anchor', 'end')
+            .attr('x', leftTable[6].x)
+            .attr('y', 10)
+            .text('Control');
+    }
+
+    const legend = legendGroup.selectAll('text')
+        .data(legendData)
+        .call(drawLegendItem);
+
+    legend.enter()
+        .append('text')
+        .call(drawLegendItem);
+
+    legend.exit().remove();
 };
 
 function getPoints(series, xScale, yScale) {
@@ -145,12 +138,45 @@ function getPointsInit(series, xScale, yScale) {
     };
 };
 
-export default function(series, effects) {
+export default function(svgWidth, series, effects, levelPredict) {
+    const space = 5;
+    const letterWidth = 7;
+
+    let left = 0;
+    let right = 0;
+
+    const leftTable = _.map(leftTableShape, (shape, index) => {
+        const maxContentLength = _.max(_.map(series, s => shape.getter(s).toString().length));
+        const maxLength = _.max([
+                maxContentLength,
+                shape.title.length,
+            ]);
+        const columnWidth = maxLength * letterWidth;
+        if (index != 0) {
+            shape.x = left + columnWidth;
+        }
+
+        left += columnWidth + space;
+        return shape;
+    });
+
+    const rightTable = _.map(rightTableShape(levelPredict), (shape, index) => {
+        const maxContentLength = _.max(_.map(series, s => shape.getter(s).toString().length));
+        const maxLength = _.max([
+                maxContentLength,
+                shape.title.length,
+            ]);
+        const columnWidth = maxLength * letterWidth;
+        shape.x = right + columnWidth;
+        right += columnWidth + space;
+        return shape;
+    });
+
+    right -= space;
+
     const positions = series.length + effects.length + 1;
 
-    const right = 250;
-    const left = 300;
-    const width = 300;
+    const width = _.max([svgWidth - left - right - 40, 200]);
     const room = 30;
     const margin = { right, left, top: 40, bottom: 20, };
     const outerWidth = margin.left + width + margin.right;
@@ -180,7 +206,7 @@ export default function(series, effects) {
 
     const yAxis = d3.svg.axis()
         .scale(yScale)
-        .ticks('')
+        .ticks(0)
         .orient('left');
 
     const svg = d3.select('body').append('svg')
@@ -196,14 +222,19 @@ export default function(series, effects) {
         .attr('transform', 'translate(' + (margin.left + xScale(0)) + ',' +  margin.top + ')')
         .call(yAxis);
 
-    svg.append('g')
-        .attr('class', 'legend')
-        .call(legendLeft);
+    const leftLegendGroup = svg.append('g')
+        .attr('class', 'legend');
+    updateLegend(leftLegendGroup, leftTable);
 
-    svg.append('g')
+    const rightLegendGroup = svg.append('g')
         .attr('transform', 'translate(' + (margin.left + width) + ',0)')
-        .attr('class', 'legend')
-        .call(legendRight);
+        .attr('class', 'legend');
+    updateLegend(rightLegendGroup, rightTable);
+
+    //setTimeout(() => {
+        //console.log('update');
+        //updateLegend(leftTable);
+    //}, 3000);
 
     const plots = svg.selectAll('g.plot')
                     .data(series)
@@ -236,7 +267,7 @@ export default function(series, effects) {
     const texts = plots.append('g')
         .attr('transform', 'translate(0,' + margin.top + ')');
 
-    _.map(leftTable(10, 100, 50), item => {
+    _.map(leftTable, item => {
         texts.append('text')
             .attr('text-anchor', _.get(item, 'text-anchor', 'end'))
             .attr('x', item.x)
@@ -261,7 +292,7 @@ export default function(series, effects) {
     const effect_texts = effect_plots.append('g')
         .attr('transform', 'translate(0,' + (margin.top + yScale(series.length + 1)) + ')');
 
-    _.map(leftTable(10, 100, 50), item => {
+    _.map(leftTable, item => {
         if (!!item.effectsPlot) {
             effect_texts.append('text')
                 .attr('text-anchor', _.get(item, 'text-anchor', 'end'))
@@ -275,7 +306,7 @@ export default function(series, effects) {
     const texts_right = plots.append('g')
         .attr('transform', 'translate(' + (margin.left + width) + ',' + margin.top + ')');
 
-    _.map(rightTable(), item => {
+    _.map(rightTable, item => {
         texts_right.append('text')
             .attr('text-anchor', 'end')
             .attr('x', item.x)
@@ -286,7 +317,7 @@ export default function(series, effects) {
     const effect_texts_right = effect_plots.append('g')
         .attr('transform', 'translate(' + (margin.left + width) + ',' + (margin.top + yScale(series.length + 1)) + ')');
 
-    _.map(rightTable(), item => {
+    _.map(rightTable, item => {
         if (!!item.effectsPlot) {
             effect_texts_right.append('text')
                         .attr('text-anchor', 'end')
