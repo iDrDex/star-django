@@ -1,4 +1,5 @@
 import os
+import math
 from funcy import suppress
 
 import rpy2.robjects as robjects
@@ -49,3 +50,28 @@ def get_meta_analysis_from_r(gene_estimates):
         title=gene_estimates.title
     )
     return m
+
+
+def get_gene_analysis(analysis, mygene_sym):
+    fc = analysis.fold_changes.frame
+    meta_gene = fc[fc.mygene_sym == mygene_sym].drop_duplicates(['gpl', 'gse'])
+    meta_gene.title = mygene_sym
+    m = get_meta_analysis_from_r(meta_gene)
+    return r2py(m)
+
+
+def r2py(obj):
+    if isinstance(obj, float):
+        return None if math.isnan(obj) else obj
+    elif isinstance(obj, (int, str, bool)):
+        return obj
+    elif obj is robjects.NULL or obj is robjects.NA_Logical:
+        return None
+    elif isinstance(obj, robjects.ListVector):
+        return {k: r2py(v) for k, v in obj.items()}
+    elif isinstance(obj, robjects.Vector):
+        return r2py(obj[0]) if len(obj) == 1 else map(r2py, obj)
+    elif isinstance(obj, robjects.SignatureTranslatedFunction):
+        return '<function>'
+    else:
+        return obj

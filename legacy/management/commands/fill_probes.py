@@ -241,6 +241,7 @@ def mygene_fetch(platform, probes, scopes):
 
 
 @file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key, extra=1)
+@retry(50, errors=requests.HTTPError, timeout=60)
 def _mygene_fetch(queries, scopes, specie):
     fields = ['entrezgene', 'symbol']
     mg = mygene.MyGeneInfo()
@@ -257,6 +258,8 @@ def _mygene_fetch(queries, scopes, specie):
 
 def get_dna_probes(platform, probes):
     from Bio import SearchIO
+
+    cprint('> Going to blat %d sequences' % len(probes), 'cyan')
 
     _ensure_files_dir()
     blat = _ensure_blat()
