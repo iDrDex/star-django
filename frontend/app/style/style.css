@@ -3,11 +3,10 @@ svg {
     padding: 10px;
 }
 svg text {
-    font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    /*font-family: 'DejaVu Sans Mono';*/
+    font-family: 'Ubuntu', 'Helvetica Neue', Helvetica, 'Open Sans', Arial, sans-serif;
 }
 svg .header text {font-weight: bold}
-svg path.domain ,svg g.tick line {
+svg path.domain, svg g.tick line {
     stroke-width: 0.5px;
     fill: none;
     stroke: rgb(97,97,97);
@@ -15,4 +14,3 @@ svg path.domain ,svg g.tick line {
 svg g.legend text {
     font-weight: bold;
 }
-

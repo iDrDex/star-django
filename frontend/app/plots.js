@@ -5,7 +5,7 @@ import format from './format';
 import './style/style.css';
 
 const defaultGap = 10;
-const fontSize = 13;
+const fontSize = 12;
 
 const leftTableShape = [
         {
@@ -144,7 +144,8 @@ function getPointsInit(series, xScale, yScale) {
 };
 
 function getTextWidth(text) {
-    return getRealTextWidth(text, fontSize, "'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif");
+    return getRealTextWidth(text, fontSize,
+        "'Ubuntu', 'Helvetica Neue', Helvetica, 'Open Sans', Arial, sans-serif");
 };
 
 function getRealTextWidth(text, fontSize, fontFace) {
