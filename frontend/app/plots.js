@@ -1,8 +1,11 @@
 import * as d3 from 'd3';
 import _ from 'lodash';
-import { scaleLinear } from 'd3-scale';
+import { scaleLinear, scalePow } from 'd3-scale';
 import format from './format';
 import './style/style.css';
+
+const defaultGap = 10;
+const fontSize = 13;
 
 const leftTableShape = [
         {
@@ -12,6 +15,7 @@ const leftTableShape = [
             effectsPlot: d => d.type,
             'text-anchor': 'start',
             'font-weight': 'bold',
+            gap: 20,
         },
         {
             title: 'Total',
@@ -25,6 +29,7 @@ const leftTableShape = [
         {
             title: 'SD',
             getter: d => format.f2(d.experimental.sd),
+            gap: 20,
         },
         {
             title: 'Total',
@@ -42,7 +47,6 @@ const leftTableShape = [
 ];
 
 function rightTableShape(levelPredict) {
-
     return [
         {
             title: 'MD',
@@ -53,13 +57,14 @@ function rightTableShape(levelPredict) {
             title: format.p0(levelPredict) + '-CI',
             getter: d =>'[' + format.f2(d.left) + ',' + format.f2(d.right) + ']',
             effectsPlot: d => '[' + format.f2(d.left) + ',' + format.f2(d.right) + ']',
+            gap: 20,
         },
         {
-            title: 'w(fixed)',
+            title: 'fixed',
             getter: d => format.p1(d.fixedWeight),
         },
         {
-            title: 'w(random)',
+            title: 'random',
             getter: d => format.p1(d.randomWeight),
         },
     ];
@@ -73,16 +78,16 @@ function drawLegendItem(selection) {
 }
 
 function updateLegend(legendGroup, legendData) {
-    if (legendData.length > 7) {
+    if (legendData.length > 6) {
         legendGroup.append('text')
             .attr('text-anchor', 'end')
-            .attr('x', leftTable[3].x)
+            .attr('x', legendData[3].x)
             .attr('y', 10)
             .text('Experemental');
 
         legendGroup.append('text')
             .attr('text-anchor', 'end')
-            .attr('x', leftTable[6].x)
+            .attr('x', legendData[6].x)
             .attr('y', 10)
             .text('Control');
     }
@@ -138,45 +143,39 @@ function getPointsInit(series, xScale, yScale) {
     };
 };
 
+function getTextWidth(text) {
+    return getRealTextWidth(text, fontSize, "'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif");
+};
+
+function getRealTextWidth(text, fontSize, fontFace) {
+    var a = document.createElement('canvas');
+    var b = a.getContext('2d');
+    b.font = fontSize + 'px ' + fontFace;
+    return b.measureText(text).width;
+};
+
+function getTable(series, tableShape) {
+    let x = 0;
+    return _.map(tableShape, (shape, index) => {
+        const texts = _.map(series, s => shape.getter(s).toString());
+        texts.push(shape.title);
+        const columnWidth = _.max(_.map(texts, getTextWidth));
+        shape.x = x + (shape['text-anchor'] ? 0 : columnWidth);
+        x += columnWidth + (shape.gap || defaultGap);
+        return shape;
+    });
+};
+
 export default function(svgWidth, series, effects, levelPredict) {
-    const space = 5;
-    const letterWidth = 7;
+    const leftTable = getTable(series, leftTableShape);
+    const rightTable = getTable(series, rightTableShape(levelPredict));
 
-    let left = 0;
-    let right = 0;
-
-    const leftTable = _.map(leftTableShape, (shape, index) => {
-        const maxContentLength = _.max(_.map(series, s => shape.getter(s).toString().length));
-        const maxLength = _.max([
-                maxContentLength,
-                shape.title.length,
-            ]);
-        const columnWidth = maxLength * letterWidth;
-        if (index != 0) {
-            shape.x = left + columnWidth;
-        }
-
-        left += columnWidth + space;
-        return shape;
-    });
-
-    const rightTable = _.map(rightTableShape(levelPredict), (shape, index) => {
-        const maxContentLength = _.max(_.map(series, s => shape.getter(s).toString().length));
-        const maxLength = _.max([
-                maxContentLength,
-                shape.title.length,
-            ]);
-        const columnWidth = maxLength * letterWidth;
-        shape.x = right + columnWidth;
-        right += columnWidth + space;
-        return shape;
-    });
-
-    right -= space;
+    const left = leftTable[leftTable.length - 1].x + defaultGap;
+    const right = (rightTable[rightTable.length - 1] || {x:0}).x + defaultGap;
 
     const positions = series.length + effects.length + 1;
 
-    const width = _.max([svgWidth - left - right - 40, 200]);
+    const width = _.min([430, _.max([svgWidth - left - right - 40, 200])]);
     const room = 30;
     const margin = { right, left, top: 40, bottom: 20, };
     const outerWidth = margin.left + width + margin.right;
@@ -195,7 +194,8 @@ export default function(svgWidth, series, effects, levelPredict) {
         .range([0, height]);
 
     const maxTotal = _.max(_.map(series, d => d.experimental.total + d.control.total));
-    const totalScale = scaleLinear()
+    const totalScale = scalePow()
+        .exponent(0.5)
         .domain([0, maxTotal])
         .range([2, 10]);
 
@@ -212,7 +212,7 @@ export default function(svgWidth, series, effects, levelPredict) {
     const svg = d3.select('body').append('svg')
         .attr('width', outerWidth)
         .attr('height', outerHeight)
-        .style({ 'font-size': '13px' });
+        .style({ 'font-size': fontSize + 'px' });
 
     svg.append('g')
         .attr('transform', 'translate(' + margin.left + ',' + (height + margin.top) + ')')
@@ -227,7 +227,7 @@ export default function(svgWidth, series, effects, levelPredict) {
     updateLegend(leftLegendGroup, leftTable);
 
     const rightLegendGroup = svg.append('g')
-        .attr('transform', 'translate(' + (margin.left + width) + ',0)')
+        .attr('transform', 'translate(' + (margin.left + width + defaultGap) + ',0)')
         .attr('class', 'legend');
     updateLegend(rightLegendGroup, rightTable);
 
@@ -252,7 +252,7 @@ export default function(svgWidth, series, effects, levelPredict) {
         .attr('x2', d=>xScale(d.md))
         .attr('y2', (d, i) => yScale(i + 0.37))
         .style({ stroke: 'rgb(1,164,164)', 'stroke-width': 2 })
-        .transition().duration(2000)
+        .transition().duration(500)
         .attr('x1', d => xScale(d.left))
         .attr('x2', d=>xScale(d.right));
 
@@ -261,7 +261,7 @@ export default function(svgWidth, series, effects, levelPredict) {
         .attr('cy', (d, i) => yScale(i + 0.37))
         .attr('r', 0)
         .style({ fill: 'rgb(17,63,164)', stroke: 'rgb(17.63.164)', 'stroke-width': 1 })
-        .transition().duration(2000)
+        .transition().duration(500)
         .attr('r', d => totalScale(d.experimental.total + d.control.total));
 
     const texts = plots.append('g')
@@ -286,7 +286,7 @@ export default function(svgWidth, series, effects, levelPredict) {
         .append('polygon')
             .attr('points', getPointsInit(series, xScale, yScale))
             .style({ fill: 'rgb(241,141,5)', stroke: 'rgb(241,141,5)', 'stroke-width': 1 })
-            .transition().duration(2000)
+            .transition().duration(500)
             .attr('points', getPoints(series, xScale, yScale));
 
     const effect_texts = effect_plots.append('g')
@@ -304,7 +304,7 @@ export default function(svgWidth, series, effects, levelPredict) {
     });
 
     const texts_right = plots.append('g')
-        .attr('transform', 'translate(' + (margin.left + width) + ',' + margin.top + ')');
+        .attr('transform', 'translate(' + (margin.left + width + defaultGap) + ',' + margin.top + ')');
 
     _.map(rightTable, item => {
         texts_right.append('text')
@@ -315,7 +315,7 @@ export default function(svgWidth, series, effects, levelPredict) {
     });
 
     const effect_texts_right = effect_plots.append('g')
-        .attr('transform', 'translate(' + (margin.left + width) + ',' + (margin.top + yScale(series.length + 1)) + ')');
+        .attr('transform', 'translate(' + (margin.left + width + defaultGap) + ',' + (margin.top + yScale(series.length + 1)) + ')');
 
     _.map(rightTable, item => {
         if (!!item.effectsPlot) {

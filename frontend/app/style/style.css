@@ -4,6 +4,7 @@ svg {
 }
 svg text {
     font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    /*font-family: 'DejaVu Sans Mono';*/
 }
 svg .header text {font-weight: bold}
 svg path.domain ,svg g.tick line {
