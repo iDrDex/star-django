@@ -2,12 +2,11 @@ svg text {
     font-family: 'Ubuntu', 'Helvetica Neue', Helvetica, 'Open Sans', Arial, sans-serif;
     fill: #555;
 }
-svg .header text {font-weight: bold}
-svg path.domain, svg g.tick line {
+svg .header text, svg g.legend text{
+    font-weight: bold
+}
+svg path.domain, svg g.tick line, svg line.y-axis {
     stroke-width: 0.5px;
     fill: none;
     stroke: rgb(97,97,97);
-}
-svg g.legend text {
-    font-weight: bold;
 }

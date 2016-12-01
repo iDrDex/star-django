@@ -167,8 +167,8 @@ export default function(elem, series, effects, levelPredict) {
     const room = 30;
     const margin = { right, left, top: 40, bottom: 20, };
     const outerWidth = margin.left + width + margin.right;
-    const outerHeight = room * positions;
-    const height = outerHeight - margin.top - margin.bottom;
+    const height = room * positions;
+    const outerHeight = height + margin.top + margin.bottom;
 
     const xMin = _.min(_.flatten([_.map(series, 'left'), _.map(effects, 'left')]));
     const xMax = _.max(_.flatten([_.map(series, 'right'), _.map(effects, 'right')]));
@@ -177,9 +177,9 @@ export default function(elem, series, effects, levelPredict) {
         .domain([xMin, xMax])
         .range([0, width]);
 
-    const yScale = scaleLinear()
-        .domain([0, positions])
-        .range([0, height]);
+    function yScale(x) {
+        return x * room;
+    }
 
     const maxTotal = _.max(_.map(series, d => d.experimental.total + d.control.total));
     const totalScale = scalePow()
@@ -192,11 +192,6 @@ export default function(elem, series, effects, levelPredict) {
         .ticks(6)
         .orient('bottom');
 
-    const yAxis = d3.svg.axis()
-        .scale(yScale)
-        .ticks(0)
-        .orient('left');
-
     const svg = d3.select(elem).append('svg')
         .attr('width', outerWidth)
         .attr('height', outerHeight)
@@ -208,7 +203,11 @@ export default function(elem, series, effects, levelPredict) {
 
     svg.append('g')
         .attr('transform', 'translate(' + (margin.left + xScale(0)) + ',' +  margin.top + ')')
-        .call(yAxis);
+        .append("line")
+        .attr("class", "y-axis")
+        .attr('y2', height);
+
+
 
     const topLegend = svg.append('g');
     topLegend.append('text')
