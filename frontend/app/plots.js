@@ -93,19 +93,35 @@ function getPoints(series, xScale, yScale) {
     return (d, i) => {
         const index = i + series.length + 0.87;
 
-        const x1 = xScale(d.left);
-        const y1 = yScale(index);
+        if (d.type != 'Prediction interval') {
+            const x1 = xScale(d.left);
+            const y1 = yScale(index);
 
-        const x2 = xScale(d.md);
-        const y2 = yScale(index + 0.2);
+            const x2 = xScale(d.md);
+            const y2 = yScale(index + 0.2);
 
-        const x3 = xScale(d.right);
-        const y3 = yScale(index);
+            const x3 = xScale(d.right);
+            const y3 = yScale(index);
 
-        const x4 = xScale(d.md);
-        const y4 = yScale(index - 0.2);
+            const x4 = xScale(d.md);
+            const y4 = yScale(index - 0.2);
 
-        return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
+            return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
+        } else {
+            const x1 = xScale(d.left);
+            const y1 = yScale(index) - 1;
+
+            const x2 = xScale(d.left);
+            const y2 = yScale(index) + 1;
+
+            const x3 = xScale(d.right);
+            const y3 = yScale(index) + 1;
+
+            const x4 = xScale(d.right);
+            const y4 = yScale(index) - 1;
+
+            return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
+        }
     };
 };
 
@@ -113,19 +129,10 @@ function getPointsInit(series, xScale, yScale) {
     return (d, i) => {
         const index = i + series.length + 0.87;
 
-        const x1 = xScale(d.md);
-        const y1 = yScale(index);
+        const x = xScale(d.md);
+        const y = yScale(index);
 
-        const x2 = xScale(d.md);
-        const y2 = yScale(index);
-
-        const x3 = xScale(d.md);
-        const y3 = yScale(index);
-
-        const x4 = xScale(d.md);
-        const y4 = yScale(index);
-
-        return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
+        return `${x},${y} ${x},${y} ${x},${y} ${x},${y}`;
     };
 };
 
@@ -287,7 +294,10 @@ export default function(elem, series, effects, levelPredict) {
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
         .append('polygon')
             .attr('points', getPointsInit(series, xScale, yScale))
-            .style({ fill: 'rgb(241,141,5)', stroke: 'rgb(241,141,5)', 'stroke-width': 1 })
+            .attr('style', d => {
+                const background = d.type == 'Prediction interval' ? '#bb1200' : 'rgb(241,141,5)';
+                return 'fill: ' + background + '; stroke: ' + background +'; stroke-width: 1';
+            })
             .transition().duration(500)
             .attr('points', getPoints(series, xScale, yScale));
 
