@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TEST</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/lodash/4.17.2/lodash.min.js"></script>
+    <script type="text/javascript" src="d3.min.js"></script>
+    <script src="https://d3js.org/d3-array.v1.min.js"></script>
+    <script src="https://d3js.org/d3-collection.v1.min.js"></script>
+    <script src="https://d3js.org/d3-color.v1.min.js"></script>
+    <script src="https://d3js.org/d3-format.v1.min.js"></script>
+    <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+    <script src="https://d3js.org/d3-time.v1.min.js"></script>
+    <script src="https://d3js.org/d3-time-format.v2.min.js"></script>
+    <script src="https://d3js.org/d3-scale.v1.min.js"></script>
+<style>
+svg {
+    border: 1px solid black;
+    padding: 10px;
+}
+svg text {
+    font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+svg .header text {font-weight: bold}
+svg path.domain ,svg g.tick line {
+    stroke-width: 0.5px;
+    fill: none;
+    stroke: rgb(97,97,97);
+}
+svg g.legend text {
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+</body>
+<script type="text/javascript">
+var data = {"TE.fixed": 0.012036935056953512, "df.Q": 8.0, "bylevs": "NA", "hakn": false, "I2.w": 0.5490076452773328, "w.random.w": 20841.614533011663, "pval": [0.3673728807504019, 0.4104204201265128, 0.0017863454700741688, 0.6595458382478798, 0.34010863294725746, 0.2144071800176736, 0.7910366330787575, 0.013612717969478579, 0.0005124419364217654], "sd.glass": "control", "H.w": 1.4890710151214976, "Q.w.random": null, "w.random": [8.930765744339258, 4450.928769906252, 5819.397650699408, 975.1527003324791, 2390.4028329741295, 491.61795535094313, 894.5241143753391, 5487.456520701385, 323.20322292738945], "title": "A1BG", "upper.H": 2.1656775064569054, "pval.random": 0.18594315161176858, "H": 1.4890710151214976, "n.harmonic.mean.w": null, "level.comb": 0.95, "Q.w": 17.73865990459974, "k.w": 9.0, "lower.random.w": -0.004414383479663433, "n.c.w": 441.0, "level": 0.95, "upper.fixed": 0.01825790215348072, "lower.I2.w": 0.04604929988662815, "upper.I2": 0.7867876149216895, "mean.c": [11.1985703262, 3.8839042886, 3.1230793134, 2.6963040152, 3.7190478229, 3.8125247821, -0.3895298156, 3.1796567823, -0.9261333088], "label.right": "", "mean.e": [10.8971425053, 3.8909849431, 3.1374476257, 2.7093338847, 3.7034409079, 3.7586440542, -0.39777031500000004, 3.1935163698, -0.7376505959], "subset": null, "upper": [0.3539795668491251, 0.023939987863998514, 0.023383902778834433, 0.07099976585614909, 0.01645867657063991, 0.031178538615924012, 0.052715093049332376, 0.024869205205038228, 0.29481592199273016], "exact.smd": false, "studlab": ["GSE27876", "GSE40732", "GSE4302", "GSE44037", "GSE46171", "GSE46171", "GSE5272", "GSE8052", "GSE8190"], "TE.random": 0.0091619473179876, "zval.fixed": 3.7923298467607114, "label.e": "Experimental", "label.c": "Control", "comb.fixed": true, "method.smd": "Hedges", "lower.H": 1.0238516498712547, "w.fixed": [8.942799979795385, 13514.979326813474, 47261.53572418775, 1143.1181865064527, 3736.0929200208748, 530.9491321579803, 1033.8774635015332, 31692.150104334072, 339.74911977433766], "seTE.random.w": 0.00692682666862218, "complab": "", "seTE.predict": 0.014094721099816094, "version": "4.3-2", "upper.random.w": 0.02273827811563863, "df.hakn": null, "backtransf": false, "method": "Inverse", "C": 64631.30278949651, "n.e": [10.0, 97.0, 74.0, 12.0, 25.0, 38.0, 110.0, 268.0, 106.0], "outclab": "", "n.c": [5.0, 97.0, 28.0, 12.0, 14.0, 3.0, 72.0, 136.0, 74.0], "upper.fixed.w": 0.01825790215348072, "TE.fixed.w": 0.012036935056953512, "df.Q.b": 0.0, "upper.random": 0.02273827811563863, "k": 9, "lower.predict": -0.024166772014074057, "bylab": "subset", "TE.random.w": 0.0091619473179876, "Q.w.fixed": 17.73865990459974, "zval.random": 1.322675989496069, "tau.w": 0.012275187786118205, "upper.H.w": 2.1656775064569054, "byvar": ["NA", "NA", "NA", "NA", "NA", "NA", "NA", "NA", "NA"], "tau.common": false, "seTE.fixed.w": 0.003174021127733676, "n.e.w": 740.0, "method.bias": "linreg", "call": ["<function>", [10, 97, 74, 12, 25, 38, 110, 268, 106], [10.8971425053, 3.8909849431, 3.1374476257, 2.7093338847, 3.7034409079, 3.7586440542, -0.39777031500000004, 3.1935163698, -0.7376505959], [0.5631606023, 0.0673489603, 0.025411675, 0.0737913659, 0.051636209, 0.052183480000000004, 0.2258716172, 0.0663685084, 0.35827710090000003], [5, 97, 28, 12, 14, 3, 72, 136, 74], [11.1985703262, 3.8839042886, 3.1230793134, 2.6963040152, 3.7190478229, 3.8125247821, -0.3895298156, 3.1796567823, -0.9261333088], [0.6328776131, 0.051393959100000004, 0.0186576765, 0.0710804933, 0.0474773969, 0.0737243242, 0.1903868596, 0.0453433847, 0.3580450141], ["GSE27876", "GSE40732", "GSE4302", "GSE44037", "GSE46171", "GSE46171", "GSE5272", "GSE8052", "GSE8190"], "A1BG", ["NA", "NA", "NA", "NA", "NA", "NA", "NA", "NA", "NA"], "subset"], "tau.preset": null, "pval.random.w": 0.18594315161176858, "C.w": 64631.30278949651, "pooledvar": false, "seTE.random": 0.00692682666862218, "zval.fixed.w": 3.7923298467607114, "prediction": false, "warn": true, "zval": [-0.9014052693719871, 0.82315400658756, 3.123630636588752, 0.4405402898490415, -0.9539506309244512, -1.2415377003636907, -0.264964729069759, 2.4673238497783423, 3.4741670278214096], "sd.e": [0.5631606023, 0.0673489603, 0.025411675, 0.0737913659, 0.051636209, 0.052183480000000004, 0.2258716172, 0.0663685084, 0.35827710090000003], "Q.b.fixed": 2.9870389456749865e-31, "method.tau": "DL", "lower.fixed": 0.005815967960426302, "se.tau2": null, "seTE.fixed": 0.003174021127733676, "tau": 0.012275187786118205, "TE.tau": null, "upper.I2.w": 0.7867876149216895, "Q.b.random": 0.0, "k.all.w": 9.0, "zval.random.w": 1.322675989496069, "pval.fixed": 0.00014924050432767972, "lower.random": -0.004414383479663433, "pval.fixed.w": 0.00014924050432767972, "seTE": [0.33439766899743867, 0.008601858757090979, 0.00459987558442299, 0.029577021217434756, 0.016360296323590123, 0.04339838241256517, 0.031100363542464236, 0.005617255108706292, 0.054252634197093925], "lower.fixed.w": 0.005815967960426302, "I2": 0.5490076452773328, "TE": [-0.30142782090000075, 0.007080654499999728, 0.014368312300000241, 0.013029869499999958, -0.015606914999999777, -0.0538807279000002, -0.008240499400000045, 0.01385958750000027, 0.18848271289999996], "df.hakn.w": null, "df.Q.w": 8.0, "label.left": "", "Q": 17.73865990459974, "lower.H.w": 1.0238516498712547, "level.predict": 0.95, "data": {".n.c": [5, 97, 28, 12, 14, 3, 72, 136, 74], ".n.e": [10, 97, 74, 12, 25, 38, 110, 268, 106], ".sd.e": [0.5631606023, 0.0673489603, 0.025411675, 0.0737913659, 0.051636209, 0.052183480000000004, 0.2258716172, 0.0663685084, 0.35827710090000003], ".byvar": ["NA", "NA", "NA", "NA", "NA", "NA", "NA", "NA", "NA"], ".mean.c": [11.1985703262, 3.8839042886, 3.1230793134, 2.6963040152, 3.7190478229, 3.8125247821, -0.3895298156, 3.1796567823, -0.9261333088], ".studlab": ["GSE27876", "GSE40732", "GSE4302", "GSE44037", "GSE46171", "GSE46171", "GSE5272", "GSE8052", "GSE8190"], ".mean.e": [10.8971425053, 3.8909849431, 3.1374476257, 2.7093338847, 3.7034409079, 3.7586440542, -0.39777031500000004, 3.1935163698, -0.7376505959], ".sd.c": [0.6328776131, 0.051393959100000004, 0.0186576765, 0.0710804933, 0.0474773969, 0.0737243242, 0.1903868596, 0.0453433847, 0.3580450141]}, "lower": [-0.9568352086491266, -0.009778678863999059, 0.00535272182116605, -0.04494002685614917, -0.04767250657063946, -0.13893999441592442, -0.06919609184933247, 0.002849969794962314, 0.08214950380726978], "comb.random": true, "print.byvar": true, "sd.c": [0.6328776131, 0.051393959100000004, 0.0186576765, 0.0710804933, 0.0474773969, 0.0737243242, 0.1903868596, 0.0453433847, 0.3580450141], "w.fixed.w": 99261.39477727628, "lower.I2": 0.04604929988662815, "sm": "MD", "upper.predict": 0.042490666650049254};
+var keys = ['studlab', 'TE', 'lower', 'upper', 'n.e', 'mean.e', 'sd.e', 'n.c', 'mean.c', 'sd.c',
+            'w.fixed', 'w.random'];
+var groupedData = data[keys[0]].map(function (v, i) {
+    return _.zipObject(keys, keys.map(function (k) {return data[k][i]}))
+})
+
+
+var series = _.map(groupedData, function(d) {
+    return {
+        title: d.studlab,
+        md: d.TE,
+        left: d.lower,
+        right: d.upper,
+        experimental: {
+            total: d["n.e"],
+            mean: d["mean.e"],
+            sd: d["sd.e"],
+        },
+        control: {
+            total: d["n.c"],
+            mean: d["mean.c"],
+            sd: d["sd.c"],
+        },
+        fixedWeight: d["w.fixed"]/data['w.fixed.w'],
+        randomWeight: d["w.random"]/data['w.random.w'],
+    }
+});
+
+var effects = [
+    {
+        type: "Fixed",
+        md: data['TE.fixed'],
+        left: data['lower.fixed'],
+        right: data['upper.fixed'],
+        experimentalTotal: _.sum(_.map(series,'experimental.total')),
+        controlTotal: _.sum(_.map(series,'control.total')),
+    },
+    {
+        type: "Random",
+        md: data['TE.random'],
+        left: data['lower.random'],
+        right: data['upper.random'],
+        experimentalTotal: _.sum(_.map(series,'experimental.total')),
+        controlTotal: _.sum(_.map(series,'control.total')),
+
+    },
+    {
+        type: "Prediction interval",
+        md: 0,
+        left: data['lower.predict'],
+        right: data['upper.predict'],
+    },
+];
+
+
+var f2format = d3.format('.2f');
+var p1format = d3.format('.1%');
+var p0format = d3.format('.0%');
+var positions = series.length + effects.length + 1;
+
+var right = 0,
+    left = 120,
+    //width = window.innerWidth - (right + left) - 20;
+    width = 400,// window.innerWidth - (right + left) - 20;
+    room = 30,
+    margin = {top: 40, right: right, bottom: 20, left:left},
+    outerWidth = margin.left + width + margin.right,
+    outerHeight = room * positions,
+    height = outerHeight - margin.top - margin.bottom;
+
+
+var xMin = _.min(_.flatten([_.map(series, 'left'), _.map(effects, 'left')]));
+var xMax = _.max(_.flatten([_.map(series, 'right'),_.map(effects, 'right')]));
+
+var x = d3.scaleLinear()
+    .domain([xMin, xMax])
+    .range([0, width]);
+
+var y = d3.scaleLinear()
+    .domain([0, positions])
+    .range([0, height]);
+
+var leftLegendScale = d3.scaleLinear()
+    .domain([0, 100])
+    .range([0, left]);
+
+var rightLegendScale = d3.scaleLinear()
+    .domain([0, 100])
+    .range([0, right]);
+
+
+var fontScale = d3.scaleLinear()
+    .domain([300, 5120])
+    .range([10, 170])
+
+var circleScale = d3.scaleLinear()
+    .domain([300, 5120])
+    .range([1, 17])
+
+var lineScale = d3.scaleLinear()
+    .domain([300, 5120])
+    .range([1, 17])
+
+var maxTotal = _.max(_.map(series,d => d.experimental.total + d.control.total));
+var total = d3.scaleLinear()
+    .domain([0, maxTotal])
+    .range([circleScale(width),5*circleScale(width)]);
+
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .ticks(6)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .ticks("")
+    .orient("left");
+
+
+
+var leftTable = [
+    {
+        title: "Study",
+        getter: d => d.title,
+        x: leftLegendScale(0),
+        effectsPlot: d => d.type,
+        "text-anchor": "start",
+        "font-weight": "bold",
+    },
+];
+
+
+var rightTable = [];
+
+    function legendLeft(selection) {
+        _.map(leftTable, item => {
+            selection.append("text")
+                .attr("text-anchor", _.get(item, "text-anchor", "end"))
+                .attr("x", item.x)
+                .attr("y", 30)
+                .text(item.title)
+        });
+    }
+
+function legendRight(selection) {
+        _.map(rightTable, item => {
+            selection.append("text")
+                .attr("text-anchor", "end")
+                .attr("x", item.x)
+                .attr("y", margin.top/2 + margin.top/4)
+                .text(item.title)
+        });
+}
+
+var svg = d3.select("body").append("svg")
+        .attr("width", outerWidth)
+        .attr("height", outerHeight)
+        .style({"font-size": "13px"});
+
+    svg.append("g")
+        .attr("transform", "translate("+margin.left+","+ (height + margin.top) +")")
+        .call(xAxis);
+
+    svg.append("g")
+        .attr("transform", "translate("+ (margin.left + x(0)) + ","+  margin.top +")")
+        .call(yAxis);
+
+    svg.append("g")
+        .attr("class", "legend")
+        .call(legendLeft);
+
+    svg.append("g")
+        .attr("transform", "translate("+ (margin.left + width) + ",0)")
+        .attr("class", "legend")
+        .call(legendRight);
+
+
+var plots = svg.selectAll("g.plot")
+                .data(series)
+                .enter()
+                .append("g")
+                .attr("class", "plot")
+
+var line = plots.append("g")
+        .attr("transform", "translate("+ margin.left + ","+margin.top+")");
+
+line.append("line")
+    .attr("class", "plot")
+    .attr("x1", d => x(d.left))
+    .attr("y1", (d,i) => y(i+0.37))
+    .attr("x2", d=>x(d.right))
+    .attr("y2", (d,i) => y(i+0.37))
+    .style({stroke: "rgb(1,164,164)", "stroke-width": lineScale(width)});
+
+line.append("circle")
+    .attr("cx", d => x(d.md))
+    .attr("cy", (d,i) => y(i+0.37))
+    .attr("r", d => total(d.experimental.total + d.control.total))
+    .style({fill: "rgb(17,63,164)", stroke: "rgb(17.63.164)", "stroke-width" :1});
+
+
+var texts = plots.append("g")
+    .attr("transform", "translate(0,"+margin.top+")");
+
+
+_.map(leftTable, item => {
+    texts.append("text")
+        .attr("text-anchor", _.get(item, "text-anchor", "end"))
+        .attr("x", item.x)
+        .attr("y", (d,i)=> y(i+0.5))
+        .text(item.getter);
+});
+
+var effect_plots = svg.selectAll("g.effect_plots")
+                .data(effects)
+                .enter()
+                .append("g")
+                .attr("class", "effect_plots")
+
+effect_plots.append("g")
+        .attr("transform", "translate("+ margin.left + ","+margin.top+")")
+        .append("polygon")
+            .attr("points", getPoints)
+            .style({fill: "rgb(241,141,5)", stroke: "rgb(241,141,5)", "stroke-width":1});
+
+
+var effect_texts = effect_plots.append("g")
+        .attr("transform", "translate(0,"+ (margin.top + y(series.length + 1)) +")");
+
+_.map(leftTable, item => {
+    if (!!item.effectsPlot) {
+        effect_texts.append("text")
+                    .attr("text-anchor", _.get(item, "text-anchor", "end"))
+                    .attr("x", item.x)
+                    .attr("y", (d,i)=> y(i))
+                    .style({"font-weight": _.get(item, "font-weight", "normal")})
+                    .text(item.effectsPlot);
+    }
+});
+
+
+texts_right = plots.append("g")
+        .attr("transform", "translate("+ (margin.left + width) + ","+margin.top+")");
+
+_.map(rightTable, item => {
+    texts_right.append("text")
+        .attr("text-anchor", "end")
+        .attr("x", item.x)
+        .attr("y", (d,i)=> y(i+0.5))
+        .text(item.getter);
+});
+
+var effect_texts_right = effect_plots.append("g")
+        .attr("transform", "translate("+ (margin.left + width) + ","+ (margin.top + y(series.length + 1)) +")");
+
+_.map(rightTable, item => {
+    if (!!item.effectsPlot) {
+        effect_texts_right.append("text")
+                    .attr("text-anchor", "end")
+                    .attr("x", item.x)
+                    .attr("y", (d,i)=> y(i))
+            .text(item.effectsPlot);
+    }
+});
+
+
+    function getPoints(d, i){
+        var index = i + series.length + 0.87;
+
+        var x1 = x(d.left);
+        var y1 = y(index);
+
+        var x2 = x(d.md);
+        var y2 = y(index + 0.2);
+
+        var x3 = x(d.right);
+        var y3 = y(index);
+
+        var x4 = x(d.md);
+        var y4 = y(index - 0.2);
+
+        return `${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}`;
+    }
+
+</script>
+</html>

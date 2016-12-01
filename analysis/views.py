@@ -2,6 +2,7 @@ import os
 import re
 from funcy import silent, without
 from handy.decorators import render_to
+from handy.ajax import ajax
 from datatableview.views import DatatableView
 
 from django.contrib.auth.decorators import login_required
@@ -15,7 +16,7 @@ from django.views.static import serve
 from core.conf import redis_client
 from legacy.models import Analysis, MetaAnalysis
 from .tasks import analysis_task
-from .forest import prepare_gene_plot
+from .forest import prepare_gene_plot, get_gene_analysis
 
 
 class Index(DatatableView):
@@ -59,6 +60,15 @@ class Detail(DatatableView):
         return context
 
 detail = Detail.as_view()
+
+
+@ajax
+def forest_data(request, analysis_id, mygene_sym):
+    analysis = Analysis.objects.get(pk=analysis_id)
+    if not analysis.fold_changes:
+        raise ajax.error('no-fold-changes', help='Try rerunning analysis')
+
+    return get_gene_analysis(analysis, mygene_sym)
 
 
 def forest(request, analysis_id, mygene_sym):
