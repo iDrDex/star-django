@@ -68,7 +68,9 @@ def forest_data(request, analysis_id, mygene_sym):
     if not analysis.fold_changes:
         raise ajax.error('no-fold-changes', help='Try rerunning analysis')
 
-    return get_gene_analysis(analysis, mygene_sym)
+    data = get_gene_analysis(analysis, mygene_sym)
+    data['min_samples'] = analysis.min_samples
+    return data
 
 
 def forest(request, analysis_id, mygene_sym):
