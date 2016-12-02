@@ -1,7 +1,7 @@
 import draw from './plots';
 import _ from 'lodash';
 
-window.initWidget = function (elem, data) {
+window.showForestPlot = function (elem, data) {
     const keys = [
         'studlab', 'TE', 'lower', 'upper', 'n.e',
         'mean.e', 'sd.e', 'n.c', 'mean.c', 'sd.c',
