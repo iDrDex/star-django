@@ -15,6 +15,7 @@ env.cwd = '/home/ubuntu/app'
 env.use_ssh_config = True
 env.hosts = ['stargeo']
 activate = lambda: prefix('source ~/venv/bin/activate')
+node = lambda: prefix('source ~/.nvm/nvm.sh')
 
 
 def restart():
@@ -30,7 +31,7 @@ def collect_static():
 
 
 def build_frontend():
-    with cd('frontend'):
+    with cd('frontend'), node():
         run('npm install')
         run('npm run build')
         run('cp -r dist ../public')
