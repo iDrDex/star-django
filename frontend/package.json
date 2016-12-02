@@ -1,10 +1,10 @@
 {
-  "name": "star-frontend",
+  "name": "stargeo-frontend",
   "version": "1.0.0",
-  "description": "Star fronted",
+  "description": "Stargeo frontend",
   "main": "''",
   "scripts": {
-    "build": "webpack --progress --profile --colors ",
+    "build": "webpack --progress --profile --colors --config=webpack.config.prod.js",
     "dev": "webpack-dev-server --progress --profile --colors --inline --hot --port 8082"
   },
   "repository": {

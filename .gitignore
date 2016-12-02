@@ -10,3 +10,4 @@ stargeo.sql*
 _errors
 _files/*
 frontend/node_modules
+frontend/dist
