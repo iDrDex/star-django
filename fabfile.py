@@ -29,6 +29,13 @@ def collect_static():
     execute(manage, 'collectstatic --noinput')
 
 
+def build_frontend():
+    with cd('frontend'):
+        run('npm install')
+        run('npm run build')
+        run('cp -r dist ../public')
+
+
 def migrate():
     execute(manage, 'migrate')
 
@@ -85,6 +92,9 @@ def deploy():
 
     print(green('Collecting static files...'))
     execute(collect_static)
+
+    print(green('Building frontend...'))
+    execute(build_frontend)
 
     print(green('Installing new crontab...'))
     execute(install_crontab)

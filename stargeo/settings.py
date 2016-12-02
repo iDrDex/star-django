@@ -148,6 +148,9 @@ TEMPLATES = [
             # we hackily exclude email, subject and logged_out templates
             "match_regex": r'(.*\.(j2|jinja)$|(^registration.*(?<!email|bject|d_out)\.\w+$))',
             "context_processors": _TEMPLATE_CONTEXT_PROCESSORS,
+            "constants": {
+                "FRONTEND": "http://localhost:8082/" if DEBUG else STATIC_URL + 'dist/'
+            }
         }
     },
     {
