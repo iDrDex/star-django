@@ -192,7 +192,7 @@ LOGGING = {
     'disable_existing_loggers': True,
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s [%(asctime)s] %(message)s'
+            'format': '%(name)s %(levelname)s [%(asctime)s] %(message)s'
         },
     },
     'handlers': {
