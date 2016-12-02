@@ -13,7 +13,8 @@ from django.http import HttpResponse, JsonResponse, Http404
 from django.shortcuts import redirect, get_object_or_404
 from django.views.static import serve
 
-from cacheops import file_cache
+from cacheops import FileCache
+file_cache = FileCache('/tmp/cacheops_views')
 
 from core.conf import redis_client
 from legacy.models import Analysis, MetaAnalysis
@@ -64,7 +65,7 @@ class Detail(DatatableView):
 detail = Detail.as_view()
 
 
-@file_cache.cached_view(extra=1)
+@file_cache.cached_view()
 @ajax
 def forest_data(request, analysis_id, mygene_sym):
     analysis = Analysis.objects.get(pk=analysis_id)
