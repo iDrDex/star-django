@@ -222,7 +222,7 @@ export default function(elem, series, effects, levelPredict) {
         .attr('x', leftTable[3].x)
         .attr('y', 10)
         .style({ 'font-weight': 'bold' })
-        .text('Experemental');
+        .text('Experimental');
 
     topLegend.append('text')
         .attr('text-anchor', 'end')
