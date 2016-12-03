@@ -79,7 +79,7 @@
             }
 
             $('#tab-frame').before('<li id="tab-{mygene}"><a href="#{mygene}" aria-controls="{mygene}" role="tab" data-toggle="tab">{mygene}<span class="close-tab" onclick="removeForestTab(\'{mygene}\')"> &times;</span></a></li>'.replace(/{mygene}/g, mygene));
-            $('#analysis-tabs-content').append('<div id="' + mygene + '" class="tab-pane"><div class="panel-body">Loading...</div></div>');
+            $('#analysis-tabs-content').append('<div id="' + mygene + '" class="tab-pane"><div class="panel-body" style="overflow-x: auto; padding: 20px 10px">Loading...</div></div>');
             $('#tab-' + mygene + ' a').tab('show');
 
             $.ajax({
