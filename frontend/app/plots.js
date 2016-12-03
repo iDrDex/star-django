@@ -4,7 +4,7 @@ import { scaleLinear, scalePow } from 'd3-scale';
 import format from './format';
 import './style/style.css';
 
-const defaultGap = 10;
+const defaultGap = 5;
 const fontSize = 12;
 
 const leftTableShape = [
@@ -15,7 +15,7 @@ const leftTableShape = [
             effectsPlot: d => d.type,
             'text-anchor': 'start',
             'font-weight': 'bold',
-            gap: 20,
+            gap: 10,
         },
         {
             title: 'Total',
@@ -29,7 +29,7 @@ const leftTableShape = [
         {
             title: 'SD',
             getter: d => format.f2(d.experimental.sd),
-            gap: 20,
+            gap: 10,
         },
         {
             title: 'Total',
@@ -170,7 +170,7 @@ export default function(elem, series, effects, levelPredict) {
 
     const positions = series.length + effects.length + 1;
 
-    const width = _.min([430, _.max([svgWidth - left - right - 40, 200])]);
+    const width = _.min([430, _.max([svgWidth - left - right - 40, 130])]);
     const room = 30;
     const margin = { right, left, top: 40, bottom: 20, };
     const outerWidth = margin.left + width + margin.right;
