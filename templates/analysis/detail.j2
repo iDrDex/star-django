@@ -98,9 +98,13 @@
             $('#results-tab-link').tab('show');
         }
 
-        function drawForestGraph(elem, data) {
-            elem.html('');
-            window.showForestPlot(elem.get(0), data.data);
+        function drawForestGraph(elem, res) {
+            if (!res.success) {
+                alert('Error happend: ' + res.error + (res.help ? '\n' + res.help : ''))
+            } else {
+                elem.html('');
+                window.showForestPlot(elem.get(0), res.data);
+            }
         }
     </script>
 {% endblock %}
