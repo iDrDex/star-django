@@ -51,5 +51,4 @@ class PasswordResetForm(_PasswordResetForm):
 
     def get_users(self, email):
         """Allow users with inactive passwords to reset it"""
-        return get_user_model()._default_manager.filter(
-            email__iexact=email, is_active=True)
+        return get_user_model()._default_manager.filter(email__iexact=email)
