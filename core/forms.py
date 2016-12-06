@@ -1,9 +1,20 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import PasswordResetForm as _PasswordResetForm
+from django.contrib.auth.forms import PasswordResetForm as _PasswordResetForm, AuthenticationForm
+from django.utils.html import mark_safe
 from registration.forms import RegistrationForm
 
 from core.models import User
+
+
+class MyAuthenticationForm(AuthenticationForm):
+    error_messages = dict(AuthenticationForm.error_messages, **{
+        'inactive': mark_safe("""
+            This account is inactive. Follow a link in activation email we sent you earlier.
+            If you haven't received the activation email you can
+            <a href="/accounts/reactivate/">resend it</a>.
+        """),
+    })
 
 
 class MyRegistrationForm(RegistrationForm):

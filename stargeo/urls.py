@@ -2,15 +2,19 @@ from django.conf.urls import patterns, include, url
 from django.contrib import admin
 
 from registration.backends.hmac.views import RegistrationView
-from core.forms import PasswordResetForm, MyRegistrationForm
+from core.forms import PasswordResetForm, MyRegistrationForm, MyAuthenticationForm
 
 
 urlpatterns = patterns('',  # noqa
+    url(r'^accounts/login/$', 'django.contrib.auth.views.login',
+        {'authentication_form': MyAuthenticationForm}, name='login'),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout',
         {'next_page': '/'}),
     url(r'^accounts/register/$',
         RegistrationView.as_view(form_class=MyRegistrationForm),
         name='registration_register'),
+    url(r'^accounts/reactivate/$', 'core.views.reactivate', name='reactivate'),
+    url(r'^accounts/reactivate_sent/$', 'core.views.reactivate_sent', name='reactivate_sent'),
     url(r'^accounts/password_reset/$', 'django.contrib.auth.views.password_reset',
         {'post_reset_redirect': 'auth_password_reset_done',
          'email_template_name': 'registration/password_reset_email.txt',
