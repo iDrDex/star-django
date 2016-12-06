@@ -69,15 +69,40 @@
                     }
                 ]
             });
+
+            loadTabsFromAnchors();
         });
+
+        function getGenTabList() {
+            var gens = window.location.hash.substr(1).split(',');
+            if (_.isEqual(gens, [""])) {
+                gens = [];
+            }
+            return gens;
+        }
+
+        function setGenTabList(gens) {
+            window.location.hash = _.join(gens, ',');
+        }
+
+        function loadTabsFromAnchors() {
+            var gens = getGenTabList();
+            if (gens.length) {
+                _.map(gens, addForestTab);
+                $('#tab-' + gens[0] + ' a').tab('show');
+            }
+        }
 
         function addForestTab(mygene) {
             var $geneTabLink = $('#tab-' + mygene + ' a');
-
             if ($geneTabLink.length) {
                 $geneTabLink.tab('show');
                 return;
             }
+
+            var gens = getGenTabList();
+            gens.push(mygene);
+            setGenTabList(_.uniq(gens));
 
             $('#tab-frame').before('<li id="tab-{mygene}"><a href="#{mygene}" aria-controls="{mygene}" role="tab" data-toggle="tab">{mygene}<span class="close-tab" onclick="removeForestTab(\'{mygene}\')"> &times;</span></a></li>'.replace(/{mygene}/g, mygene));
             $('#analysis-tabs-content').append('<div id="' + mygene + '" class="tab-pane"><div class="panel-body" style="overflow-x: auto; padding: 20px 10px">Loading...</div></div>');
@@ -95,8 +120,13 @@
 
         function removeForestTab(mygene) {
             $("#tab-" + mygene).remove();
-            $("#" + mygene).remove();
-            $('#results-tab-link').tab('show');
+            $genLi = $("#" + mygene);
+            if ($genLi.hasClass('active')){
+                $('#results-tab-link').tab('show');
+            }
+            $genLi.remove();
+
+            setGenTabList(_.filter(getGenTabList(), function(gen) { return gen != mygene; }));
         }
 
         function drawForestGraph(elem, res) {
