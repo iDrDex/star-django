@@ -160,8 +160,7 @@ function getTable(series, tableShape) {
     });
 };
 
-export default function(elem, series, effects, levelPredict) {
-    const svgWidth = elem.offsetWidth;
+export default function(elem, svgWidth, series, effects, levelPredict) {
     const leftTable = getTable(series, leftTableShape);
     const rightTable = getTable(series, rightTableShape(levelPredict));
 

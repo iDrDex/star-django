@@ -49,6 +49,7 @@
     <script src="{{ static('js/datatableview.js') }}"></script>
     <script type="text/javascript">
         var analysisId = {{ analysis.id }};
+        var tabWidth = $('#results').get(0).offsetWidth;
         datatableview.auto_initialize = false;
         $(function(){
             datatableview.initialize($('.datatable'), {
@@ -103,7 +104,7 @@
                 alert('Error happend: ' + res.error + (res.help ? '\n' + res.help : ''))
             } else {
                 elem.html('');
-                window.showForestPlot(elem.get(0), res.data);
+                window.showForestPlot(elem.get(0),tabWidth, res.data);
             }
         }
     </script>
