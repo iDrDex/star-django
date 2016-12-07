@@ -53,6 +53,7 @@
     <div class="panel-heading">
         {{ page.paginator.count }} serie{{ page.paginator.count|pluralize }} found,
         {{ page.start_index() }}&ndash;{{ page.end_index() }} shown.
+        <span style="float: right">Specie{{ species|count|pluralize }}: {{ ','.join(species) }} &mdash; {{ platforms|intcomma }} platforms found {{ samples|intcomma }} samples found</span>
     </div>
     {% endif %}
 
@@ -67,7 +68,7 @@
                 <div class="desc">{{ serie.attrs.summary|truncate(300, True) }}</div>
                 <p style="margin: 0.5em 0 0">
                     Serie: {{ serie.gse_name }},
-                    {% with platforms = serie.attrs.platform_id.split('---') %}
+                    {% with platforms = serie.platforms %}
                         Platform{{ platforms|count|pluralize }}: {{ platforms|join(', ') }}
                     {%- endwith -%}
                     {%- if serie_tags[serie.id] -%}
@@ -79,7 +80,7 @@
                 </p>
             </div>
             <div class="col-md-1 forum-info">
-                <span class="number">{{ serie.attrs.sample_id.split()|count }}</span>
+                <span class="number">{{ serie.samples_count }}</span>
                 <small>Samples</small>
             </div>
         </div>

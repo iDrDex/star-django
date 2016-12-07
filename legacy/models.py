@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
-from funcy import distinct, keep
+from funcy import distinct, keep, flatten
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django_pandas.managers import DataFrameManager
 from handy.models import JSONField
@@ -39,6 +40,8 @@ class Series(models.Model):
     gse_name = models.TextField()
     specie = models.CharField(max_length=127, blank=True)
     attrs = JSONField(default={})
+    platforms = ArrayField(models.CharField(max_length=127), blank=True, null=True)
+    samples_count = models.IntegerField(default=0)
 
     class Meta:
         db_table = 'series'
@@ -48,6 +51,10 @@ class Series(models.Model):
         taxid = distinct(keep(self.attrs.get, ['platform_taxid', 'sample_taxid']))
         if len(taxid) == 1:
             self.specie = SPECIES.get(taxid[0])
+
+        self.platforms = flatten(p.split('|\n|') for p in self.attrs['platform_id'].split('---'))
+        self.samples_count = len(self.attrs['sample_id'].split())
+
         super(Series, self).save(**kwargs)
 
 

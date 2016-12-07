@@ -9,9 +9,11 @@ from handy.utils import get_or_none
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Sum
 from django.forms import ModelForm, ValidationError, HiddenInput
 from django.shortcuts import redirect, get_object_or_404
 
+from core.aggregations import ArrayAgg, ArrayConcatUniq, ArrayLength
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series
 from .models import Tag, SeriesTag
@@ -64,11 +66,23 @@ def search(request):
         exclude_series = join(tag_series[t] for t in exclude_tags)
         qs = qs.exclude(id__in=exclude_series)
 
+    data = qs.aggregate(samples=Sum('samples_count'),
+                        platforms=ArrayLength(ArrayConcatUniq('platforms')),
+                        species=ArrayAgg('specie'))
+    samples = data['samples']
+    platforms = data['platforms']
+    species = set(data['species'])
+    species.remove('')
+
     return {
         'series': qs,
         'tags': tags,
         'serie_tags': serie_tags,
+        'samples': samples,
+        'platforms': platforms,
+        'species': species,
     }
+
 
 def _parse_query(q):
     tags, words = split(r'^tag:', q.split())
