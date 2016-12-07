@@ -20,6 +20,11 @@ from .models import Tag, SeriesTag
 @render_to()
 @paginate('series', 10)
 def search(request):
+    # Save last specie in session
+    specie = request.GET.get('specie') or request.session.get('specie')
+    if specie != request.session.get('specie'):
+        request.session['specie'] = specie
+
     q = request.GET.get('q')
     if not q:
         return {'series': None}
@@ -27,6 +32,7 @@ def search(request):
     exclude_tags = keep(silent(int), request.GET.getlist('exclude_tags'))
     serie_tags, tag_series, tag_ids = series_tags_data()
 
+    # Parse query
     q_string, q_tags = _parse_query(q)
     q_tags, wrong_tags = split(lambda t: t.lower() in tag_ids, q_tags)
     if wrong_tags:
@@ -35,7 +41,11 @@ def search(request):
     if not q_string and not q_tags:
         return {'series': None}
 
+    # Build qs
     qs = search_series_qs(q_string)
+    if specie:
+        qs = qs.filter(specie=specie)
+
     if q_tags:
         q_tag_ids = keep(tag_ids.get(t.lower()) for t in q_tags)
         include_series = reduce(set.intersection, (tag_series[t] for t in q_tag_ids))

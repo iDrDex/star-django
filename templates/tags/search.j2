@@ -7,9 +7,19 @@
                 Search series
             </h2>
 
-            <form id="search-form" cclass="col-lg-offset-1" style="margin-top: 1em">
+            <form id="search-form" class="form-inline" style="margin-top: 1em">
+                <div class="form-group col-md-8" style="padding: 0">
+                    <input type="text" class="form-control input-lg" name="q" value="{{ request.GET.q or '' }}" placeholder="Type in keywords" style="width: 100%">
+                </div>
+                <div class="form-group">
+                    <select name="specie" class="form-control input-lg">
+                        <option value="">all species</option>
+                        {% for specie in ('human', 'mouse', 'rat') %}
+                            <option value="{{ specie }}"{% if (request.GET.specie or request.session.specie) == specie %} selected{% endif %}>{{ specie }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <div class="input-group">
-                    <input type="text" class="form-control input-lg" name="q" value="{{ request.GET.q or '' }}" placeholder="Type in keywords">
                     <span class="input-group-btn">
                         <button type="submit" class="btn btn-primary btn-lg">Search</button>
                     </span>
