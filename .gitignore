@@ -12,3 +12,4 @@ _files/*
 frontend/node_modules
 frontend/dist
 frontend/npm-debug.log
+.ropeproject
