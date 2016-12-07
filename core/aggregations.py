@@ -16,3 +16,8 @@ class ArrayConcatUniq(ArrayAgg):
 
 class ArrayConcat(ArrayAgg):
     function = 'ARRAY_CONCAT'
+
+
+class ArrayLength(Aggregate):
+    function = 'ARRAY_LENGTH'
+    template = '%(function)s(%(expressions)s,1)'
