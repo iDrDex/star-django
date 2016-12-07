@@ -20,12 +20,11 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 
-from legacy.models import Series, Platform, Sample
+from legacy.models import Series, Platform, Sample, SPECIES
 
 
 # TODO: verbosity levels
 
-SPECIES = {'9606': 'human', '10090': 'mouse', '10116': 'rat'}
 DEFAULT_NUMBER_OF_THREADS = 20
 SERIES_MATRIX_URL = urlparse.urlparse('ftp://ftp.ncbi.nih.gov/geo/series/')
 SOCKET_TIMEOUT = 20

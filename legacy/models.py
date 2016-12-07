@@ -1,8 +1,12 @@
 from __future__ import unicode_literals
+from funcy import distinct, keep
 
 from django.db import models
 from django_pandas.managers import DataFrameManager
 from handy.models import JSONField
+
+
+SPECIES = {'9606': 'human', '10090': 'mouse', '10116': 'rat'}
 
 
 class Platform(models.Model):
@@ -33,10 +37,18 @@ class PlatformProbe(models.Model):
 
 class Series(models.Model):
     gse_name = models.TextField()
+    specie = models.CharField(max_length=127, blank=True)
     attrs = JSONField(default={})
 
     class Meta:
         db_table = 'series'
+
+    def save(self, **kwargs):
+        # Only set specie when it's non-controversial
+        taxid = distinct(keep(self.attrs.get, ['platform_taxid', 'sample_taxid']))
+        if len(taxid) == 1:
+            self.specie = SPECIES.get(taxid[0])
+        super(Series, self).save(**kwargs)
 
 
 class Sample(models.Model):
