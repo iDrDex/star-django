@@ -71,8 +71,7 @@ def search(request):
                         species=ArrayAgg('specie'))
     samples = data['samples']
     platforms = data['platforms']
-    species = set(data['species'])
-    species.remove('')
+    species = set(data['species']) - {''}
 
     return {
         'series': qs,
