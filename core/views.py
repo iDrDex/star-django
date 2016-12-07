@@ -1,20 +1,26 @@
 from funcy import zipdict
 from handy.decorators import render_to
+from collections import defaultdict
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
 from django.contrib.auth import get_user_model
 
+from .models import StatisticCache
 from .conf import redis_client
 
 
 @render_to(template='dashboard.j2')
 def dashboard(request):
-    keys = ('core.stats.tags', 'core.stats.serie_annotations', 'core.stats.sample_annotations',
-            'core.graph')
+    stats = defaultdict(str)
+    stats.update({
+        stat['slug']: stat['count'] for stat
+        in StatisticCache.objects.values('slug','count')
+    })
+    stats['graph'] = redis_client.get('core.graph')
     return {
-        'stats': zipdict(keys, redis_client.mget(*keys))
+        'stats': stats
     }
 
 

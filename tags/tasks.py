@@ -11,7 +11,6 @@ from django.db import transaction
 from django.db.models import F
 
 from core.conf import redis_client
-from core.tasks import update_dashboard
 from .models import (SeriesTag, SerieValidation, SampleValidation,
                      UserStats, ValidationJob, Payment, PaymentState)
 
@@ -33,7 +32,6 @@ def validation_workflow(sv_id, is_new=True):
             calc_validation_stats(v.pk, recalc=True)
 
     update_canonical_annotation(series_tag_id)
-    update_dashboard.delay()
 
 
 # TODO: get rid of recalc flag, separate function into 2 or 3:

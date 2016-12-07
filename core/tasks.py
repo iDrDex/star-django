@@ -1,28 +1,9 @@
 import json
 
 from celery import shared_task
-from handy.db import fetch_val, fetch_all
+from handy.db import fetch_all
 
 from .conf import redis_client
-
-
-@shared_task
-def update_stats():
-    tags = fetch_val('select count(*) from tag')
-    redis_client.set('core.stats.tags', tags)
-
-    serie_annotations = fetch_val(
-        '''select (select count(*) from series_tag)
-                + (select count(*) from series_validation)'''
-    )
-    redis_client.set('core.stats.serie_annotations', serie_annotations)
-
-    sample_annotations = fetch_val(
-        '''select (select count(*) from sample_tag)
-                + (select count(*) from sample_validation)
-                + (select count(*) from sample_validation__backup)'''
-    )
-    redis_client.set('core.stats.sample_annotations', sample_annotations)
 
 
 # TODO: debounce this task
@@ -51,10 +32,6 @@ def update_graph():
     graph_data = {'total': total, 'right': right, 'wrong': wrong}
     redis_client.set('core.graph', json.dumps(graph_data, default=defaultencode))
 
-
-from celery import group
-
-update_dashboard = group(update_stats.si(), update_graph.si())
 
 
 # Utils

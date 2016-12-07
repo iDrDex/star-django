@@ -30,7 +30,7 @@
 
                         <div style="margin-top: 9.35em">
                             <h1 class="font-extra-bold m-t-xl m-b-xs">
-                                {{ stats['core.stats.sample_annotations']|intcomma }}
+                                {{ stats['sample_annotations']|intcomma }}
                             </h1>
                             <small>sample annotations</small>
                         </div>
@@ -75,26 +75,26 @@
                 <div id="tab-1" class="tab-pane active">
                     <div class="panel-body">
                         <p>STAR provides a powerful search engine across samples, experiments, and attributes from GEO.
-                        In all, 465,770 digital samples
-                        described by 15,340,350 attributes that are
-                        drawn from 11,903 experiments
-                        described by 295,786 attributes are available.</p>
+                        In all, {{ stats['samples']|intcomma }} digital samples
+                        described by {{ stats['samples_attributes']|intcomma }} attributes that are
+                        drawn from {{ stats['experiments']|intcomma }} experiments
+                        described by {{ stats['experiments_attributes']|intcomma }} attributes are available.</p>
                     </div>
                 </div>
                 <div id="tab-2" class="tab-pane">
                     <div class="panel-body">
                         <p>STAR uses an annotation engine based on a semantic network of crowd-sourced tags that
-                        that represent biological annotations. In all, {{ stats['core.stats.tags']|intcomma }} tags have been used
-                        to make {{ stats['core.stats.serie_annotations']|intcomma }} annotations of digital experiments
-                        representing {{ stats['core.stats.sample_annotations']|intcomma }} annotations of digital samples.</p>
+                        that represent biological annotations. In all, {{ stats['tags']|intcomma }} tags have been used
+                        to make {{ stats['serie_annotations']|intcomma }} annotations of digital experiments
+                        representing {{ stats['sample_annotations']|intcomma }} annotations of digital samples.</p>
                     </div>
                 </div>
                 <div id="tab-3" class="tab-pane">
                     <div class="panel-body">
                         <p>STAR enables meta-analysis of digitally tagged samples for robust gene signatures
-                        using 28,254,323 gene probes across 1,682 platforms
+                        using {{ stats['gene_probes']|intcomma }} gene probes across {{ stats['platforms']|intcomma }} platforms
                         within
-                        GEO. In all 21 meta-analyses of standard fixed and random models have
+                        GEO. In all {{ stats['meta_analyses']|intcomma }} meta-analyses of standard fixed and random models have
                         been
                         run with corresponding Forrest plots available.</p>
                     </div>
@@ -104,7 +104,7 @@
                         <p>STAR represents an annotation layer built on open public data provided by GEO. It is provided as
                         an open resource for the scientific community as a tool to derive robust gene signatures from
                         public
-                        functional genomics data. Currently 31 users have contributed.</p>
+                        functional genomics data. Currently {{ stats['users']|intcomma }} users have contributed.</p>
                     </div>
                 </div>
             </div>
@@ -126,7 +126,7 @@
 <script src="{{ static('jquery.flot.time.js') }}"></script>
 <script>
     $(function () {
-        var annotations = {{ stats['core.graph']|safe }};
+        var annotations = {{ stats['graph']|safe }};
 
         // Construct plot data and options
         fixSeries(annotations);

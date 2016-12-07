@@ -14,7 +14,6 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
-from core.tasks import update_dashboard
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series, Sample
 from tags.models import Tag, SeriesTag, SampleTag
@@ -96,8 +95,6 @@ def save_annotation(request):
             sa.fill_samples(sample_tags)
 
     messages.success(request, 'Saved annotations')
-
-    update_dashboard.delay()
 
     return redirect(reverse(annotate) + '?series_id=' + series_id)
 
