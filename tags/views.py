@@ -56,13 +56,13 @@ def search(request):
                 % (q_tags[0] if len(q_tags) == 1 else 'all these tags simultaneously')
             messages.warning(request, message)
             return {'series': []}
-    if exclude_tags:
-        exclude_series = join(tag_series[t] for t in exclude_tags)
-        qs = qs.exclude(id__in=exclude_series)
 
     series_ids = qs.values_list('id', flat=True)
     tags = distinct(imapcat(serie_tags, series_ids), key=itemgetter('id'))
-    # TODO: do not hide excluded tags
+
+    if exclude_tags:
+        exclude_series = join(tag_series[t] for t in exclude_tags)
+        qs = qs.exclude(id__in=exclude_series)
 
     return {
         'series': qs,
