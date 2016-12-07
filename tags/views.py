@@ -23,7 +23,7 @@ from .models import Tag, SeriesTag
 @paginate('series', 10)
 def search(request):
     # Save last specie in session
-    specie = request.GET.get('specie') or request.session.get('specie')
+    specie = request.GET.get('specie')
     if specie != request.session.get('specie'):
         request.session['specie'] = specie
 
