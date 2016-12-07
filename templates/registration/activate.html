@@ -1,0 +1,9 @@
+{% extends "base.j2" %}
+
+
+{% block content %}
+    <p>Account activation failed.</p>
+    <p>Check that you copied complete activation URL and there is no funny characters on the end of it &mdash; some email clients don't parse links carefully.</p>
+    <p>There is also a possibility that your activation link has expired,
+       in this case you can <a href="{{ url('reactivate') }}">resend an activation email</a>.</p>
+{% endblock %}
