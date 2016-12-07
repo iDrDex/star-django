@@ -1,6 +1,12 @@
-15 0 * * 0 cd /home/ubuntu/app && ../venv/bin/python manage.py cleanfilecache
-15 1 * * 0 cd /home/ubuntu/app && ../venv/bin/python manage.py refresh_data
+# Update descriptive statistics cache for dashboard
+5  */8 * * *   cd /home/ubuntu/app && ../venv/bin/python manage.py update_statistic_cache
+#
+15 0   * * 0   cd /home/ubuntu/app && ../venv/bin/python manage.py cleanfilecache
+#
+15 1   * * 0   cd /home/ubuntu/app && ../venv/bin/python manage.py refresh_data
 # Remove old files to clean cache and update to new refMrna dbs
-0 1 * * 1 cd /home/ubuntu/app && rm -rf _files
-15 1 * * 1 cd /home/ubuntu/app && ../venv/bin/python manage.py fill_probes
-15 1 * * 2-6 cd /home/ubuntu/app && ../venv/bin/python manage.py fill_probes --redo=100
+0  1   * * 1   cd /home/ubuntu/app && rm -rf _files
+#
+15 1   * * 1   cd /home/ubuntu/app && ../venv/bin/python manage.py fill_probes
+#
+15 1   * * 2-6 cd /home/ubuntu/app && ../venv/bin/python manage.py fill_probes --redo=100
