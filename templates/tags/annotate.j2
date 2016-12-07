@@ -15,7 +15,7 @@
     {% if done_tags %}
     <p>Tags done:
         {%- for tag in done_tags %}
-        <a href="{{ url('on_demand_validate') }}?series_id={{ serie.id }}&amp;tag_id={{ tag.id }}" class="label label-success">{{ tag.tag_name }}</a>
+            <a href="{{ url('on_demand_validate') }}?series_id={{ serie.id }}&amp;tag_id={{ tag.id }}" class="label label-{{ 'success' if tags_validated[tag.id] else 'grey' }}">{{ tag.tag_name }}</a>
         {% endfor %}
     </p>
     {% endif %}

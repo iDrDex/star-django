@@ -40,12 +40,18 @@ def annotate(request):
     tags = Tag.objects.filter(is_active=True).exclude(id__in=done_tag_ids) \
         .order_by('tag_name').values('id', 'tag_name')
 
+    # Get annotations statuses
+    annos_qs = SerieAnnotation.objects.filter(series=serie) \
+                              .values_list('tag_id', 'best_cohens_kappa')
+    tags_validated = {t: k == 1 for t, k in annos_qs}
+
     return {
         'done_tags': done_tags,
         'tags': tags,
         'serie': serie,
         'columns': columns,
         'samples': samples,
+        'tags_validated': tags_validated,
     }
 
 
