@@ -144,7 +144,7 @@ def save_analysis(request, analysis):
 class AnalysisForm(ModelForm):
     class Meta:
         model = Analysis
-        fields = ['analysis_name', 'description',
+        fields = ['analysis_name', 'description', 'specie',
                   'case_query', 'control_query', 'modifier_query', 'min_samples']
 
 

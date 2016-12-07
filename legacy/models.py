@@ -83,6 +83,8 @@ def analysis_s3name(self):
 class Analysis(models.Model):
     analysis_name = models.CharField(max_length=512)
     description = models.CharField(max_length=512, blank=True, default='')
+    specie = models.CharField(max_length=127, blank=True,
+                              choices=[('human', 'human'), ('mouse', 'mouse'), ('rat', 'rat')])
     case_query = models.CharField(max_length=512)
     control_query = models.CharField(max_length=512)
     modifier_query = models.CharField(max_length=512, blank=True, default='')

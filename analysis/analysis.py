@@ -27,7 +27,7 @@ SERIES_MATRIX_MIRROR = os.environ['SERIES_MATRIX_MIRROR']
 def perform_analysis(analysis, debug=False):
     logger.info('Started %s analysis', analysis.analysis_name)
     with log_durations(logger.debug, 'Loading dataframe for %s' % analysis.analysis_name):
-        df = get_analysis_df(analysis.case_query, analysis.control_query, analysis.modifier_query)
+        df = get_analysis_df(analysis)
     debug and df.to_csv("%s.analysis_df.csv" % analysis.analysis_name)
 
     logger.info('Matching sources: %d' % df.groupby(['series_id', 'platform_id']).ngroups)
@@ -137,13 +137,15 @@ COLUMNS = {
 }
 
 @log_durations(logger.debug)
-def get_analysis_df(case_query, control_query, modifier_query):
+def get_analysis_df(analysis):
     # Fetch all relevant data
-    queries = [case_query, control_query, modifier_query]
+    queries = [analysis.case_query, analysis.control_query, analysis.modifier_query]
     tokens = set(cat(re_all('[a-zA-Z]\w*', query) for query in queries))
 
     tags = Tag.objects.filter(tag_name__iregex='^(%s)$' % '|'.join(map(re.escape, tokens)))
     qs = SampleAnnotation.objects.filter(serie_annotation__tag__in=tags)
+    if analysis.specie:
+        qs = qs.filter(serie_annotation__series__specie=analysis.specie)
     df = qs.to_dataframe(COLUMNS.keys()).rename(columns=COLUMNS)
 
     # Make tag columns
@@ -161,10 +163,10 @@ def get_analysis_df(case_query, control_query, modifier_query):
     df = df.convert_objects(convert_numeric=True)
 
     # Apply case/control/modifier
-    if modifier_query:
-        df = df.query(modifier_query.lower())
-    case_df = df.query(case_query.lower())
-    control_df = df.query(control_query.lower())
+    if analysis.modifier_query:
+        df = df.query(analysis.modifier_query.lower())
+    case_df = df.query(analysis.case_query.lower())
+    control_df = df.query(analysis.control_query.lower())
 
     # Set 0 and 1 for analysis
     overlap_df = df.ix[set(case_df.index).intersection(set(control_df.index))]

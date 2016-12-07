@@ -8,6 +8,9 @@
         {% if analysis.description %}
             <tr><th>Description</th><td>{{ analysis.description }}</td></tr>
         {% endif %}
+        {% if analysis.specie %}
+            <tr><th>Specie</th><td>{{ analysis.specie }}</td></tr>
+        {% endif %}
         <tr><th>Case Query</th><td>{{ analysis.case_query }}</td></tr>
         <tr><th>Control Query</th><td>{{ analysis.control_query }}</td></tr>
         {% if analysis.modifier_query %}
@@ -24,7 +27,7 @@
             <tr><th>Samples</th><td>{{ analysis.sample_count }}</td></tr>
         </table>
     {% endif %}
-    <div class="datatable-wrap clear-fix">
+    <div class="datatable-wrap clear-fix" style="clear: both">
         {{ datatable|safe }}
     </div>
     <a href="{{ url('analysis_export', analysis.id) }}" class="btn btn-primary">Export</a>
