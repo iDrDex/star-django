@@ -40,7 +40,7 @@ class Series(models.Model):
     gse_name = models.TextField()
     specie = models.CharField(max_length=127, blank=True)
     attrs = JSONField(default={})
-    platforms = ArrayField(models.CharField(max_length=127), blank=True, null=True)
+    platforms = ArrayField(models.CharField(max_length=127), default=[])
     samples_count = models.IntegerField(default=0)
 
     class Meta:
