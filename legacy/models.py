@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from funcy import distinct, keep
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django_pandas.managers import DataFrameManager
 from handy.models import JSONField
@@ -39,6 +40,8 @@ class Series(models.Model):
     gse_name = models.TextField()
     specie = models.CharField(max_length=127, blank=True)
     attrs = JSONField(default={})
+    platforms = ArrayField(models.IntegerField(), blank=True, null=True)
+    samples_count = models.IntegerField(default=0)
 
     class Meta:
         db_table = 'series'

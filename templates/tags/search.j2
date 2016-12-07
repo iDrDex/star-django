@@ -43,6 +43,7 @@
     <div class="panel-heading">
         {{ page.paginator.count }} serie{{ page.paginator.count|pluralize }} found,
         {{ page.start_index() }}&ndash;{{ page.end_index() }} shown.
+        <span style="float: right">Species: {{ ','.join(species) }} &mdash; {{ platforms }} platforms found, {{ samples }} samples found</span>
     </div>
     {% endif %}
 
