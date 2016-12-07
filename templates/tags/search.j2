@@ -51,9 +51,15 @@
 <div class="hpanel forum-box">
     {% if page and page is not none %}
     <div class="panel-heading">
+        <span class="pull-right">
+            {{ samples }} sample{{ samples|pluralize }}.
+            {{ platforms }} platform{{ platforms|pluralize }}.
+            {% if species|count == 1 %}All{% else %}Species:{% endif %}
+            {{ ', '.join(species|sort) }}.
+        </span>
+
         {{ page.paginator.count }} serie{{ page.paginator.count|pluralize }} found,
         {{ page.start_index() }}&ndash;{{ page.end_index() }} shown.
-        <span style="float: right">Specie{{ species|count|pluralize }}: {{ ','.join(species) }} &mdash; {{ platforms|intcomma }} platforms found {{ samples|intcomma }} samples found</span>
     </div>
     {% endif %}
 
