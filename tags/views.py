@@ -3,7 +3,8 @@ from operator import itemgetter
 from collections import defaultdict
 
 from funcy import distinct, imapcat, join, keep, silent, split, map
-from handy.decorators import render_to, paginate
+from handy.decorators import render_to
+from handy.shortcuts import paginate
 from handy.utils import get_or_none
 
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -16,11 +17,9 @@ from django.shortcuts import redirect, get_object_or_404
 from core.aggregations import ArrayAgg, ArrayConcatUniq, ArrayLength
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series
-from .models import Tag, SeriesTag
-
+from .models import Tag, SeriesTag, SerieAnnotation
 
 @render_to()
-@paginate('series', 10)
 def search(request):
     # Save last specie in session
     specie = request.GET.get('specie')
@@ -66,27 +65,34 @@ def search(request):
         exclude_series = join(tag_series[t] for t in exclude_tags)
         qs = qs.exclude(id__in=exclude_series)
 
-    data = qs.aggregate(samples=Sum('samples_count'),
-                        platforms=ArrayLength(ArrayConcatUniq('platforms')),
-                        species=ArrayAgg('specie'))
-    samples = data['samples']
-    platforms = data['platforms']
-    species = set(data['species']) - {''}
+    series = paginate(request, qs, 10)
 
-    return {
-        'series': qs,
+    # Get annotations statuses
+    annos_qs = SerieAnnotation.objects.filter(series__in=series) \
+                              .values_list('series_id', 'tag_id', 'best_cohens_kappa')
+    tags_validated = {(s, t): k == 1 for s, t, k in annos_qs}
+
+    return dict({
+        'series': series,
+        'page': series,
+        'tags_validated': tags_validated,
         'tags': tags,
         'serie_tags': serie_tags,
-        'samples': samples,
-        'platforms': platforms,
-        'species': species,
-    }
+    }, **_search_stats(qs))
 
 
 def _parse_query(q):
     tags, words = split(r'^tag:', q.split())
     tags = map(r'^tag:(.*)', tags)
     return ' '.join(words), tags
+
+
+def _search_stats(qs):
+    stats = qs.aggregate(samples=Sum('samples_count'),
+                         platforms=ArrayLength(ArrayConcatUniq('platforms')),
+                         species=ArrayAgg('specie'))
+    stats['species'] = set(stats['species']) - {''}
+    return stats
 
 
 @login_required

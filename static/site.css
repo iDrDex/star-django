@@ -10,3 +10,6 @@
     color: #ea6557;
     font-size: 13px
 }
+
+.label-grey {background-color: #9c9c9c}
+.label-grey:hover {background-color: #838383}
