@@ -30,31 +30,53 @@
     <script type="text/javascript">
         $('form.form :input:visible:first').focus();
 
-        $('#id_concept_name').after(
+        var $idConceptName = $('#id_concept_name')
+
+        $idConceptName.after(
             '<b>Ontology: </b><span id="ontology_helper">None</span> &nbsp;'
             + '<b>Concept: </b><span id="concept_helper">None</span>');
 
+        var $ontologyHelper = $('#ontology_helper');
+        var $conceptHelper = $('#concept_helper');
+        var $idOntologyId = $('#id_ontology_id');
+        var $idConceptFullId = $('#id_concept_full_id');
+
+        var $conceptNameBioportalOntologyId;
+        var $conceptNameBioportalFullId;
+
         function updateTagFormFields() {
             // Clear if no concept
-            if (!$('#id_concept_name').val()) {
-                $('#concept_name_bioportal_ontology_id').val('');
-                $('#concept_name_bioportal_full_id').val('');
+
+            if (!$idConceptName.val()) {
+                $conceptNameBioportalOntologyId.val('');
+                $conceptNameBioportalFullId.val('');
             }
             // Fill db hiddens from bioportal ones
-            $('#id_ontology_id').val($('#concept_name_bioportal_ontology_id').val())
-            $('#id_concept_full_id').val($('#concept_name_bioportal_full_id').val())
+            $idOntologyId.val($conceptNameBioportalOntologyId.val());
+            $idConceptFullId.val($conceptNameBioportalFullId.val());
 
-            $('#ontology_helper').text($('#concept_name_bioportal_ontology_id').val()
-                                       || 'None')
-            $('#concept_helper').text($('#concept_name_bioportal_full_id').val()
-                                       || 'None')
+
+            var currentOntology = $ontologyHelper.text();
+            var currentConcept = $conceptHelper.text();
+
+            if (currentOntology !== $conceptNameBioportalOntologyId.val()){
+                $ontologyHelper.text($conceptNameBioportalOntologyId.val() || 'None');
+            }
+            if (currentConcept != $conceptNameBioportalFullId.val()) {
+                var link = $conceptNameBioportalFullId.val();
+                var content  = "<a target='_blank' href='" + link + "'>" + link + "</a>";
+                $conceptHelper.html(link ? content : 'None');
+            }
         }
 
         $(function () {
             waitForElement('#concept_name_bioportal_ontology_id', function () {
                 // Fill bioportal hiddens from db ones
-                $('#concept_name_bioportal_ontology_id').val($('#id_ontology_id').val())
-                $('#concept_name_bioportal_full_id').val($('#id_concept_full_id').val())
+                $conceptNameBioportalOntologyId = $('#concept_name_bioportal_ontology_id');
+                $conceptNameBioportalFullId = $('#concept_name_bioportal_full_id');
+
+                $conceptNameBioportalOntologyId.val($idOntologyId.val());
+                $conceptNameBioportalFullId.val($idConceptFullId.val());
 
                 // Set up filling back
                 updateTagFormFields();
