@@ -16,11 +16,13 @@ class User(AbstractUser):
         db_table = 'auth_user'
 
 
+ATTR_PER_SAMPLE = 32
+ATTR_PER_SERIE = 4
+
+
 class StatisticCacheManager(models.Manager):
     def update_statistics(self):
         from core.tasks import update_graph
-        ATTR_PER_SAMPLE = 32
-        ATTR_PER_SERIE = 4
 
         users = list(SeriesTag.objects.values_list('created_by', flat=True))
         users += list(SerieValidation.objects.values_list('created_by', flat=True))

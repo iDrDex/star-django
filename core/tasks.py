@@ -33,7 +33,6 @@ def update_graph():
     redis_client.set('core.graph', json.dumps(graph_data, default=defaultencode))
 
 
-
 # Utils
 
 from datetime import datetime

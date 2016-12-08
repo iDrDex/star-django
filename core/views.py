@@ -1,4 +1,3 @@
-from funcy import zipdict
 from handy.decorators import render_to
 from collections import defaultdict
 
@@ -16,7 +15,7 @@ def dashboard(request):
     stats = defaultdict(str)
     stats.update({
         stat['slug']: stat['count'] for stat
-        in StatisticCache.objects.values('slug','count')
+        in StatisticCache.objects.values('slug', 'count')
     })
     stats['graph'] = redis_client.get('core.graph')
     return {
