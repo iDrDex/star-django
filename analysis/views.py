@@ -151,14 +151,11 @@ class AnalysisForm(ModelForm):
 @login_required
 def rerun(request, analysis_id):
     analysis = get_object_or_404(Analysis, pk=analysis_id)
-    if request.GET.get('copy'):
-        analysis.pk = None
-        analysis.is_active = True  # Undelete it
-        analysis.created_by_id = analysis.modified_by_id = request.user.id
-        analysis.save()
-    else:
-        analysis.modified_by_id = request.user.id
-        analysis.save()
+    analysis.pk = None
+    analysis.is_active = True  # Undelete it
+    analysis.created_by_id = analysis.modified_by_id = request.user.id
+    analysis.save()
+
     analysis_task.delay(analysis.pk)
     return redirect(log, analysis.pk)
 
