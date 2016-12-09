@@ -4,7 +4,10 @@
 
 
 {% block header %}
-    <a href="{{ url('tag_create') }}" class="btn btn-success" style="float: right">Create</a>
+    <div style="float: right">
+        <input id="tagSearch"/>
+        <a href="{{ url('tag_create') }}" class="btn btn-success">Create</a>
+    </div>
     {{ super() }}
 {% endblock %}
 
@@ -14,11 +17,13 @@
     {% for col in tags|index('tag_name')|slice(2) %}
         <div class="col-md-6">
             {% for key, group in col %}
-            <div class="row">
+            <div class="tagGroup row">
                 <div class="col-sm-1"><h2>{{ key }}</h2></div>
                 <div class="col-sm-11 toc-items">
                     {%- for tag in group %}
-                        <a href="{{ url('tag', tag.id) }}" class="label label-success" title="{{ tag.description or '(no description)' }}">{{ tag.tag_name }}</a>&nbsp;
+                        <span class="tag" data-name="{{ tag.tag_name }}">
+                            <a href="{{ url('tag', tag.id) }}" class="label label-success" title="{{ tag.description or '(no description)' }}">{{ tag.tag_name }}</a>&nbsp;
+                        </span>
                     {%- endfor %}
                 </div>
             </div>
@@ -30,4 +35,35 @@
         .toc h2 {margin: 0}
         .toc-items {line-height: 190%; margin-bottom: 1.35em}
     </style>
+{% endblock %}
+
+{% block script %}
+    <script type="text/javascript">
+        $(function(){
+            $("#tagSearch").change(function(e){
+                var filterValue = e.target.value.toLowerCase();
+                $('span.tag').each(function(index, elem){
+                    var $elem = $(elem);
+                    var tagValue = $elem.attr('data-name').toLowerCase();
+                    if (tagValue.search(filterValue) == -1) {
+                        $elem.addClass('hidden');
+                    } else {
+                        $elem.removeClass('hidden');
+                    }
+
+                });
+                $('div.tagGroup').each(function(index, elem) {
+                    var $elem = $(elem);
+                    var displayedTags = $elem.find('span.tag').filter(function(index, elem){
+                        return !$(elem).hasClass('hidden');
+                    });
+                    if (displayedTags.length == 0) {
+                        $elem.addClass('hidden');
+                    } else {
+                        $elem.removeClass('hidden');
+                    }
+                });
+            });
+        });
+    </script>
 {% endblock %}
