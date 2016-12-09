@@ -4,8 +4,8 @@
 
 
 {% block header %}
-    <div style="float: right">
-        <input id="tagSearch"/>
+    <div class="pull-right">
+        <input id="tagSearch" placeholder="search tag" autofocus=true class="search form-control"/>
         <a href="{{ url('tag_create') }}" class="btn btn-success">Create</a>
     </div>
     {{ super() }}
@@ -40,15 +40,34 @@
 {% block script %}
     <script type="text/javascript">
         $(function(){
-            $("#tagSearch").change(function(e){
-                var filterValue = e.target.value.toLowerCase();
+            var $tagSearch = $("#tagSearch");
+            var timeoutId;
+
+            $tagSearch.change(function(e){
+                onFilterChange(e.target.value.toLowerCase().trim());
+            });
+
+            $tagSearch.keyup(function(){
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(function(){
+                    onFilterChange($tagSearch.val().toLowerCase().trim());
+                }, 300);
+            });
+
+            function onFilterChange(filterValue) {
                 $('span.tag').each(function(index, elem){
                     var $elem = $(elem);
-                    var tagValue = $elem.attr('data-name').toLowerCase();
-                    if (tagValue.search(filterValue) == -1) {
+                    var tagValue = $elem.attr('data-name');
+                    var startIndex = tagValue.toLowerCase().search(filterValue);
+                    if (startIndex == -1) {
                         $elem.addClass('hidden');
+                        $elem.find('a').text($elem.attr('data-name'));
                     } else {
+                        var stopIndex = startIndex + filterValue.length
+                        var htmlContent = tagValue.slice(0,startIndex) + "<span class='highlight'>" + tagValue.slice(startIndex, stopIndex) + "</span>" + tagValue.slice(stopIndex,-1);
+
                         $elem.removeClass('hidden');
+                        $elem.find('a').html(htmlContent);
                     }
 
                 });
@@ -63,7 +82,7 @@
                         $elem.removeClass('hidden');
                     }
                 });
-            });
+            };
         });
     </script>
 {% endblock %}

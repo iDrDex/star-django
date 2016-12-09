@@ -13,3 +13,14 @@
 
 .label-grey {background-color: #9c9c9c}
 .label-grey:hover {background-color: #838383}
+
+.highlight {
+    background-color: yellow;
+    color: black;
+}
+
+input.form-control.search {
+    padding-top: 2px;
+    width: auto;
+    display: inline;
+}
