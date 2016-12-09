@@ -47,6 +47,8 @@ INSTALLED_APPS = (
     'legacy',
     'tags',
     'analysis',
+    'rest_framework',
+    'rest_framework_swagger',
 )
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar', 'django_extensions')
@@ -257,4 +259,11 @@ AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY = os.environ['AWS_CREDENTIALS'].split('
 S3_BUCKETS = {
     'legacy.analysis.df': os.environ['AWS_BUCKET_TEMPLATE'] % 'analysis-df',
     'legacy.analysis.fold_changes': os.environ['AWS_BUCKET_TEMPLATE'] % 'fold-changes',
+}
+
+
+# Django REST framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10
 }

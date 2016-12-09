@@ -71,3 +71,9 @@ def clean_key_name(key_name):
     # Remove double dots and slashes
     key_name = re.sub(r'([./])\1+', r'\1', key_name)
     return key_name[:MAX_KEY_LEN].strip(u'._/')
+
+
+def generate_url(desc):
+    bucket = _get_bucket(desc['bucket'])
+    key = bucket.get_key(desc['key'], validate=False)
+    return key.generate_url(expires_in=0, query_auth=False)
