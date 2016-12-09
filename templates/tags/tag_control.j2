@@ -61,13 +61,8 @@
                     var startIndex = tagValue.toLowerCase().search(filterValue);
                     if (startIndex == -1) {
                         $elem.addClass('hidden');
-                        $elem.find('a').text($elem.attr('data-name'));
                     } else {
-                        var stopIndex = startIndex + filterValue.length
-                        var htmlContent = tagValue.slice(0,startIndex) + "<span class='highlight'>" + tagValue.slice(startIndex, stopIndex) + "</span>" + tagValue.slice(stopIndex,-1);
-
                         $elem.removeClass('hidden');
-                        $elem.find('a').html(htmlContent);
                     }
 
                 });
