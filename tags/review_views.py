@@ -38,7 +38,8 @@ class SeriesAnnotations(DatatableView):
             'authors',
             'fleiss_kappa',
             'best_cohens_kappa',
-        ]
+        ],
+        'search_fields': ['tag__description', ],
     }
     datatable_options_class = AnnotationsSearchOptions
 
@@ -54,6 +55,7 @@ class SeriesAnnotations(DatatableView):
             queryset = queryset.filter(platform__gpl_name__in=options['filters']['GPL'])
 
         return super(SeriesAnnotations, self).apply_queryset_options(queryset)
+
 
 series_annotations = SeriesAnnotations.as_view()
 
@@ -124,6 +126,7 @@ class SampleAnnotations(DatatableView):
             })
 
         return self.extra_data[src.__class__, src.pk, instance.sample_id] or ''
+
 
 sample_annotations = SampleAnnotations.as_view()
 
