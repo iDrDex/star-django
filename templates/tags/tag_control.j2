@@ -21,7 +21,7 @@
                 <div class="col-sm-1"><h2>{{ key }}</h2></div>
                 <div class="col-sm-11 toc-items">
                     {%- for tag in group %}
-                        <span class="tag" data-name="{{ tag.tag_name }}">
+                        <span class="tag" data-search-index="{{ tag.tag_name }} {{ tag.description }}">
                             <a href="{{ url('tag', tag.id) }}" class="label label-success" title="{{ tag.description or '(no description)' }}">{{ tag.tag_name }}</a>&nbsp;
                         </span>
                     {%- endfor %}
@@ -57,7 +57,7 @@
             function onFilterChange(filterValue) {
                 $('span.tag').each(function(index, elem){
                     var $elem = $(elem);
-                    var tagValue = $elem.attr('data-name');
+                    var tagValue = $elem.attr('data-search-index');
                     var startIndex = tagValue.toLowerCase().search(filterValue);
                     if (startIndex == -1) {
                         $elem.addClass('hidden');
