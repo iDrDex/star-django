@@ -2,35 +2,47 @@ import json
 import random
 from datetime import timedelta
 
-from funcy import group_by, first, project, select_keys, takewhile, without, distinct, merge, icat
-from handy.decorators import render_to
-
-from django.core.urlresolvers import reverse
-from django.contrib.auth.decorators import login_required
+from dal import autocomplete
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
+from funcy import project, select_keys, takewhile, without, distinct, merge, icat
+from handy.decorators import render_to
 
-from core.decorators import block_POST_for_incompetent
-from legacy.models import Series, Sample
-from tags.models import Tag, SeriesTag, SampleTag
+from .forms import AnnotationForm
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
 from .tasks import validation_workflow, calc_validation_stats
+from core.decorators import block_POST_for_incompetent
+from legacy.models import Series, Sample
+from tags.models import Tag, SeriesTag
 
 
 @login_required
 @block_POST_for_incompetent
 @render_to('tags/annotate.j2')
 def annotate(request):
-    if request.method == 'POST':
-        return save_annotation(request)
-
     series_id = request.GET.get('series_id')
     if not series_id:
         raise Http404
+
+    form = AnnotationForm(series_id, request.POST or None)
+
+    if form.is_valid():
+        res, message = form.save(request.user.id)
+
+        if res:
+            messages.success(request, message)
+            return redirect(reverse(annotate) + '?series_id=' + series_id)
+        else:
+            messages.error(request, messages)
+            return redirect(request.get_full_path())
+
+    messages.error(request, form.errors)
 
     serie = Series.objects.get(pk=series_id)
     samples, columns = fetch_annotation_data(series_id)
@@ -46,6 +58,7 @@ def annotate(request):
     tags_validated = {t: k == 1 for t, k in annos_qs}
 
     return {
+        'form': form,
         'done_tags': done_tags,
         'tags': tags,
         'serie': serie,
@@ -55,57 +68,25 @@ def annotate(request):
     }
 
 
-def save_annotation(request):
-    user_id = request.user.id
+class AvailableSeriesTagAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        series_id = self.args[0]
+        done_tag_ids = SeriesTag.objects.filter(series_id=series_id).values('tag_id')
+        tags = Tag.objects.filter(is_active=True).exclude(id__in=done_tag_ids) \
+            .order_by('tag_name')
 
-    # Do not check input, just crash for now
-    series_id = request.POST['series_id']
-    tag_id = request.POST['tag_id']
-    column = request.POST['column']
-    regex = request.POST['regex']
-    values = dict(json.loads(request.POST['values']))
+        if self.q:
+            tags = tags.filter(Q(tag_name__icontains=self.q) |
+                               Q(description__icontains=self.q))
 
-    with transaction.atomic():
-        # Group samples by platform
-        sample_to_platform = dict(Sample.objects.filter(id__in=values)
-                                        .values_list('id', 'platform_id'))
-        groups = group_by(lambda (id, _): sample_to_platform[id], values.items())
+        return tags
 
-        old_annotation = first(SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id))
-        if old_annotation:
-            messages.error(request, 'Serie %s is already annotated with tag %s'
-                           % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
-            return redirect(request.get_full_path())
 
-        # Save all annotations and used regexes
-        for platform_id, annotations in groups.items():
-            # Do not allow for same user to annotate same serie twice
-            series_tag, _ = SeriesTag.objects.get_or_create(
-                series_id=series_id, platform_id=platform_id, tag_id=tag_id, created_by_id=user_id,
-                defaults=dict(header=column, regex=regex, modified_by_id=user_id)
-            )
-
-            # TODO: check if this can result in sample tags doubling
-            # Create all sample tags
-            sample_tags = SampleTag.objects.bulk_create([
-                SampleTag(sample_id=sample_id, series_tag=series_tag, annotation=annotation,
-                          created_by_id=user_id, modified_by_id=user_id)
-                for sample_id, annotation in annotations
-            ])
-
-            # Create validation job
-            ValidationJob.objects.create(series_tag=series_tag)
-
-            # Create canonical annotation
-            sa = SerieAnnotation.create_from_series_tag(series_tag)
-            sa.fill_samples(sample_tags)
-
-    messages.success(request, 'Saved annotations')
-
-    return redirect(reverse(annotate) + '?series_id=' + series_id)
+available_series_tag_autocomplete = AvailableSeriesTagAutocomplete.as_view()
 
 
 BLIND_FIELDS = {'id', 'gsm_name', 'platform_id'}
+
 
 @login_required
 @block_POST_for_incompetent
@@ -130,6 +111,7 @@ def validate(request):
         'columns': columns,
         'samples': samples,
     }
+
 
 def save_validation(request):
     # Do not check input, just crash for now
@@ -240,6 +222,7 @@ def on_demand_validate(request):
         'samples': samples,
     }
 
+
 def save_on_demand_validation(request):
     user_id = request.user.id
     series_tag_id = request.POST['series_tag_id']
@@ -272,6 +255,7 @@ def save_on_demand_validation(request):
 
     return redirect(on_demand_result, serie_validation.id)
 
+
 @login_required
 def on_demand_result(request, serie_validation_id):
     serie_validation = get_object_or_404(SerieValidation, id=serie_validation_id)
@@ -290,7 +274,6 @@ def on_demand_result(request, serie_validation_id):
 def competence(request):
     if request.user.is_competent:
         return redirect(validate)
-
     if request.method == 'POST':
         return save_competence(request)
 
@@ -369,6 +352,7 @@ def competence(request):
         'progress': progress
     }
 
+
 def get_sample(qs, optional_conds=()):
     """
     Get a random sample from given queryset.
@@ -382,6 +366,7 @@ def get_sample(qs, optional_conds=()):
             optional_conds.pop()
         else:
             return None
+
 
 def save_competence(request):
     user_id = request.user.id

@@ -31,6 +31,9 @@ urlpatterns = patterns('',  # noqa
     url(r'^tags/(\d+)/delete/$', 'tags.views.delete_tag', name='tag_delete'),
 
     url(r'^annotate/$', 'tags.annotate_views.annotate', name='annotate'),
+    url(r'^annotate/(\d+)/autocompleate_tag$',
+        'tags.annotate_views.available_series_tag_autocomplete',
+        name='available_series_tag_autocomplete'),
     url(r'^validate/$', 'tags.annotate_views.validate', name='validate'),
     url(r'^on_demand_validate/$', 'tags.annotate_views.on_demand_validate',
         name='on_demand_validate'),
