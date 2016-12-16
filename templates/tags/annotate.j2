@@ -65,12 +65,7 @@
   {% if tags %}
     <div class="form-group">
       <label for="tag_id">Tag</label>
-      <select name="tag_id" class="form-control" id="tag">
-        <option value="">...</option>
-        {% for tag in tags %}
-            <option value="{{ tag.id }}">{{ tag.tag_name }}</option>
-        {% endfor %}
-      </select>
+      {{ form.tag_id }}
     </div>
   {% endif %}
   <div class="form-group">
@@ -166,6 +161,10 @@ var samples = {{ samples|json }};
 {% endif %}
 </script>
 <script type="text/javascript" src="{{ static('annotate.js') }}"></script>
+
+{% if tags %}
+{{ form.media }}
+{% endif %}
 
 {% if tag %}
   <script type="text/javascript">

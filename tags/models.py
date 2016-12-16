@@ -29,6 +29,9 @@ class Tag(models.Model):
     class Meta:
         db_table = 'tag'
 
+    def __unicode__(self):
+        return self.tag_name
+
     def get_stats(self):
         from tags.models import SampleValidation, SampleAnnotation
 
