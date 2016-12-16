@@ -1,5 +1,6 @@
 import os
 import honcho.environ
+from .celery import app as celery_app
 
 
 def load_env(filename):
