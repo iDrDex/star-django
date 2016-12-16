@@ -55,6 +55,9 @@
         var tabWidth = $('#results').get(0).offsetWidth;
         datatableview.auto_initialize = false;
         $(function(){
+            $('a#results-tab-link').click(function(){
+              $('.datatable').DataTable().draw();
+            });
             datatableview.initialize($('.datatable'), {
                 scrollX: true,
                 columnDefs: [
