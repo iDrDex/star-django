@@ -1,16 +1,27 @@
-server:
-  volumes:
-  - .:/app/user
-  environment:
-    REDIS_HOST: redis
-    BROKER_URL: redis://redis/1
+version: '2'
+services:
+  server:
+    volumes:
+    - .:/app/user
+    - ~/.ssh:/root/.ssh
+    environment:
+      REDIS_HOST: redis
+      BROKER_URL: redis://redis/1
 
-celery:
-  volumes:
-  - .:/app/user
-  environment:
-    REDIS_HOST: redis
-    BROKER_URL: redis://redis/1
-    C_FORCE_ROOT: "True"
+  celery:
+    volumes:
+    - .:/app/user
+    environment:
+      REDIS_HOST: redis
+      BROKER_URL: redis://redis/1
+      C_FORCE_ROOT: "True"
+
+  frontend:
+    build: frontend
+    command: yarn run dev
+    volumes:
+    - ./frontend:/app/user
+    ports:
+    - 8082:8082
 
 
