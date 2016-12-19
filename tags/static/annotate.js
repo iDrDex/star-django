@@ -269,5 +269,22 @@ function multiline(fn) {
   return match[1];
 };
 
+$('#tag').select2({
+    placeholder: "...",
+    allowClear: true,
+    matcher: function(params, data) {
+        if ($.trim(params.term) === '') {
+            return data;
+        }
+        var term = params.term.toUpperCase();
+        var original = data.text.toUpperCase() + " " + data.element.attributes["data-description"].value.toUpperCase();
+
+        if (original.indexOf(term) > -1) {
+            return data;
+        }
+
+        return null;
+  }
+});
 
 updateUI(); // Generate first time

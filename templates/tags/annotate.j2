@@ -66,9 +66,9 @@
     <div class="form-group">
       <label for="tag_id">Tag</label>
       <select name="tag_id" class="form-control" id="tag">
-        <option value="">...</option>
+            <option data-description="" ></option>
         {% for tag in tags %}
-            <option value="{{ tag.id }}">{{ tag.tag_name }}</option>
+            <option data-description="{{tag.description}}" value="{{ tag.id }}">{{ tag.tag_name }}</option>
         {% endfor %}
       </select>
     </div>
@@ -165,7 +165,11 @@ var samples = {{ samples|json }};
   var tagNames = {{ {tag.id: tag.tag_name}|json }};
 {% endif %}
 </script>
+
+<script type="text/javascript" src="{{ static('select2-4.0.3/js/select2.min.js') }}"></script>
+<link rel="stylesheet" type="text/css" href="{{ static('select2-4.0.3/css/select2.min.css') }}">
 <script type="text/javascript" src="{{ static('annotate.js') }}"></script>
+
 
 {% if tag %}
   <script type="text/javascript">
