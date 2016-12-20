@@ -120,6 +120,8 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
 
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
 # For debug toolbar
 DEBUG_TOOLBAR_CONFIG = {
     'JQUERY_URL': '/static/jquery.min.js'
