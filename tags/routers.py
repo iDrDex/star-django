@@ -4,7 +4,9 @@ from .viewsets import (PlatformViewSet,
                        AnalysisViewSet,
                        SerieAnnotationViewSet,
                        TagViewSet,
-                       SeriesTagViewSet, )
+                       MetaAnalysisViewSet,
+                       PlatformProbeViewSet
+                       )
 
 
 router = routers.DefaultRouter()
@@ -13,4 +15,5 @@ router.register('series', SeriesViewSet)
 router.register('analysis', AnalysisViewSet)
 router.register('serie_annotations', SerieAnnotationViewSet)
 router.register('tags', TagViewSet)
-router.register('series_tag', SeriesTagViewSet)
+router.register('meta_analysis', MetaAnalysisViewSet)
+router.register('platform_probe', PlatformProbeViewSet)

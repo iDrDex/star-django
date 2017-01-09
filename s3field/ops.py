@@ -74,6 +74,4 @@ def clean_key_name(key_name):
 
 
 def generate_url(desc):
-    bucket = _get_bucket(desc['bucket'])
-    key = bucket.get_key(desc['key'], validate=False)
-    return key.generate_url(expires_in=0, query_auth=False)
+    return "http://{bucket}.s3.amazonaws.com/{key}".format(**desc)

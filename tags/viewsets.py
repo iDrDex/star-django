@@ -1,13 +1,21 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, filters
+from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import SerieAnnotation, Tag, SeriesTag
+from .models import SerieAnnotation, Tag
 from .serializers import (PlatformSerializer,
                           SeriesSerializer,
                           AnalysisSerializer,
                           SerieAnnotationSerializer,
                           TagSerializer,
-                          SeriesTagSerializer, )
-from legacy.models import Platform, Series, Analysis
+                          MetaAnalysisSerializer,
+                          PlatformProbeSerializer,
+                          )
+from legacy.models import (Platform,
+                           Series,
+                           Analysis,
+                           MetaAnalysis,
+                           PlatformProbe,
+                           )
 
 
 class PlatformViewSet(viewsets.ReadOnlyModelViewSet):
@@ -21,8 +29,11 @@ class SeriesViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Analysis.objects.all()
+    queryset = Analysis.objects.filter(is_active=True)
     serializer_class = AnalysisSerializer
+    filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
+    search_fields = ('case_query', 'control_query', 'modifier_query', )
+    filter_fields = ('specie', )
 
 
 class SerieAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -31,10 +42,15 @@ class SerieAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Tag.objects.all()
+    queryset = Tag.objects.filter(is_active=True)
     serializer_class = TagSerializer
 
 
-class SeriesTagViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = SeriesTag.objects.all()
-    serializer_class = SeriesTagSerializer
+class MetaAnalysisViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = MetaAnalysis.objects.all()
+    serializer_class = MetaAnalysisSerializer
+
+
+class PlatformProbeViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = PlatformProbe.objects.all()
+    serializer_class = PlatformProbeSerializer

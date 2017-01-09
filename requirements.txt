@@ -4,6 +4,7 @@ django-jinja==1.4.1
 django-jinja-bootstrap-form==4.0.3
 djangorestframework==3.5.1
 django-rest-swagger==2.1.0
+django-filter==1.0.1
 funcy==1.7.2
 django-model-utils>=1.4,<2.4
 handy==0.5.3
