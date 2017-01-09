@@ -1,7 +1,13 @@
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import SerieAnnotation, Tag
+from tags.models import SerieAnnotation, Tag
+from legacy.models import (Platform,
+                           Series,
+                           Analysis,
+                           MetaAnalysis,
+                           PlatformProbe,
+                           )
 from .serializers import (PlatformSerializer,
                           SeriesSerializer,
                           AnalysisSerializer,
@@ -10,12 +16,6 @@ from .serializers import (PlatformSerializer,
                           MetaAnalysisSerializer,
                           PlatformProbeSerializer,
                           )
-from legacy.models import (Platform,
-                           Series,
-                           Analysis,
-                           MetaAnalysis,
-                           PlatformProbe,
-                           )
 
 
 class PlatformViewSet(viewsets.ReadOnlyModelViewSet):

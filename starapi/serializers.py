@@ -1,18 +1,13 @@
 from rest_framework import serializers
 
-from .models import SerieAnnotation, Tag
 from legacy.models import (Platform,
                            Series,
                            Analysis,
                            MetaAnalysis,
                            PlatformProbe,
                            )
-from s3field.ops import generate_url
-
-
-class S3Field(serializers.Field):
-    def to_representation(self, obj):
-        return generate_url(obj)
+from tags.models import SerieAnnotation, Tag
+from .fields import S3Field
 
 
 class PlatformSerializer(serializers.ModelSerializer):

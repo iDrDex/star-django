@@ -49,6 +49,7 @@ INSTALLED_APPS = (
     'analysis',
     'rest_framework',
     'rest_framework_swagger',
+    'starapi',
 )
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar', 'django_extensions')
