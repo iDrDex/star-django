@@ -2,6 +2,12 @@
 
 {% set page_title = 'Series annotations' %}
 
+{% block header %}
+  <h2 class="font-light" style="display: inline-block; margin-bottom: 0">{{ page_title }}</h2>
+  <a href="{{ url('export_samples_annotations') }}" class="btn btn-success" style='float:right;'>
+    Export samples annotations
+  </a>
+{% endblock %}
 
 {% block script %}
     {{ super() }}
