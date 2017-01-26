@@ -35,6 +35,17 @@ class AnalysisSerializer(serializers.ModelSerializer):
                    'created_on', 'modified_on', ]
 
 
+class AnalysisParamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Analysis
+        fields = ['specie', 'case_query',
+                  'control_query', 'modifier_query', ]
+
+    def __init__(self, *args, **kwargs):
+        super(AnalysisParamSerializer, self).__init__(*args, **kwargs)
+        self.fields['specie'].required = True
+        self.fields['specie'].allow_blank = False
+
 class SerieAnnotationSerializer(serializers.ModelSerializer):
     class Meta:
         model = SerieAnnotation

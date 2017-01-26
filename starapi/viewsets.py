@@ -1,4 +1,6 @@
 from rest_framework import viewsets, filters
+from rest_framework.decorators import list_route
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
 from tags.models import SerieAnnotation, Tag
@@ -8,9 +10,11 @@ from legacy.models import (Platform,
                            MetaAnalysis,
                            PlatformProbe,
                            )
+from analysis.analysis import get_analysis_df
 from .serializers import (PlatformSerializer,
                           SeriesSerializer,
                           AnalysisSerializer,
+                          AnalysisParamSerializer,
                           SerieAnnotationSerializer,
                           TagSerializer,
                           MetaAnalysisSerializer,
@@ -34,6 +38,13 @@ class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
     search_fields = ('case_query', 'control_query', 'modifier_query', )
     filter_fields = ('specie', )
+
+    @list_route(methods=['post'], serializer_class=AnalysisParamSerializer)
+    def get_analysis_df(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        analysis = Analysis(**serializer.data)
+        return Response(get_analysis_df(analysis))
 
 
 class SerieAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
