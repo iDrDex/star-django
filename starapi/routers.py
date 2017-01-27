@@ -30,7 +30,7 @@ class StarApiRouter(DefaultRouter):
         )
         lookup_url_kwarg = view.initkwargs.get(
             'lookup_url_kwarg',
-            getattr(viewset, 'lookup_url_kwarg') or lookup_field
+            getattr(viewset, 'lookup_url_kwarg', None) or lookup_field
         )
         lookup_value = view.initkwargs.get(
             'lookup_value_regex',
