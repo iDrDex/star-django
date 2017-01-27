@@ -11,6 +11,7 @@ from legacy.models import (Platform,
                            PlatformProbe,
                            )
 from analysis.analysis import get_analysis_df
+from pandas.computation.ops import UndefinedVariableError
 from .serializers import (PlatformSerializer,
                           SeriesSerializer,
                           AnalysisSerializer,
@@ -41,10 +42,25 @@ class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
 
     @list_route(methods=['post'], serializer_class=AnalysisParamSerializer)
     def get_analysis_df(self, request):
+        """
+        **Example of valid request data**
+        ```
+        {
+            "specie": "human",
+            "case_query": "PHT == 'PHT' or hypertension == 'hypertension'",
+            "control_query": "PHT_Control == 'PHT_Control' or hypertension_control == 'hypertension_control'"
+        }
+        ```
+        You can copy it and paste to input below to perform a API request.
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         analysis = Analysis(**serializer.data)
-        return Response(get_analysis_df(analysis))
+        try:
+            return Response(get_analysis_df(analysis))
+        except UndefinedVariableError as err:
+            data = {'error': str(err)}
+            return Response(status=400, data=data)
 
 
 class SerieAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
