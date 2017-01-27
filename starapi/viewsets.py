@@ -66,10 +66,10 @@ class PlatformProbeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PlatformProbe.objects.all()
     serializer_class = PlatformProbeSerializer
 
-    @detail_route(methods=['get'])
-    def get_probes(self, request, pk):
+    @detail_route(methods=['get'], lookup_url_kwarg="gpl_name")
+    def get_probes(self, request, gpl_name):
         qs = PlatformProbe.objects.filter(
-            platform__gpl_name=pk).order_by('id')
+            platform__gpl_name=gpl_name).order_by('id')
         probes_df = qs.to_dataframe(
             fieldnames=['probe', 'mygene_sym', 'mygene_entrez']
         )
