@@ -1,5 +1,5 @@
 from rest_framework import viewsets, filters
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -65,3 +65,12 @@ class MetaAnalysisViewSet(viewsets.ReadOnlyModelViewSet):
 class PlatformProbeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PlatformProbe.objects.all()
     serializer_class = PlatformProbeSerializer
+
+    @detail_route(methods=['get'])
+    def get_probes(self, request, pk):
+        qs = PlatformProbe.objects.filter(
+            platform__gpl_name=pk).order_by('id')
+        probes_df = qs.to_dataframe(
+            fieldnames=['probe', 'mygene_sym', 'mygene_entrez']
+        )
+        return Response(probes_df)
