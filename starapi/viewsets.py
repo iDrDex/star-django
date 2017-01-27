@@ -1,9 +1,12 @@
+from cacheops import FileCache
+from django.utils.decorators import method_decorator
+from django.http import JsonResponse
+from django_filters.rest_framework import DjangoFilterBackend
+from funcy import partial, walk_keys
 from rest_framework import viewsets, filters
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-
-from tags.models import SerieAnnotation, Tag
+from tags.models import SerieAnnotation, Tag, SampleAnnotation
 from legacy.models import (Platform,
                            Series,
                            Analysis,
@@ -21,6 +24,7 @@ from .serializers import (PlatformSerializer,
                           MetaAnalysisSerializer,
                           PlatformProbeSerializer,
                           )
+file_cache = FileCache('/tmp/cacheops_sample_annotations')
 
 
 class PlatformViewSet(viewsets.ReadOnlyModelViewSet):
@@ -43,6 +47,7 @@ class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
     @list_route(methods=['post'], serializer_class=AnalysisParamSerializer)
     def get_analysis_df(self, request):
         """
+        Download analysis data frame  
         **Example of valid request data**
         ```
         {
@@ -66,6 +71,41 @@ class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
 class SerieAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = SerieAnnotation.objects.all()
     serializer_class = SerieAnnotationSerializer
+
+class SampleAnnotationViewSet(viewsets.ViewSet):
+    KEYS = {
+        'serie_annotation__tag__tag_name': 'tag_name',
+        'serie_annotation__tag_id': 'tag_id',
+        'serie_annotation__tag__concept_full_id': 'tag_concept_full_id',
+        'serie_annotation__series__gse_name': 'gse_name',
+        'serie_annotation__series_id': 'serie_id',
+        'serie_annotation_id': 'serie_annotation_id',
+        'sample__gsm_name': 'gsm_name',
+        'sample_id': 'sample_id',
+        'sample__platform__gpl_name': 'gpl_name',
+        'sample__platform_id': 'platform_id',
+        'annotation': 'annotation',
+    }
+
+    def list(self, request, format=None):
+        """
+        Download all samples annotations.  
+        This API method return the huge amout of data.  
+        Please use [this link](/api/sample_annotations.json) to dowload all samples annotations.
+        """
+        @file_cache.cached_view(timeout=60 * 60)
+        def handle(request):
+            data = map(
+                partial(walk_keys, self.KEYS),
+                SampleAnnotation.objects.values(*self.KEYS).prefetch_related(
+                    'sample',
+                    'sample__platform',
+                    'serie_annotation__tag',
+                ).iterator())
+
+            return JsonResponse(data, safe=False, content_type='application/octet-stream')
+        return handle(request._request)
+
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

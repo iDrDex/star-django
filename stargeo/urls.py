@@ -48,8 +48,6 @@ urlpatterns = patterns('',  # noqa
     url(r'^annotations/(\d+)/samples/$', 'tags.review_views.sample_annotations',
         name='sample_annotations'),
     url(r'^annotations/ignore/(\d+)/$', 'tags.review_views.ignore', name='ignore_validation'),
-    url(r'^samples-annotations.json', 'tags.api_views.samples_annotations',
-        name='export_samples_annotations'),
 
     url(r'^analysis/$', 'analysis.views.index', name='analysis'),
     url(r'^analysis/create/$', 'analysis.views.create', name='analysis_create'),
