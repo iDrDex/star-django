@@ -1,4 +1,4 @@
-from cacheops import FileCache
+from cacheops import cached_as
 from django.http import JsonResponse, HttpResponse
 from funcy import partial, walk_keys
 from rest_framework import viewsets
@@ -23,7 +23,6 @@ from .serializers import (PlatformSerializer,
                           MetaAnalysisSerializer,
                           PlatformProbeSerializer,
                           )
-file_cache = FileCache('/tmp/cacheops_sample_annotations')
 
 
 class PlatformViewSet(viewsets.ReadOnlyModelViewSet):
@@ -96,19 +95,21 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
         This API method return the huge amout of data.  
         Please use [this link](/api/sample_annotations.json) to dowload all samples annotations.
         """
-        @file_cache.cached_view(timeout=60 * 60)
-        def handle(request):
-            data = map(
-                partial(walk_keys, self.KEYS),
-                SampleAnnotation.objects.values(*self.KEYS).prefetch_related(
-                    'sample',
-                    'sample__platform',
-                    'serie_annotation__tag',
-                ).iterator())
-
-            return JsonResponse(data, safe=False, content_type='application/octet-stream')
-        return handle(request._request)
-
+        @cached_as(SampleAnnotation)
+        def get_annotation():
+            return JsonResponse(
+                map(
+                    partial(walk_keys, self.KEYS),
+                    SampleAnnotation.objects.values(*self.KEYS).prefetch_related(
+                        'sample',
+                        'sample__platform',
+                        'serie_annotation__tag',
+                    ).iterator()),
+                safe=False)
+        response = get_annotation()
+        response['Content-Type'] = 'application/octet-stream' if format == 'json'\
+                                   else 'application/json'
+        return response
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

@@ -174,10 +174,14 @@ TEMPLATE_DEFAULT_EXTENSION = '.j2'
 
 # Cacheops settings
 CACHEOPS_REDIS = {
-    'host': 'localhost',  # redis-server is on same machine
+    'host': os.environ.get('REDIS_HOST', 'localhost'),  # redis-server is on same machine
     'port': 6379,         # default redis port
     'db': 1,              # SELECT non-default redis database
     'socket_timeout': 3,  # connection timeout in seconds, optional
+}
+
+CACHEOPS = {
+    'tags.sampleannotation': {'ops': [], 'timeout': 60 * 60},
 }
 
 
