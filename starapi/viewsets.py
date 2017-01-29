@@ -61,6 +61,15 @@ class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
             data = {'error': str(err)}
             return Response(status=400, data=data)
 
+    @list_route(methods=['get'], url_path="probes/(?P<gpl_name>[^/.]+)")
+    def get_probes(self, request, gpl_name):
+        qs = PlatformProbe.objects.filter(
+            platform__gpl_name=gpl_name).order_by('id')
+        probes_df = qs.to_dataframe(
+            fieldnames=['probe', 'mygene_sym', 'mygene_entrez']
+        )
+        return HttpResponse(frame_dumps(probes_df), content_type='application/json')
+
 
 class SerieAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = SerieAnnotation.objects.all()
@@ -115,12 +124,3 @@ class MetaAnalysisViewSet(viewsets.ReadOnlyModelViewSet):
 class PlatformProbeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PlatformProbe.objects.all()
     serializer_class = PlatformProbeSerializer
-
-    @detail_route(methods=['get'], lookup_url_kwarg="gpl_name")
-    def get_probes(self, request, gpl_name):
-        qs = PlatformProbe.objects.filter(
-            platform__gpl_name=gpl_name).order_by('id')
-        probes_df = qs.to_dataframe(
-            fieldnames=['probe', 'mygene_sym', 'mygene_entrez']
-        )
-        return Response(probes_df)
