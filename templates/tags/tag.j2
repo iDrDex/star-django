@@ -4,7 +4,12 @@
 
 
 {% block script %}
-    <script src="{{ static('bioontology.form_complete.js') }}"></script>
+<script type="text/javascript" src="{{ static('select2-4.0.3/js/select2.min.js') }}"></script>
+<script type="text/javascript" src="{{ static('tag.js') }}"></script>
+{% endblock %}
+
+{% block style %}
+<link rel="stylesheet" type="text/css" href="{{ static('select2-4.0.3/css/select2.min.css') }}"> 
 {% endblock %}
 
 
@@ -27,69 +32,6 @@
             <input type="submit" class="btn btn-primary" value="Save" />
         </div>
     </form>
-    <script type="text/javascript">
-        $('form.form :input:visible:first').focus();
-
-        var $idConceptName = $('#id_concept_name')
-
-        $idConceptName.after(
-            '<b>Ontology: </b><span id="ontology_helper">None</span> &nbsp;'
-            + '<b>Concept: </b><span id="concept_helper">None</span>');
-
-        var $ontologyHelper = $('#ontology_helper');
-        var $conceptHelper = $('#concept_helper');
-        var $idOntologyId = $('#id_ontology_id');
-        var $idConceptFullId = $('#id_concept_full_id');
-
-        var $conceptNameBioportalOntologyId;
-        var $conceptNameBioportalFullId;
-
-        function updateTagFormFields() {
-            // Clear if no concept
-
-            if (!$idConceptName.val()) {
-                $conceptNameBioportalOntologyId.val('');
-                $conceptNameBioportalFullId.val('');
-            }
-            // Fill db hiddens from bioportal ones
-            $idOntologyId.val($conceptNameBioportalOntologyId.val());
-            $idConceptFullId.val($conceptNameBioportalFullId.val());
-
-
-            var currentOntology = $ontologyHelper.text();
-            var currentConcept = $conceptHelper.text();
-
-            if (currentOntology !== $conceptNameBioportalOntologyId.val()){
-                $ontologyHelper.text($conceptNameBioportalOntologyId.val() || 'None');
-            }
-            if (currentConcept != $conceptNameBioportalFullId.val()) {
-                var link = $conceptNameBioportalFullId.val();
-                var content  = "<a target='_blank' href='" + link + "'>" + link + "</a>";
-                $conceptHelper.html(link ? content : 'None');
-            }
-        }
-
-        $(function () {
-            waitForElement('#concept_name_bioportal_ontology_id', function () {
-                // Fill bioportal hiddens from db ones
-                $conceptNameBioportalOntologyId = $('#concept_name_bioportal_ontology_id');
-                $conceptNameBioportalFullId = $('#concept_name_bioportal_full_id');
-
-                $conceptNameBioportalOntologyId.val($idOntologyId.val());
-                $conceptNameBioportalFullId.val($idConceptFullId.val());
-
-                // Set up filling back
-                updateTagFormFields();
-                setInterval(updateTagFormFields, 200);
-                $('form.form').submit(updateTagFormFields);
-            })
-        })
-
-        function waitForElement(selector, func) {
-            if (document.querySelector(selector)) func();
-            else setTimeout(function() {waitForElement(selector, func)}, 200);
-        }
-    </script>
 </div></div>
 
 {% if stats %}
@@ -102,7 +44,7 @@
             <tr><td>{{ value }}</td><td>{{ count }}</td></tr>
         {% endfor %}
     </table>
-    {% endfor %}
+  {% endfor %}
 </div></div>
 {% endif %}
 {% endblock %}

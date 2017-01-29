@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum
-from django.forms import ModelForm, ValidationError, HiddenInput
+from django.forms import ModelForm, ValidationError, HiddenInput, Select
 from django.shortcuts import redirect, get_object_or_404
 
 from core.aggregations import ArrayAgg, ArrayConcatUniq, ArrayLength
@@ -191,9 +191,9 @@ class TagForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(TagForm, self).__init__(*args, **kwargs)
-        self.fields['concept_name'].widget.attrs['class'] = 'bp_form_complete-all-name'
-        self.fields['ontology_id'].widget = HiddenInput()
-        self.fields['concept_full_id'].widget = HiddenInput()
+        self.fields['concept_name'].widget = Select()
+        self.fields['ontology_id'].widget = Select()
+        # self.fields['concept_full_id'].widget = HiddenInput()
 
     def clean_tag_name(self):
         tag_name = self.cleaned_data['tag_name']
