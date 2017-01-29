@@ -1,10 +1,8 @@
 from cacheops import FileCache
-from django.utils.decorators import method_decorator
-from django.http import JsonResponse
-from django_filters.rest_framework import DjangoFilterBackend
+from django.http import JsonResponse, HttpResponse
 from funcy import partial, walk_keys
-from rest_framework import viewsets, filters
-from rest_framework.decorators import list_route, detail_route
+from rest_framework import viewsets
+from rest_framework.decorators import list_route
 from rest_framework.response import Response
 from tags.models import SerieAnnotation, Tag, SampleAnnotation
 from legacy.models import (Platform,
@@ -13,6 +11,7 @@ from legacy.models import (Platform,
                            MetaAnalysis,
                            PlatformProbe,
                            )
+from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
 from pandas.computation.ops import UndefinedVariableError
 from .serializers import (PlatformSerializer,
@@ -39,30 +38,25 @@ class SeriesViewSet(viewsets.ReadOnlyModelViewSet):
 
 class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Analysis.objects.filter(is_active=True)
+    pagination_class = None
     serializer_class = AnalysisSerializer
-    filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
-    search_fields = ('case_query', 'control_query', 'modifier_query', )
-    filter_fields = ('specie', )
+    filter_fields = ('specie', 'case_query', 'control_query', 'modifier_query')
 
-    @list_route(methods=['post'], serializer_class=AnalysisParamSerializer)
-    def get_analysis_df(self, request):
+    def list(self, request, format=None):
         """
         Download analysis data frame  
-        **Example of valid request data**
-        ```
-        {
-            "specie": "human",
-            "case_query": "PHT == 'PHT' or hypertension == 'hypertension'",
-            "control_query": "PHT_Control == 'PHT_Control' or hypertension_control == 'hypertension_control'"
-        }
-        ```
-        You can copy it and paste to input below to perform a API request.
+        **Example of valid filter data**  
+        specie: `human`  
+        case_query: `PHT == 'PHT' or hypertension == 'hypertension'`  
+        control_query: `PHT_Control == 'PHT_Control' or hypertension_control == 'hypertension_control'`  
+        You can copy it and paste to inputs below to perform a API request.
         """
-        serializer = self.get_serializer(data=request.data)
+        serializer = AnalysisParamSerializer(data=request.GET)
         serializer.is_valid(raise_exception=True)
         analysis = Analysis(**serializer.data)
         try:
-            return Response(get_analysis_df(analysis))
+            df = get_analysis_df(analysis)
+            return HttpResponse(frame_dumps(df), content_type='application/json')
         except UndefinedVariableError as err:
             data = {'error': str(err)}
             return Response(status=400, data=data)
