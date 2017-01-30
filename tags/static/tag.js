@@ -1,10 +1,17 @@
+var $conceptName = $('#id_concept_name');
+
 var $ontologiSelect = $('#id_ontology_id');
-var $conceptSelect = $('#id_concept_name');
 $ontologiSelect.append($('<option>'), {text: 'loding...'});
 $ontologiSelect.on('change', function(){
     $conceptSelect.val(null).trigger("change");
 });
+
+var $conceptSelect = $('#id_concept_full_id');
 $conceptSelect.append($('<option>'), {text: 'loding...'});
+$conceptSelect.on('change', function(){
+    $conceptName.val($conceptSelect.select2('data')[0].text);
+});
+
 
 function beforeSend(xhr){
     xhr.setRequestHeader ("Authorization", "apikey token=");
@@ -27,25 +34,28 @@ $.ajax({
 
 $conceptSelect.select2({
     ajax: {
-        url: "http://data.bioontology.org/search",
-        dataType: 'json',
-        beforeSend: beforeSend,
+        url: "http://bioportal.bioontology.org/search/json_search/",
+        dataType: "jsonp",
         delay: 250,
         data: function (params) {
             return {
                 q: params.term,
-                page: params.page,
+                target_property: "name",
                 ontologies: $ontologiSelect.val(),
+                response: "json",
             };
         },
         processResults: function (data, params) {
+            var results = data.data.split('~!~').map(function(itemString){
+                var item = itemString.split('|');
+                return {
+                    id: item[1],
+                    text: item[0],
+                    definition: item[7],
+                };
+            });
             return {
-                results: _.map(data.collection, function(item){
-                    item.id = item['@id'];
-                    item.text = item.prefLabel;
-                    return item;
-                }),
-                pagination: data.links.nextPage
+                results: results,
             };
         },
         cache: false,
@@ -55,8 +65,7 @@ $conceptSelect.select2({
         if(data.loading) {
             return data.text;
         }
-        var definition = data.definition ? data.definition[0] : '';
-        return "<p><b>" + data.text + "</b>" + definition + "</p>";
+        return "<p><b>" + data.text + "</b> " + data.definition + "</p>";
     },
     templateSelection: function(data) { return data.text; },
     minimumInputLength: 1,

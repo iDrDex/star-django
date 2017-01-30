@@ -186,14 +186,14 @@ def delete_tag(request, tag_id):
 class TagForm(ModelForm):
     class Meta:
         model = Tag
-        fields = ['tag_name', 'description',
-                  'concept_name', 'ontology_id', 'concept_full_id']
+        fields = ['tag_name', 'description', 'ontology_id',
+                  'concept_full_id', 'concept_name']
 
     def __init__(self, *args, **kwargs):
         super(TagForm, self).__init__(*args, **kwargs)
-        self.fields['concept_name'].widget = Select()
         self.fields['ontology_id'].widget = Select()
-        # self.fields['concept_full_id'].widget = HiddenInput()
+        self.fields['concept_full_id'].widget = Select()
+        self.fields['concept_name'].widget = HiddenInput()
 
     def clean_tag_name(self):
         tag_name = self.cleaned_data['tag_name']
