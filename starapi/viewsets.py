@@ -1,9 +1,18 @@
+import coreapi
+
 from cacheops import cached_as
 from django.http import JsonResponse, HttpResponse
 from funcy import partial, walk_keys
-from rest_framework import viewsets
+from pandas.computation.ops import UndefinedVariableError
+from rest_framework import viewsets, exceptions
 from rest_framework.decorators import list_route
+from rest_framework.permissions import AllowAny
+from rest_framework.renderers import CoreJSONRenderer
 from rest_framework.response import Response
+from rest_framework.schemas import SchemaGenerator
+from rest_framework.views import APIView
+from rest_framework_swagger import renderers
+
 from tags.models import SerieAnnotation, Tag, SampleAnnotation
 from legacy.models import (Platform,
                            Series,
@@ -13,7 +22,6 @@ from legacy.models import (Platform,
                            )
 from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
-from pandas.computation.ops import UndefinedVariableError
 from .serializers import (PlatformSerializer,
                           SeriesSerializer,
                           AnalysisSerializer,
@@ -37,11 +45,11 @@ class SeriesViewSet(viewsets.ReadOnlyModelViewSet):
 
 class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Analysis.objects.filter(is_active=True)
-    pagination_class = None
     serializer_class = AnalysisSerializer
     filter_fields = ('specie', 'case_query', 'control_query', 'modifier_query')
 
-    def list(self, request, format=None):
+    @list_route()
+    def df(self, request, format=None):
         """
         Download analysis data frame  
         **Example of valid filter data**  
@@ -59,9 +67,10 @@ class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
         except UndefinedVariableError as err:
             data = {'error': str(err)}
             return Response(status=400, data=data)
+    df.action = 'list'
 
-    @list_route(methods=['get'], url_path="probes/(?P<gpl_name>[^/.]+)")
-    def get_probes(self, request, gpl_name):
+    @list_route(url_path="probes/(?P<gpl_name>[^/.]+)")
+    def probes(self, request, gpl_name):
         qs = PlatformProbe.objects.filter(
             platform__gpl_name=gpl_name).order_by('id')
         probes_df = qs.to_dataframe(
@@ -125,3 +134,33 @@ class MetaAnalysisViewSet(viewsets.ReadOnlyModelViewSet):
 class PlatformProbeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PlatformProbe.objects.all()
     serializer_class = PlatformProbeSerializer
+
+
+class SwaggerSchemaView(APIView):
+    _ignore_model_permissions = True
+    exclude_from_schema = True
+    permission_classes = [AllowAny]
+    renderer_classes = [
+        CoreJSONRenderer,
+        renderers.OpenAPIRenderer,
+        renderers.SwaggerUIRenderer
+    ]
+
+    def get(self, request):
+        generator = SchemaGenerator(
+            title="Stargeo API",
+        )
+        schema = generator.get_schema(request=request)
+        schema['analysis']['df']._fields = [
+            coreapi.Field(name='specie', required=True),
+            coreapi.Field(name='case_query', required=True),
+            coreapi.Field(name='control_query', required=True),
+            coreapi.Field(name='modifier_query', required=False),
+        ]
+
+        if not schema:
+            raise exceptions.ValidationError(
+                'The schema generator did not return a schema Document'
+            )
+
+        return Response(schema)

@@ -1,14 +1,10 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from registration.backends.hmac.views import RegistrationView
-from rest_framework_swagger.views import get_swagger_view
 
 from core.forms import PasswordResetForm, MyRegistrationForm, MyAuthenticationForm
 from starapi.routers import router
-
-
-schema_view = get_swagger_view(title='Stargeo API')
-
+from starapi.viewsets import SwaggerSchemaView
 
 urlpatterns = patterns('',  # noqa
     url(r'^accounts/login/$', 'django.contrib.auth.views.login',
@@ -69,5 +65,5 @@ urlpatterns = patterns('',  # noqa
 
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/', include(router.urls)),
-    url(r'^docs', schema_view),
+    url(r'^docs', SwaggerSchemaView.as_view()),
 )
