@@ -107,13 +107,12 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
         @cached_as(SampleAnnotation)
         def get_annotation():
             return JsonResponse(
-                map(
-                    partial(walk_keys, self.KEYS),
-                    SampleAnnotation.objects.values(*self.KEYS).prefetch_related(
-                        'sample',
-                        'sample__platform',
-                        'serie_annotation__tag',
-                    ).iterator()),
+                [walk_keys(self.KEYS, annotation) for annotation in
+                 SampleAnnotation.objects.values(*self.KEYS).prefetch_related(
+                     'sample',
+                     'sample__platform',
+                     'serie_annotation__tag',
+                ).iterator()],
                 safe=False)
         response = get_annotation()
         response['Content-Type'] = 'application/octet-stream' if format == 'json'\
