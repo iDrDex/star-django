@@ -191,8 +191,15 @@ class TagForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(TagForm, self).__init__(*args, **kwargs)
-        self.fields['ontology_id'].widget = Select()
-        self.fields['concept_full_id'].widget = Select()
+        ontology_id_choices = [('', '')]
+        concept_full_id_choices = [('', '')]
+        instance = kwargs.get('instance')
+        if instance:
+            ontology_id_choices = [(instance.ontology_id, instance.ontology_id)]
+            concept_full_id_choices = [(instance.concept_full_id,
+                                        instance.concept_name)]
+        self.fields['ontology_id'].widget = Select(choices=ontology_id_choices)
+        self.fields['concept_full_id'].widget = Select(choices=concept_full_id_choices)
         self.fields['concept_name'].widget = HiddenInput()
 
     def clean_tag_name(self):

@@ -1,17 +1,16 @@
 var $conceptName = $('#id_concept_name');
 
 var $ontologiSelect = $('#id_ontology_id');
-$ontologiSelect.append($('<option>'), {text: 'loding...'});
 $ontologiSelect.on('change', function(){
     $conceptSelect.val(null).trigger("change");
 });
 
 var $conceptSelect = $('#id_concept_full_id');
-$conceptSelect.append($('<option>'), {text: 'loding...'});
 $conceptSelect.on('change', function(){
-    $conceptName.val($conceptSelect.select2('data')[0].text);
+    if ($conceptSelect.select2('data')[0]) {
+        $conceptName.val($conceptSelect.select2('data')[0].text);
+    }
 });
-
 
 function beforeSend(xhr){
     xhr.setRequestHeader ("Authorization", "apikey token=");
