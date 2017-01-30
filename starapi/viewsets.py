@@ -2,7 +2,7 @@ import coreapi
 
 from cacheops import cached_as
 from django.http import JsonResponse, HttpResponse
-from funcy import partial, walk_keys
+from funcy import walk_keys
 from pandas.computation.ops import UndefinedVariableError
 from rest_framework import viewsets, exceptions
 from rest_framework.decorators import list_route
