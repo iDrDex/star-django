@@ -1,11 +1,6 @@
 from rest_framework import serializers
 
-from legacy.models import (Platform,
-                           Series,
-                           Analysis,
-                           MetaAnalysis,
-                           PlatformProbe,
-                           )
+from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
 from tags.models import SerieAnnotation, Tag
 from .fields import S3Field
 

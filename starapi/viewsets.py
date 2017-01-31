@@ -14,22 +14,12 @@ from rest_framework.views import APIView
 from rest_framework_swagger import renderers
 
 from tags.models import SerieAnnotation, Tag, SampleAnnotation
-from legacy.models import (Platform,
-                           Series,
-                           Analysis,
-                           MetaAnalysis,
-                           PlatformProbe,
-                           )
+from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
 from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
-from .serializers import (PlatformSerializer,
-                          SeriesSerializer,
-                          AnalysisSerializer,
-                          AnalysisParamSerializer,
-                          SerieAnnotationSerializer,
-                          TagSerializer,
-                          MetaAnalysisSerializer,
-                          PlatformProbeSerializer,
+from .serializers import (PlatformSerializer, SeriesSerializer, AnalysisSerializer,
+                          AnalysisParamSerializer, SerieAnnotationSerializer,
+                          TagSerializer, MetaAnalysisSerializer, PlatformProbeSerializer,
                           )
 
 
