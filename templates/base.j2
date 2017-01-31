@@ -146,6 +146,9 @@
                 <a href="/competence/"> <span class="nav-label">Competence Test</span> </a>
             </li>
             {% endif %}
+            <li>
+              <a href="/docs/"> <span clss="nav-label">API Docs</span></a>
+            </li>
             {# HACK: hardcode my and Dexters ids #}
             {% if request.user.is_superuser %}
             <li{% if request.path == '/stats/' %} class="active"{% endif %}>

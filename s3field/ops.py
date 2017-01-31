@@ -2,6 +2,7 @@ import re
 from thread import start_new_thread
 
 import boto
+import pandas as pd
 
 from django.conf import settings
 from django.utils.encoding import force_unicode
@@ -71,3 +72,13 @@ def clean_key_name(key_name):
     # Remove double dots and slashes
     key_name = re.sub(r'([./])\1+', r'\1', key_name)
     return key_name[:MAX_KEY_LEN].strip(u'._/')
+
+
+def generate_url(desc):
+    return "http://{bucket}.s3.amazonaws.com/{key}".format(**desc)
+
+def frame_dumps(df):
+    return df.to_json(orient='split')
+
+def frame_loads(s):
+    return pd.io.json.read_json(s, orient='split')

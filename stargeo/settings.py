@@ -47,6 +47,9 @@ INSTALLED_APPS = (
     'legacy',
     'tags',
     'analysis',
+    'rest_framework',
+    'rest_framework_swagger',
+    'starapi',
 )
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar', 'django_extensions')
@@ -171,10 +174,14 @@ TEMPLATE_DEFAULT_EXTENSION = '.j2'
 
 # Cacheops settings
 CACHEOPS_REDIS = {
-    'host': 'localhost',  # redis-server is on same machine
+    'host': os.environ.get('REDIS_HOST', 'localhost'),  # redis-server is on same machine
     'port': 6379,         # default redis port
     'db': 1,              # SELECT non-default redis database
     'socket_timeout': 3,  # connection timeout in seconds, optional
+}
+
+CACHEOPS = {
+    'tags.sampleannotation': {'ops': [], 'timeout': 60 * 60},
 }
 
 
@@ -257,4 +264,15 @@ AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY = os.environ['AWS_CREDENTIALS'].split('
 S3_BUCKETS = {
     'legacy.analysis.df': os.environ['AWS_BUCKET_TEMPLATE'] % 'analysis-df',
     'legacy.analysis.fold_changes': os.environ['AWS_BUCKET_TEMPLATE'] % 'fold-changes',
+}
+
+
+# Django REST framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10
 }

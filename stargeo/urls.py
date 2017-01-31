@@ -1,9 +1,10 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
-
 from registration.backends.hmac.views import RegistrationView
-from core.forms import PasswordResetForm, MyRegistrationForm, MyAuthenticationForm
 
+from core.forms import PasswordResetForm, MyRegistrationForm, MyAuthenticationForm
+from starapi.routers import router
+from starapi.viewsets import SwaggerSchemaView
 
 urlpatterns = patterns('',  # noqa
     url(r'^accounts/login/$', 'django.contrib.auth.views.login',
@@ -43,8 +44,6 @@ urlpatterns = patterns('',  # noqa
     url(r'^annotations/(\d+)/samples/$', 'tags.review_views.sample_annotations',
         name='sample_annotations'),
     url(r'^annotations/ignore/(\d+)/$', 'tags.review_views.ignore', name='ignore_validation'),
-    url(r'^samples-annotations.json', 'tags.api_views.samples_annotations',
-        name='export_samples_annotations'),
 
     url(r'^analysis/$', 'analysis.views.index', name='analysis'),
     url(r'^analysis/create/$', 'analysis.views.create', name='analysis_create'),
@@ -65,4 +64,6 @@ urlpatterns = patterns('',  # noqa
     url(r'^pay/$', 'tags.user_views.pay', name='pay'),
 
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^api/', include(router.urls)),
+    url(r'^docs', SwaggerSchemaView.as_view()),
 )

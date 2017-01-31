@@ -4,7 +4,7 @@
 
 {% block header %}
   <h2 class="font-light" style="display: inline-block; margin-bottom: 0">{{ page_title }}</h2>
-  <a href="{{ url('export_samples_annotations') }}" class="btn btn-success" style='float:right;'>
+  <a href="{{ url('sampleannotation-list', format='json') }}" class="btn btn-success" style='float:right;'>
     Export samples annotations
   </a>
 {% endblock %}

@@ -32,7 +32,7 @@ class Resource(dict):
         blob = ops.download_as_string(self['bucket'], self['key'])
         if self.get('compressed'):
             blob = zlib.decompress(blob)
-        return frame_loads(blob)
+        return ops.frame_loads(blob)
 
 
 class S3Field(models.TextField):
@@ -81,7 +81,7 @@ class S3Field(models.TextField):
 def _upload_FIELD(self, desc, field=None, lazy=False):  # noqa
     # NOTE: only dataframes for now
     assert isinstance(desc, pd.DataFrame)
-    data = frame_dumps(desc)
+    data = ops.frame_dumps(desc)
     if field.compress:
         data = zlib.compress(data)
     desc = {
@@ -91,10 +91,3 @@ def _upload_FIELD(self, desc, field=None, lazy=False):  # noqa
         'compressed': field.compress,
     }
     setattr(self, field.attname, Resource(ops.upload(desc, lazy=lazy)))
-
-
-def frame_dumps(df):
-    return df.to_json(orient='split')
-
-def frame_loads(s):
-    return pd.io.json.read_json(s, orient='split')
