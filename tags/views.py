@@ -1,4 +1,5 @@
 import re
+import pickle
 from operator import itemgetter
 from collections import defaultdict
 
@@ -11,10 +12,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum
-from django.forms import ModelForm, ValidationError, HiddenInput
+from django.forms import ModelForm, ValidationError, HiddenInput, Select
 from django.shortcuts import redirect, get_object_or_404
 
 from core.aggregations import ArrayAgg, ArrayConcatUniq, ArrayLength
+from core.conf import redis_client
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series
 from .models import Tag, SeriesTag, SerieAnnotation
@@ -186,14 +188,32 @@ def delete_tag(request, tag_id):
 class TagForm(ModelForm):
     class Meta:
         model = Tag
-        fields = ['tag_name', 'description',
-                  'concept_name', 'ontology_id', 'concept_full_id']
+        fields = ['tag_name', 'description', 'ontology_id',
+                  'concept_full_id', 'concept_name']
 
     def __init__(self, *args, **kwargs):
         super(TagForm, self).__init__(*args, **kwargs)
-        self.fields['concept_name'].widget.attrs['class'] = 'bp_form_complete-all-name'
-        self.fields['ontology_id'].widget = HiddenInput()
-        self.fields['concept_full_id'].widget = HiddenInput()
+        concept_full_id_choices = []
+        instance = kwargs.get('instance')
+
+        try:
+            ontology_id_choices = pickle.loads(redis_client.get('ontologies'))
+        except (pickle.PickleError, TypeError, KeyError):
+            if instance:
+                ontology_id_choices = [(instance.ontology_id, instance.ontology_id)]
+            else:
+                ontology_id_choices = []
+        ontology_id_choices.insert(0, ('', ''))
+
+        if instance:
+            concept_full_id_choices = [(instance.concept_full_id,
+                                        instance.concept_name)]
+
+        self.fields['ontology_id'].widget = Select(choices=ontology_id_choices)
+        self.fields['ontology_id'].label = 'Ontology'
+        self.fields['concept_full_id'].widget = Select(choices=concept_full_id_choices)
+        self.fields['concept_full_id'].label = 'Concept name'
+        self.fields['concept_name'].widget = HiddenInput()
 
     def clean_tag_name(self):
         tag_name = self.cleaned_data['tag_name']
