@@ -1,9 +1,18 @@
 {% extends "rest_framework_swagger/base.html" %}
 
+{% block header %}
+    {{ block.super }}
+    <div class="swagger-section swagger-ui-wrap">
+        <p>If you want to sign request to the server you need to add </p>
+        <p><i>Authorization: Token {{ request.user.auth_token.key }}</i></p>
+        <p>header to your request</p>
+    </div>
+{% endblock %}
+
 {% block extra_styles %}
-<style>
- div#sample_annotations_sample_annotations_list_content form{
-     display: none;
- }
-</style>
+    <style>
+        div#sample_annotations_sample_annotations_list_content form{
+            display: none;
+        }
+    </style>
 {% endblock extra_styles %}
