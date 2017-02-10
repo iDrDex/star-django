@@ -1,51 +1,52 @@
 var $conceptName = $('#id_concept_name');
 var $ontologiSelect = $('#id_ontology_id');
 var $conceptSelect = $('#id_concept_full_id');
+$conceptSelect.parent().append("<b>Concept:</b> <a id='conceptLink'></p>");
+var $conceptLink = $('#conceptLink');
 
-$.ajax({
-    url: "http://data.bioontology.org/ontologies",
-    dataType: "json",
-    beforeSend: function (xhr){
-        xhr.setRequestHeader("Authorization", "apikey token="+window.BIOPORTAL_API_KEY);
-        },
-    }).then(function(data){
-        var val = $ontologiSelect.val();
-        $ontologiSelect.html('');
-        $ontologiSelect.select2({
-            matcher: function(params, data) {
-                if ($.trim(params.term) === '') {
-                    return data;
-                }
-                var term = params.term.toUpperCase();
-                var original = data.text.toUpperCase() + " " + data.id.toUpperCase();
+var simpleModel = $ontologiSelect.find('option').length <= 2;
 
-                if (original.indexOf(term) > -1) {
-                    return data;
-                }
+if (simpleModel) {
+    $ontologiSelect.parent().prepend(
+        "<b style='color:#e74c3c'>Ontology API is not available.<br/> Autocomplete will not work.</b>");
+}
 
-                return null;
-            },
-            templateSelection: function(data) { return data.id + " (" + data.text + ")"; },
-            templateResult: function(data) { return data.id + " (" + data.text + ")"; },
-            data: _.map(data, function(ontology){
-                return {
-                    id: ontology.acronym,
-                    text: ontology.name
-                };
-            }),
-        });
-        $ontologiSelect.val(val).trigger('change');
-        $ontologiSelect.on('change', function(e){
-            var newOntology = e.target.value;
-            var conceptOntology = ($conceptSelect.select2('data')[0] || {}).ontology;
-            if (newOntology !== conceptOntology) {
-                $conceptSelect.val(null).trigger("change");
-            }
-        });
-        populateConceptValue();
+$ontologiSelect.select2({
+    placeholder: ' ',
+    disable: true,
+    allowClear: true,
+    matcher: function(params, data) {
+        if ($.trim(params.term) === '') {
+            return data;
+        }
+        var term = params.term.toUpperCase();
+        var original = data.text.toUpperCase() + " " + data.id.toUpperCase();
+
+        if (original.indexOf(term) > -1) {
+            return data;
+        }
+
+        return null;
+    },
+    templateSelection: function(data) {
+        if(data.id) {
+            return data.id + " (" + data.text + ")";
+        }
+        return data.text;
+    },
+    templateResult: function(data) { return data.id + " (" + data.text + ")"; },
+});
+$ontologiSelect.on('change', function(e){
+    var newOntology = e.target.value;
+    var conceptOntology = ($conceptSelect.select2('data')[0] || {}).ontology;
+    if (newOntology !== conceptOntology) {
+        $conceptSelect.val(null).trigger("change");
+    }
 });
 
 $conceptSelect.select2({
+    placeholder: ' ',
+    allowClear: true,
     ajax: {
         url: "http://bioportal.bioontology.org/search/json_search/",
         dataType: "jsonp",
@@ -93,6 +94,9 @@ function populateConceptValue() {
     if (data) {
         $conceptName.val(data.text);
         if (data.ontology) {
+            if($ontologiSelect.find('option[value=\''+data.ontology+'\']').length === 0){
+                $ontologiSelect.append('<option value="'+data.ontology+'">'+data.ontology+'</option>');
+            }
             $ontologiSelect.val(data.ontology).trigger('change');
         }
         $conceptLink.attr({ href: data.id, target: "_blank"}).html(data.id);
@@ -100,5 +104,4 @@ function populateConceptValue() {
 }
 
 $conceptSelect.on('change', populateConceptValue);
-$conceptSelect.parent().append("<b>Concept:</b> <a id='conceptLink'></p>");
-var $conceptLink = $('#conceptLink');
+populateConceptValue();

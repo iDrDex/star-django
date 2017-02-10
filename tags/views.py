@@ -1,4 +1,5 @@
 import re
+import pickle
 from operator import itemgetter
 from collections import defaultdict
 
@@ -15,6 +16,7 @@ from django.forms import ModelForm, ValidationError, HiddenInput, Select
 from django.shortcuts import redirect, get_object_or_404
 
 from core.aggregations import ArrayAgg, ArrayConcatUniq, ArrayLength
+from core.conf import redis_client
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series
 from .models import Tag, SeriesTag, SerieAnnotation
@@ -191,13 +193,22 @@ class TagForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(TagForm, self).__init__(*args, **kwargs)
-        ontology_id_choices = [('', '')]
         concept_full_id_choices = []
         instance = kwargs.get('instance')
+
+        try:
+            ontology_id_choices = pickle.loads(redis_client.get('ontologies'))
+        except (pickle.PickleError, TypeError, KeyError):
+            if instance:
+                ontology_id_choices = [(instance.ontology_id, instance.ontology_id)]
+            else:
+                ontology_id_choices = []
+        ontology_id_choices.insert(0, ('', ''))
+
         if instance:
-            ontology_id_choices = [(instance.ontology_id, instance.ontology_id)]
             concept_full_id_choices = [(instance.concept_full_id,
                                         instance.concept_name)]
+
         self.fields['ontology_id'].widget = Select(choices=ontology_id_choices)
         self.fields['ontology_id'].label = 'Ontology'
         self.fields['concept_full_id'].widget = Select(choices=concept_full_id_choices)
