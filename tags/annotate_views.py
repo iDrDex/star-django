@@ -19,6 +19,7 @@ from legacy.models import Series, Sample
 from tags.models import Tag, SeriesTag, SampleTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
 from .tasks import validation_workflow, calc_validation_stats
+from .misc import save_annotation
 
 
 @login_required
@@ -26,7 +27,7 @@ from .tasks import validation_workflow, calc_validation_stats
 @render_to('tags/annotate.j2')
 def annotate(request):
     if request.method == 'POST':
-        return save_annotation(request)
+        return save_annotation_from_request(request)
 
     series_id = request.GET.get('series_id')
     if not series_id:
@@ -55,7 +56,7 @@ def annotate(request):
     }
 
 
-def save_annotation(request):
+def save_annotation_from_request(request):
     user_id = request.user.id
 
     # Do not check input, just crash for now
@@ -65,40 +66,13 @@ def save_annotation(request):
     regex = request.POST['regex']
     values = dict(json.loads(request.POST['values']))
 
-    with transaction.atomic():
-        # Group samples by platform
-        sample_to_platform = dict(Sample.objects.filter(id__in=values)
-                                        .values_list('id', 'platform_id'))
-        groups = group_by(lambda (id, _): sample_to_platform[id], values.items())
+    old_annotation = first(SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id))
+    if old_annotation:
+        messages.error(request, 'Serie %s is already annotated with tag %s'
+                       % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
+        return redirect(request.get_full_path())
 
-        old_annotation = first(SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id))
-        if old_annotation:
-            messages.error(request, 'Serie %s is already annotated with tag %s'
-                           % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
-            return redirect(request.get_full_path())
-
-        # Save all annotations and used regexes
-        for platform_id, annotations in groups.items():
-            # Do not allow for same user to annotate same serie twice
-            series_tag, _ = SeriesTag.objects.get_or_create(
-                series_id=series_id, platform_id=platform_id, tag_id=tag_id, created_by_id=user_id,
-                defaults=dict(header=column, regex=regex, modified_by_id=user_id)
-            )
-
-            # TODO: check if this can result in sample tags doubling
-            # Create all sample tags
-            sample_tags = SampleTag.objects.bulk_create([
-                SampleTag(sample_id=sample_id, series_tag=series_tag, annotation=annotation,
-                          created_by_id=user_id, modified_by_id=user_id)
-                for sample_id, annotation in annotations
-            ])
-
-            # Create validation job
-            ValidationJob.objects.create(series_tag=series_tag)
-
-            # Create canonical annotation
-            sa = SerieAnnotation.create_from_series_tag(series_tag)
-            sa.fill_samples(sample_tags)
+    save_annotation(user_id, series_id, tag_id, values, column, regex)
 
     messages.success(request, 'Saved annotations')
 

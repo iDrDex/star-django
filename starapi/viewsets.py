@@ -6,7 +6,7 @@ from funcy import walk_keys
 from pandas.computation.ops import UndefinedVariableError
 from rest_framework import viewsets, exceptions
 from rest_framework.decorators import list_route
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.renderers import CoreJSONRenderer
 from rest_framework.response import Response
 from rest_framework.schemas import SchemaGenerator
@@ -20,6 +20,7 @@ from analysis.analysis import get_analysis_df
 from .serializers import (PlatformSerializer, SeriesSerializer, AnalysisSerializer,
                           AnalysisParamSerializer, SerieAnnotationSerializer,
                           TagSerializer, MetaAnalysisSerializer, PlatformProbeSerializer,
+                          CreateSampleAnnotationSerializer,
                           )
 
 
@@ -74,6 +75,7 @@ class SerieAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SerieAnnotationSerializer
 
 class SampleAnnotationViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticatedOrReadOnly]
     KEYS = {
         'serie_annotation__tag__tag_name': 'tag_name',
         'serie_annotation__tag_id': 'tag_id',
@@ -87,6 +89,15 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
         'sample__platform_id': 'platform_id',
         'annotation': 'annotation',
     }
+
+    def create(self, request):
+        serializer = CreateSampleAnnotationSerializer(
+            data=request.data,
+            context={'user': request.user})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=201)
+
 
     def list(self, request, format=None):
         """
