@@ -104,11 +104,13 @@ class CreateSampleAnnotationSerializer(serializers.Serializer):
         else:
             # create validation
             if series_tag.created_by.id == user_id:
-                raise serializers.ValidationError("You can't validate your own annotation")
+                raise serializers.ValidationError(
+                    {'non_field_errors': "You can't validate your own annotation"})
             try:
                 return save_validation(user_id, series_tag, values, column)
             except SaveValidatonError as err:
-                raise serializers.ValidationError(unicode(err))
+                raise serializers.ValidationError(
+                    {'non_field_errors': unicode(err)})
 
 
 class TagSerializer(serializers.ModelSerializer):
