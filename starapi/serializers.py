@@ -1,4 +1,4 @@
-from funcy import walk_keys, all, compact
+from funcy import all, compact, map
 
 from rest_framework import serializers
 
@@ -61,30 +61,50 @@ class SampleAnnotationValidator(serializers.Serializer):
     # values field is a json object with sample_id as keys and tag value as values
 
     def validate_values(self, value):
-        try:
-            value = walk_keys(int, value)
-        except Exception as err:
-            raise serializers.ValidationError(str(err))
-
         if not all(isinstance(v, (unicode, str)) for v in value.values()):
             raise serializers.ValidationError(
                 "Values should be a dict with serie tag id as a key and tag value as a value")
 
+        if not all(isinstance(v, (unicode, str, int)) for v in value.keys()):
+                raise serializers.ValidationError(
+                    "Values should be a dict with serie tag id as a key and tag value as a value")
+
         return value
 
     def validate(self, data):
-        tagged_samples_ids = set(data['values'].keys())
+        samples = data['series'].samples.all()
+
+        gsm_to_id = {s.gsm_name.upper(): s.id for s in samples}
+        id_to_gsm = {v: k for k, v in gsm_to_id.iteritems()}
+
+        try:
+            values = {
+                gsm_to_id[key.upper()]
+                if isinstance(key, (unicode, str)) and key.upper().startswith('GSM')
+                else
+                int(key): value
+                for key, value in data['values'].iteritems()
+            }
+        except KeyError as err:
+            raise serializers.ValidationError(
+                "There is samples with id {0} which doesn't belongs to series {1}"
+                .format(err.message, data['series'].id))
+        except ValueError as err:
+            raise serializers.ValidationError(unicode(err))
+
+        tagged_samples_ids = set(values.keys())
         all_samples_ids = set(data['series'].samples.values_list('id', flat=True))
         missing_annotations = all_samples_ids - tagged_samples_ids
         extra_annotations = tagged_samples_ids - all_samples_ids
 
         if missing_annotations == extra_annotations == set():
+            data['values'] = values
             return data
 
-        missing_text = "There are samples with id {0} which are missing their annotation"\
-                       .format(list(missing_annotations)) \
+        missing_text = "There are samples with ids {0} which are missing their annotation"\
+                       .format(map(id_to_gsm, missing_annotations)) \
                        if missing_annotations else None
-        extra_text = "There are samples with id {0} which doesn't belongs to series {1}"\
+        extra_text = "There are samples with ids {0} which doesn't belongs to series {1}"\
                      .format(list(extra_annotations), data['series'].id) \
                      if extra_annotations else None
 
