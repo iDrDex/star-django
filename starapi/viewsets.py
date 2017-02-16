@@ -113,12 +113,12 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
             # create validation
             if series_tag.created_by.id == user_id:
                 raise ValidationError(
-                    {'non_field_errors': "You can't validate your own annotation"})
+                    {'non_field_errors': ["You can't validate your own annotation"]})
 
             res, err = save_validation(user_id, series_tag, serializer.validated_data, True)
             if not res:
                 raise ValidationError(
-                    {'non_field_errors': err})
+                    {'non_field_errors': [err]})
 
         return Response(status=201)
 
