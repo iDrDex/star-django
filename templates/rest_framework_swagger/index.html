@@ -2,11 +2,13 @@
 
 {% block header %}
     {{ block.super }}
+    {% if not request.user.is_anonymous %}
     <div class="swagger-section swagger-ui-wrap">
         <p>If you want to sign request to the server you need to add </p>
-        <p><i>Authorization: Token {{ request.user.auth_token.key }}</i></p>
+        <p><code>Authorization: Token {{ request.user.auth_token.key }}</code></p>
         <p>header to your request</p>
     </div>
+    {% endif %}
 {% endblock %}
 
 {% block extra_styles %}
