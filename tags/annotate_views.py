@@ -19,7 +19,7 @@ from legacy.models import Series, Sample
 from tags.models import Tag, SeriesTag, SampleTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
 from .tasks import validation_workflow, calc_validation_stats
-from .misc import save_annotation
+from .misc import save_annotation, save_validation, SaveValidatonError
 
 
 @login_required
@@ -86,7 +86,7 @@ BLIND_FIELDS = {'id', 'gsm_name', 'platform_id'}
 @render_to('tags/annotate.j2')
 def validate(request):
     if request.method == 'POST':
-        return save_validation(request)
+        return save_validation_from_request(request)
 
     try:
         job = lock_validation_job(request.user.id)
@@ -105,7 +105,7 @@ def validate(request):
         'samples': samples,
     }
 
-def save_validation(request):
+def save_validation_from_request(request):
     # Do not check input, just crash for now
     user_id = request.user.id
     job_id = request.POST['job_id']
@@ -123,25 +123,13 @@ def save_validation(request):
             return
 
         # Save validation with used column and regex
-        st = job.series_tag
-        serie_validation, created = SerieValidation.objects.get_or_create(
-            series_tag_id=st.id, created_by_id=user_id,
-            defaults=dict(
-                column=column, regex=regex,
-                series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id
-            )
-        )
-        # Do not allow user validate same serie, same platform for same tag twice
-        if not created:
-            messages.error(request, 'You had already validated this annotation')
-            return redirect(request.get_full_path())
+        series_tag = job.series_tag
 
-        # Create all sample validations
-        SampleValidation.objects.bulk_create([
-            SampleValidation(sample_id=sample_id, serie_validation=serie_validation,
-                             annotation=annotation, created_by_id=user_id)
-            for sample_id, annotation in values.items()
-        ])
+        try:
+            serie_validation = save_validation(user_id, series_tag, values, column, regex)
+        except SaveValidatonError as err:
+            messages.error(request, unicode(err))
+            return redirect(request.get_full_path())
 
         # Remove validation job from queue
         job.delete()

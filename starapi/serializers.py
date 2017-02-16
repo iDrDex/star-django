@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
 from tags.models import SerieAnnotation, Tag, SeriesTag
-from tags.misc import save_annotation
+from tags.misc import save_annotation, save_validation, SaveValidatonError
 
 from .fields import S3Field
 
@@ -54,7 +54,7 @@ class SerieAnnotationSerializer(serializers.ModelSerializer):
 
 class CreateSampleAnnotationSerializer(serializers.Serializer):
     series = serializers.PrimaryKeyRelatedField(queryset=Series.objects.all())
-    tag = serializers.PrimaryKeyRelatedField(queryset=SeriesTag.objects.all())
+    tag = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all())
     column = serializers.CharField(max_length=512, required=False)
     values = serializers.JSONField()
 
@@ -71,20 +71,25 @@ class CreateSampleAnnotationSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
+        user_id = self.context['user'].id
         series = validated_data['series']
         tag = validated_data['tag']
         column = validated_data.get('column', '')
         values = validated_data['values']
 
-        old_annotation = first(SeriesTag.objects.filter(series=series, tag=tag))
+        series_tag = first(SeriesTag.objects.filter(series=series, tag=tag))
 
-        if not old_annotation:
+        if not series_tag:
             # create annotation
-            save_annotation(self.context.user.id, series.id, tag.id, values, column)
+            return save_annotation(user_id, series.id, tag.id, values, column)
         else:
             # create validation
-            pass
-        return []
+            if series_tag.created_by.id == user_id:
+                raise serializers.ValidationError("You can't validate your own annotation")
+            try:
+                return save_validation(user_id, series_tag, values, column)
+            except SaveValidatonError as err:
+                raise serializers.ValidationError(unicode(err))
 
 
 class TagSerializer(serializers.ModelSerializer):
