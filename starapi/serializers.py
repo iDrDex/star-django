@@ -54,7 +54,8 @@ class SerieAnnotationSerializer(serializers.ModelSerializer):
 class SampleAnnotationValidator(serializers.Serializer):
     series = serializers.PrimaryKeyRelatedField(queryset=Series.objects.all())
     tag = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all())
-    column = serializers.CharField(max_length=512, required=False, default='')
+    column = serializers.CharField(max_length=512, required=False, allow_blank=True, default='')
+    regex = serializers.CharField(max_length=512, required=False, default='')
     comment = serializers.CharField(max_length=512, required=False, default='')
     values = serializers.JSONField()
     # values field is a json object with sample_id as keys and tag value as values
@@ -78,7 +79,6 @@ class SampleAnnotationValidator(serializers.Serializer):
         extra_annotations = tagged_samples_ids - all_samples_ids
 
         if missing_annotations == extra_annotations == set():
-            data['regex'] = ''
             return data
 
         missing_text = "There are samples with id {0} which are missing their annotation"\

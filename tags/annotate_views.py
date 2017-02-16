@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series, Sample
+from starapi.serializers import SampleAnnotationValidator
 from tags.models import Tag, SeriesTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
 from .tasks import validation_workflow, calc_validation_stats
@@ -27,17 +28,22 @@ from .misc import save_annotation, save_validation
 @render_to('tags/annotate.j2')
 def annotate(request):
     if request.method == 'POST':
-        # Do not check input, just crash for now
         user_id = request.user.id
 
-        data = {
-            'series': Series.objects.get(id=request.POST['series_id']),
-            'tag': Tag.objects.get(id=request.POST['tag_id']),
+        raw_data = {
+            'series': request.POST['series_id'],
+            'tag': request.POST['tag_id'],
             'column': request.POST['column'],
             'regex': request.POST['regex'],
             'values': dict(json.loads(request.POST['values'])),
-            'comment': '',
         }
+
+        serializer = SampleAnnotationValidator(data=raw_data)
+        if not serializer.is_valid():
+            messages.error(request, serializer.errors)
+            return redirect(request.get_full_path())
+
+        data = serializer.validated_data
 
         with transaction.atomic():
             old_annotation = first(SeriesTag.objects.filter(series=data['series'], tag=data['tag']))
@@ -88,6 +94,9 @@ BLIND_FIELDS = {'id', 'gsm_name', 'platform_id'}
 def validate(request):
     if request.method == 'POST':
         # Do not check input, just crash for now
+        # we can't use SampleAnnotationValidator for this data
+        # because series and tag are passing implicitly via job param
+
         user_id = request.user.id
         job_id = request.POST['job_id']
         data = {
@@ -142,7 +151,7 @@ def validate(request):
         'serie': job.series_tag.series,
         'tag': tag,
         'columns': columns,
-        'samples': samples,
+        'samples': samples
     }
 
 @transaction.atomic
