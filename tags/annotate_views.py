@@ -2,7 +2,7 @@ import json
 import random
 from datetime import timedelta
 
-from funcy import group_by, first, project, select_keys, takewhile, without, distinct, merge, icat
+from funcy import first, project, select_keys, takewhile, without, distinct, merge, icat
 from handy.decorators import render_to
 
 from django.core.urlresolvers import reverse
@@ -16,10 +16,10 @@ from django.utils import timezone
 
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series, Sample
-from tags.models import Tag, SeriesTag, SampleTag
+from tags.models import Tag, SeriesTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
 from .tasks import validation_workflow, calc_validation_stats
-from .misc import save_annotation, save_validation, SaveValidatonError
+from .misc import save_annotation, save_validation
 
 
 @login_required
@@ -27,7 +27,31 @@ from .misc import save_annotation, save_validation, SaveValidatonError
 @render_to('tags/annotate.j2')
 def annotate(request):
     if request.method == 'POST':
-        return save_annotation_from_request(request)
+        # Do not check input, just crash for now
+        user_id = request.user.id
+
+        data = {
+            'series': Series.objects.get(id=request.POST['series_id']),
+            'tag': Tag.objects.get(id=request.POST['tag_id']),
+            'column': request.POST['column'],
+            'regex': request.POST['regex'],
+            'values': dict(json.loads(request.POST['values'])),
+            'comment': '',
+        }
+
+        with transaction.atomic():
+            old_annotation = first(SeriesTag.objects.filter(series=data['series'], tag=data['tag']))
+
+            if old_annotation:
+                messages.error(request, 'Serie %s is already annotated with tag %s'
+                               % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
+                return redirect(request.get_full_path())
+
+            save_annotation(user_id, data)
+
+            messages.success(request, 'Saved annotations')
+
+            return redirect(reverse(annotate) + '?series_id={0}'.format(data['series'].id))
 
     series_id = request.GET.get('series_id')
     if not series_id:
@@ -56,29 +80,6 @@ def annotate(request):
     }
 
 
-def save_annotation_from_request(request):
-    user_id = request.user.id
-
-    # Do not check input, just crash for now
-    series_id = request.POST['series_id']
-    tag_id = request.POST['tag_id']
-    column = request.POST['column']
-    regex = request.POST['regex']
-    values = dict(json.loads(request.POST['values']))
-
-    old_annotation = first(SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id))
-    if old_annotation:
-        messages.error(request, 'Serie %s is already annotated with tag %s'
-                       % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
-        return redirect(request.get_full_path())
-
-    save_annotation(user_id, series_id, tag_id, values, column, regex)
-
-    messages.success(request, 'Saved annotations')
-
-    return redirect(reverse(annotate) + '?series_id=' + series_id)
-
-
 BLIND_FIELDS = {'id', 'gsm_name', 'platform_id'}
 
 @login_required
@@ -86,7 +87,46 @@ BLIND_FIELDS = {'id', 'gsm_name', 'platform_id'}
 @render_to('tags/annotate.j2')
 def validate(request):
     if request.method == 'POST':
-        return save_validation_from_request(request)
+        # Do not check input, just crash for now
+        user_id = request.user.id
+        job_id = request.POST['job_id']
+        data = {
+            'column': request.POST['column'],
+            'regex': request.POST['regex'],
+            'values': dict(json.loads(request.POST['values'])),
+            'comment': '',
+        }
+
+        with transaction.atomic():
+            # Make database lock on job in queue
+            try:
+                job = ValidationJob.objects.select_for_update().get(id=job_id, locked_by=user_id)
+            except ValidationJob.DoesNotExist:
+                # TODO: fast-acquire lock if available
+                messages.error(
+                    request,
+                    'Validation task timed out. Someone else could have done it.')
+                return
+
+            # Save validation with used column and regex
+            series_tag = job.series_tag
+
+            serie_validation, err = save_validation(user_id, series_tag, data)
+            if not serie_validation:
+                messages.error(request, unicode(err))
+                return redirect(request.get_full_path())
+
+            # Remove validation job from queue
+            job.delete()
+
+        message = 'Saved {} validations for {}'.format(
+            len(data['values']),
+            serie_validation.tag.tag_name)
+        messages.success(request, message)
+
+        validation_workflow.delay(serie_validation.pk)
+
+        return redirect(request.get_full_path())
 
     try:
         job = lock_validation_job(request.user.id)
@@ -104,43 +144,6 @@ def validate(request):
         'columns': columns,
         'samples': samples,
     }
-
-def save_validation_from_request(request):
-    # Do not check input, just crash for now
-    user_id = request.user.id
-    job_id = request.POST['job_id']
-    column = request.POST['column']
-    regex = request.POST['regex']
-    values = dict(json.loads(request.POST['values']))
-
-    with transaction.atomic():
-        # Make database lock on job in queue
-        try:
-            job = ValidationJob.objects.select_for_update().get(id=job_id, locked_by=user_id)
-        except ValidationJob.DoesNotExist:
-            # TODO: fast-acquire lock if available
-            messages.error(request, 'Validation task timed out. Someone else could have done it.')
-            return
-
-        # Save validation with used column and regex
-        series_tag = job.series_tag
-
-        try:
-            serie_validation = save_validation(user_id, series_tag, values, column, regex)
-        except SaveValidatonError as err:
-            messages.error(request, unicode(err))
-            return redirect(request.get_full_path())
-
-        # Remove validation job from queue
-        job.delete()
-
-    message = 'Saved {} validations for {}'.format(len(values), serie_validation.tag.tag_name)
-    messages.success(request, message)
-
-    validation_workflow.delay(serie_validation.pk)
-
-    return redirect(request.get_full_path())
-
 
 @transaction.atomic
 def lock_validation_job(user_id):

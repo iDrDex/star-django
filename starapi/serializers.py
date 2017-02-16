@@ -1,10 +1,9 @@
-from funcy import walk_keys, all, first, compact
+from funcy import walk_keys, all, compact
 
 from rest_framework import serializers
 
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
-from tags.models import SerieAnnotation, Tag, SeriesTag
-from tags.misc import save_annotation, save_validation, SaveValidatonError
+from tags.models import SerieAnnotation, Tag
 
 from .fields import S3Field
 
@@ -52,7 +51,7 @@ class SerieAnnotationSerializer(serializers.ModelSerializer):
         exclude = ['series_tag', 'created_on', 'modified_on', ]
 
 
-class CreateSampleAnnotationSerializer(serializers.Serializer):
+class SampleAnnotationValidator(serializers.Serializer):
     series = serializers.PrimaryKeyRelatedField(queryset=Series.objects.all())
     tag = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all())
     column = serializers.CharField(max_length=512, required=False, default='')
@@ -90,30 +89,6 @@ class CreateSampleAnnotationSerializer(serializers.Serializer):
                      if extra_annotations else None
 
         raise serializers.ValidationError(compact([missing_text, extra_text]))
-
-    def create(self, validated_data):
-        user_id = self.context['user'].id
-        series = validated_data['series']
-        tag = validated_data['tag']
-        column = validated_data.get('column', '')
-        values = validated_data['values']
-
-        series_tag = first(SeriesTag.objects.filter(series=series, tag=tag))
-
-        if not series_tag:
-            # create annotation
-            return save_annotation(user_id, series.id, tag.id, values, column)
-        else:
-            # create validation
-            if series_tag.created_by.id == user_id:
-                raise serializers.ValidationError(
-                    {'non_field_errors': "You can't validate your own annotation"})
-            try:
-                return save_validation(user_id, series_tag, values, column)
-            except SaveValidatonError as err:
-                raise serializers.ValidationError(
-                    {'non_field_errors': unicode(err)})
-
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:

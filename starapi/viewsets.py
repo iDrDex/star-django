@@ -2,7 +2,8 @@ import coreapi
 
 from cacheops import cached_as
 from django.http import JsonResponse, HttpResponse
-from funcy import walk_keys
+from django.db import transaction
+from funcy import walk_keys, first
 from pandas.computation.ops import UndefinedVariableError
 from rest_framework import viewsets, exceptions
 from rest_framework.decorators import list_route
@@ -10,17 +11,19 @@ from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.renderers import CoreJSONRenderer
 from rest_framework.response import Response
 from rest_framework.schemas import SchemaGenerator
+from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 from rest_framework_swagger import renderers
 
-from tags.models import SerieAnnotation, Tag, SampleAnnotation
+from tags.models import SerieAnnotation, Tag, SampleAnnotation, SeriesTag
+from tags.misc import save_annotation, save_validation
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
 from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
 from .serializers import (PlatformSerializer, SeriesSerializer, AnalysisSerializer,
                           AnalysisParamSerializer, SerieAnnotationSerializer,
                           TagSerializer, MetaAnalysisSerializer, PlatformProbeSerializer,
-                          CreateSampleAnnotationSerializer,
+                          SampleAnnotationValidator,
                           )
 
 
@@ -90,14 +93,34 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
         'annotation': 'annotation',
     }
 
+    @transaction.atomic
     def create(self, request):
-        serializer = CreateSampleAnnotationSerializer(
-            data=request.data,
-            context={'user': request.user})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=201)
+        user_id = request.user.id
 
+        serializer = SampleAnnotationValidator(
+            data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        series = serializer.validated_data['series']
+        tag = serializer.validated_data['tag']
+
+        series_tag = first(SeriesTag.objects.filter(series=series, tag=tag))
+
+        if not series_tag:
+            # create annotation
+            save_annotation(user_id, serializer.validated_data, True)
+        else:
+            # create validation
+            if series_tag.created_by.id == user_id:
+                raise ValidationError(
+                    {'non_field_errors': "You can't validate your own annotation"})
+
+            res, err = save_validation(user_id, series_tag, serializer.validated_data, True)
+            if not res:
+                raise ValidationError(
+                    {'non_field_errors': err})
+
+        return Response(status=201)
 
     def list(self, request, format=None):
         """
