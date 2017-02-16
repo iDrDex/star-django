@@ -11,8 +11,9 @@ def forwards_func(apps, schema_editor):
     User = apps.get_model('core', 'User')
     Token = apps.get_model('authtoken', 'Token')
     for user in User.objects.all().iterator():
-        Token.objects.create(user=user,
-                             key=binascii.hexlify(os.urandom(20)).decode())
+        Token.objects.get_or_create(
+            user=user,
+            defaults=dict(key=binascii.hexlify(os.urandom(20)).decode()))
 
 def reverse_func(apps, schema_editor):
     pass
