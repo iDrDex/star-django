@@ -142,7 +142,7 @@ def validate(request):
         'serie': job.series_tag.series,
         'tag': tag,
         'columns': columns,
-        'samples': samples
+        'samples': samples,
     }
 
 @transaction.atomic
