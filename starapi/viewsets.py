@@ -101,16 +101,6 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
         serializer = SampleAnnotationValidator(
             data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        series = serializer.validated_data['series']
-        tag = serializer.validated_data['tag']
-        platform = serializer.validated_data['platform']
-
-        series_tag = SeriesTag.objects.filter(
-            series=series, tag=tag,
-            platform=platform, is_active=True).first()
-
-        serializer.validated_data['series_tag'] = series_tag
         serializer.validated_data['user_id'] = user_id
 
         res, err = save_annotation(serializer.validated_data, from_api=True)

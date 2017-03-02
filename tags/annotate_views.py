@@ -108,14 +108,13 @@ def validate(request):
 
             data = {
                 'user_id': user_id,
-                'series_tag': job.series_tag,
                 'column': request.POST['column'],
                 'regex': request.POST['regex'],
                 'annotations': dict(json.loads(request.POST['values'])),
             }
 
             # Save validation with used column and regex
-            serie_validation, err = save_validation(data)
+            serie_validation, err = save_validation(job.series_tag, data)
             if not serie_validation:
                 messages.error(request, unicode(err))
                 return redirect(request.get_full_path())

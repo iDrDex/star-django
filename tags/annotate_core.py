@@ -4,8 +4,16 @@ from tags.models import (SeriesTag, SampleTag, ValidationJob,
 
 
 def save_annotation(data, from_api=False):
-    if data.get('series_tag') is not None:
-        return save_validation(data, from_api)
+    series = data['series']
+    tag = data['tag']
+    platform = data['platform']
+
+    series_tag = SeriesTag.objects.filter(
+        series=series, tag=tag,
+        platform=platform, is_active=True).first()
+
+    if series_tag:
+        return save_validation(series_tag, data, from_api)
 
     user_id = data['user_id']
     series = data['series']
@@ -35,9 +43,8 @@ def save_annotation(data, from_api=False):
     return sa, ''
 
 
-def save_validation(data, from_api=False):
+def save_validation(series_tag, data, from_api=False):
     user_id = data['user_id']
-    series_tag = data['series_tag']
     annotations = data['annotations'].iteritems()
 
     if series_tag.created_by.id == user_id:
