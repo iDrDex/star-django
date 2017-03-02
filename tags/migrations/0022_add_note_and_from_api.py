@@ -13,8 +13,8 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='seriestag',
-            name='comment',
-            field=models.CharField(max_length=512, null=True, blank=True),
+            name='note',
+            field=models.TextField(null=True, blank=True),
         ),
         migrations.AddField(
             model_name='seriestag',
@@ -23,8 +23,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='serievalidation',
-            name='comment',
-            field=models.CharField(max_length=512, null=True, blank=True),
+            name='note',
+            field=models.TextField(null=True, blank=True),
         ),
         migrations.AddField(
             model_name='serievalidation',

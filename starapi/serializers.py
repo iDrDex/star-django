@@ -1,8 +1,8 @@
-from funcy import all, compact, map
+from funcy import all, compact, map, first
 
 from rest_framework import serializers
 
-from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
+from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe, Sample
 from tags.models import SerieAnnotation, Tag
 
 from .fields import S3Field
@@ -51,39 +51,37 @@ class SerieAnnotationSerializer(serializers.ModelSerializer):
         exclude = ['series_tag', 'created_on', 'modified_on', ]
 
 
+def ids_to_gsms(ids):
+    return Sample.objects.filter(id__in=ids).values_list('gsm_name', flat=True)
+
+
 class SampleAnnotationValidator(serializers.Serializer):
-    series = serializers.PrimaryKeyRelatedField(queryset=Series.objects.all())
     tag = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all())
-    column = serializers.CharField(max_length=512, required=False, allow_blank=True, default='')
-    regex = serializers.CharField(max_length=512, required=False, default='')
-    comment = serializers.CharField(max_length=512, required=False, default='')
-    values = serializers.JSONField()
-    # values field is a json object with sample_id as keys and tag value as values
+    series = serializers.SlugRelatedField(queryset=Series.objects.all(), slug_field='gse_name')
+    platform = serializers.SlugRelatedField(queryset=Platform.objects.all(), slug_field='gpl_name')
+    note = serializers.CharField(required=False, default='')
+    annotations = serializers.JSONField()
 
-    def validate_values(self, value):
-        if not all(isinstance(v, (unicode, str)) for v in value.values()):
+    def validate_annotations(self, annotations):
+        if not all(isinstance(v, (unicode, str)) for v in annotations.values()):
             raise serializers.ValidationError(
-                "Values should be a dict with serie tag id as a key and tag value as a value")
+                "Annotations should be a dict with serie tag id as a key and tag value as a value")
 
-        if not all(isinstance(v, (unicode, str, int)) for v in value.keys()):
+        if not all(isinstance(v, (unicode, str, int)) for v in annotations.keys()):
                 raise serializers.ValidationError(
-                    "Values should be a dict with serie tag id as a key and tag value as a value")
+                    "Annotations should be a dict with serie tag id as a key and tag value as a value")
 
-        return value
+        return annotations
 
     def validate(self, data):
-        samples = data['series'].samples.all()
+        samples = data['series'].samples.values_list('id', 'gsm_name')
 
-        gsm_to_id = {s.gsm_name.upper(): s.id for s in samples}
-        id_to_gsm = {v: k for k, v in gsm_to_id.iteritems()}
+        gsm_to_id = {s[1].upper(): s[0] for s in samples}
 
         try:
-            values = {
-                gsm_to_id[key.upper()]
-                if isinstance(key, (unicode, str)) and key.upper().startswith('GSM')
-                else
-                int(key): value
-                for key, value in data['values'].iteritems()
+            annotations = {
+                gsm_to_id[key.upper()]: value
+                for key, value in data['annotations'].iteritems()
             }
         except KeyError as err:
             raise serializers.ValidationError(
@@ -92,23 +90,18 @@ class SampleAnnotationValidator(serializers.Serializer):
         except ValueError as err:
             raise serializers.ValidationError(unicode(err))
 
-        tagged_samples_ids = set(values.keys())
-        all_samples_ids = set(data['series'].samples.values_list('id', flat=True))
+        tagged_samples_ids = set(annotations.keys())
+        all_samples_ids = set(map(first, samples))
         missing_annotations = all_samples_ids - tagged_samples_ids
-        extra_annotations = tagged_samples_ids - all_samples_ids
 
-        if missing_annotations == extra_annotations == set():
-            data['values'] = values
+        if missing_annotations == set():
+            data['annotations'] = annotations
             return data
 
-        missing_text = "There are samples with ids {0} which are missing their annotation"\
-                       .format(map(id_to_gsm, missing_annotations)) \
-                       if missing_annotations else None
-        extra_text = "There are samples with ids {0} which doesn't belongs to series {1}"\
-                     .format(list(extra_annotations), data['series'].id) \
-                     if extra_annotations else None
-
-        raise serializers.ValidationError(compact([missing_text, extra_text]))
+        raise serializers.ValidationError(
+            ["There are samples with ids {0} which are missing their annotation"
+             .format(ids_to_gsms(missing_annotations))
+             ])
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:

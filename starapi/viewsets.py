@@ -4,6 +4,7 @@ from cacheops import cached_as
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from funcy import walk_keys, first
+
 from pandas.computation.ops import UndefinedVariableError
 from rest_framework import viewsets, exceptions
 from rest_framework.decorators import list_route
@@ -16,7 +17,7 @@ from rest_framework.views import APIView
 from rest_framework_swagger import renderers
 
 from tags.models import SerieAnnotation, Tag, SampleAnnotation, SeriesTag
-from tags.misc import save_annotation, save_validation
+from tags.annotate_core import save_annotation
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
 from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
@@ -103,22 +104,19 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
 
         series = serializer.validated_data['series']
         tag = serializer.validated_data['tag']
+        platform = serializer.validated_data['platform']
 
-        series_tag = first(SeriesTag.objects.filter(series=series, tag=tag))
+        series_tag = SeriesTag.objects.filter(
+            series=series, tag=tag,
+            platform=platform, is_active=True).first()
 
-        if not series_tag:
-            # create annotation
-            save_annotation(user_id, serializer.validated_data, True)
-        else:
-            # create validation
-            if series_tag.created_by.id == user_id:
-                raise ValidationError(
-                    {'non_field_errors': ["You can't validate your own annotation"]})
+        serializer.validated_data['series_tag'] = series_tag
+        serializer.validated_data['user_id'] = user_id
 
-            res, err = save_validation(user_id, series_tag, serializer.validated_data, True)
-            if not res:
-                raise ValidationError(
-                    {'non_field_errors': [err]})
+        res, err = save_annotation(serializer.validated_data, from_api=True)
+        if err:
+            raise ValidationError(
+                {'non_field_errors': [err]})
 
         return Response(status=201)
 
