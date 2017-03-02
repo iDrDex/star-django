@@ -74,7 +74,8 @@ class SampleAnnotationValidator(serializers.Serializer):
         return annotations
 
     def validate(self, data):
-        samples = data['series'].samples.values_list('id', 'gsm_name')
+        samples = data['series'].samples.filter(
+            platform=data['platform']).values_list('id', 'gsm_name')
 
         gsm_to_id = {s[1].upper(): s[0] for s in samples}
 
