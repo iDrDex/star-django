@@ -83,7 +83,7 @@ class SeriesTag(models.Model):
     # (with whatever previous one, not necessarily initial)
     agreed = models.IntegerField(blank=True, null=True)
     fleiss_kappa = models.FloatField(blank=True, null=True)
-    note = models.TextField(blank=True, null=True)
+    note = models.TextField(default='')
     from_api = models.BooleanField(default=False)
 
     class Meta:
@@ -194,7 +194,7 @@ class SerieValidation(models.Model):
     on_demand = models.BooleanField(default=False)
     ignored = models.BooleanField(default=False)
     by_incompetent = models.BooleanField(default=False)
-    note = models.TextField(blank=True, null=True)
+    note = models.TextField(default='')
     from_api = models.BooleanField(default=False)
 
     # Calculated fields

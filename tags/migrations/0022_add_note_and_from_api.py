@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='seriestag',
             name='note',
-            field=models.TextField(null=True, blank=True),
+            field=models.TextField(default=''),
         ),
         migrations.AddField(
             model_name='seriestag',
@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='serievalidation',
             name='note',
-            field=models.TextField(null=True, blank=True),
+            field=models.TextField(default=''),
         ),
         migrations.AddField(
             model_name='serievalidation',
