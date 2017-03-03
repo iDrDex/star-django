@@ -1,8 +1,8 @@
-from funcy import all, compact, map, first
+from funcy import all
 
 from rest_framework import serializers
 
-from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe, Sample
+from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
 from tags.models import SerieAnnotation, Tag
 
 from .fields import S3Field

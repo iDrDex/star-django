@@ -15,10 +15,10 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
 from core.decorators import block_POST_for_incompetent
-from legacy.models import Series, Sample, Platform
+from legacy.models import Series, Sample
 from tags.models import Tag, SeriesTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
-from .tasks import validation_workflow, calc_validation_stats
+from .tasks import calc_validation_stats
 from .annotate_core import save_annotation, save_validation, AnnotationError
 
 

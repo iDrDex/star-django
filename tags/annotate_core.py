@@ -51,7 +51,6 @@ def save_validation(series_tag_id, data):
     series_tag = SeriesTag.objects.get(id=series_tag_id)
     user_id = data['user_id']
 
-    import ipdb; ipdb.set_trace()
     if not data.get('on_demand') and series_tag.created_by_id == user_id:
         raise AnnotationError("You can't validate your own annotation")
 

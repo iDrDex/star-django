@@ -3,7 +3,7 @@ import coreapi
 from cacheops import cached_as
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
-from funcy import walk_keys, first
+from funcy import walk_keys
 
 from pandas.computation.ops import UndefinedVariableError
 from rest_framework import viewsets, exceptions
@@ -16,7 +16,7 @@ from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 from rest_framework_swagger import renderers
 
-from tags.models import SerieAnnotation, Tag, SampleAnnotation, SeriesTag
+from tags.models import SerieAnnotation, Tag, SampleAnnotation
 from tags.annotate_core import save_annotation
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
 from s3field.ops import frame_dumps
