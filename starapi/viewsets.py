@@ -96,17 +96,18 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
 
     @transaction.atomic
     def create(self, request):
-        user_id = request.user.id
 
         serializer = SampleAnnotationValidator(
             data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.validated_data['user_id'] = user_id
+        serializer.validated_data['user_id'] = request.user.id
+        serializer.validated_data['from_api'] = True
 
-        res, err = save_annotation(serializer.validated_data, from_api=True)
-        if err:
+        try:
+            save_annotation(serializer.validated_data)
+        except Exception as err:
             raise ValidationError(
-                {'non_field_errors': [err]})
+                {'non_field_errors': [unicode(err)]})
 
         return Response(status=201)
 
