@@ -50,6 +50,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'rest_framework_swagger',
     'starapi',
+    'rest_framework.authtoken',
 )
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar', 'django_extensions')
@@ -85,6 +86,7 @@ import os
 DATABASES = {
     'default': dj_database_url.config(),
 }
+DATABASES['default']['ENGINE'] = 'transaction_hooks.backends.postgresql_psycopg2'
 
 
 REDIS = {
@@ -273,6 +275,10 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
     'PAGE_SIZE': 10
 }
 

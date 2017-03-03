@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from rest_framework.authtoken.models import Token
 
 from legacy.models import Sample, Series, PlatformProbe, Platform, Analysis
 from tags.models import (Tag, SeriesTag, SerieValidation,
@@ -14,6 +17,11 @@ class User(AbstractUser):
 
     class Meta:
         db_table = 'auth_user'
+
+@receiver(post_save, sender=User)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
 
 
 ATTR_PER_SAMPLE = 32

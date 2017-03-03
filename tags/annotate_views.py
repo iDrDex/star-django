@@ -2,7 +2,7 @@ import json
 import random
 from datetime import timedelta
 
-from funcy import group_by, first, project, select_keys, takewhile, without, distinct, merge, icat
+from funcy import project, select_keys, takewhile, without, distinct, merge, icat
 from handy.decorators import render_to
 
 from django.core.urlresolvers import reverse
@@ -16,9 +16,10 @@ from django.utils import timezone
 
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series, Sample
-from tags.models import Tag, SeriesTag, SampleTag
+from tags.models import Tag, SeriesTag
 from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
-from .tasks import validation_workflow, calc_validation_stats
+from .tasks import calc_validation_stats
+from .annotate_core import save_annotation, save_validation, AnnotationError
 
 
 @login_required
@@ -26,7 +27,30 @@ from .tasks import validation_workflow, calc_validation_stats
 @render_to('tags/annotate.j2')
 def annotate(request):
     if request.method == 'POST':
-        return save_annotation(request)
+        data = {
+            'user_id': request.user.id,
+            'series_id': request.POST['series_id'],
+            'tag_id': request.POST['tag_id'],
+            'column': request.POST['column'],
+            'regex': request.POST['regex'],
+            'annotations': dict(json.loads(request.POST['values'])),
+        }
+
+        try:
+            with transaction.atomic():
+                if SeriesTag.objects.filter(series_id=data['series_id'],
+                                            tag_id=data['tag_id']).exists():
+                    raise AnnotationError(
+                        'Serie %s is already annotated with tag %s'
+                        % (data['series'].gse_name, data['tag'].tag_name))
+
+                save_annotation(data)
+                messages.success(request, 'Saved annotations')
+                return redirect(reverse(annotate) + '?series_id={0}'.format(data['series_id']))
+
+        except AnnotationError as err:
+            messages.error(request, unicode(err))
+            return redirect(request.get_full_path())
 
     series_id = request.GET.get('series_id')
     if not series_id:
@@ -55,56 +79,6 @@ def annotate(request):
     }
 
 
-def save_annotation(request):
-    user_id = request.user.id
-
-    # Do not check input, just crash for now
-    series_id = request.POST['series_id']
-    tag_id = request.POST['tag_id']
-    column = request.POST['column']
-    regex = request.POST['regex']
-    values = dict(json.loads(request.POST['values']))
-
-    with transaction.atomic():
-        # Group samples by platform
-        sample_to_platform = dict(Sample.objects.filter(id__in=values)
-                                        .values_list('id', 'platform_id'))
-        groups = group_by(lambda (id, _): sample_to_platform[id], values.items())
-
-        old_annotation = first(SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id))
-        if old_annotation:
-            messages.error(request, 'Serie %s is already annotated with tag %s'
-                           % (old_annotation.series.gse_name, old_annotation.tag.tag_name))
-            return redirect(request.get_full_path())
-
-        # Save all annotations and used regexes
-        for platform_id, annotations in groups.items():
-            # Do not allow for same user to annotate same serie twice
-            series_tag, _ = SeriesTag.objects.get_or_create(
-                series_id=series_id, platform_id=platform_id, tag_id=tag_id, created_by_id=user_id,
-                defaults=dict(header=column, regex=regex, modified_by_id=user_id)
-            )
-
-            # TODO: check if this can result in sample tags doubling
-            # Create all sample tags
-            sample_tags = SampleTag.objects.bulk_create([
-                SampleTag(sample_id=sample_id, series_tag=series_tag, annotation=annotation,
-                          created_by_id=user_id, modified_by_id=user_id)
-                for sample_id, annotation in annotations
-            ])
-
-            # Create validation job
-            ValidationJob.objects.create(series_tag=series_tag)
-
-            # Create canonical annotation
-            sa = SerieAnnotation.create_from_series_tag(series_tag)
-            sa.fill_samples(sample_tags)
-
-    messages.success(request, 'Saved annotations')
-
-    return redirect(reverse(annotate) + '?series_id=' + series_id)
-
-
 BLIND_FIELDS = {'id', 'gsm_name', 'platform_id'}
 
 @login_required
@@ -112,7 +86,40 @@ BLIND_FIELDS = {'id', 'gsm_name', 'platform_id'}
 @render_to('tags/annotate.j2')
 def validate(request):
     if request.method == 'POST':
-        return save_validation(request)
+        # Do not check input, just crash for now
+
+        user_id = request.user.id
+        job_id = request.POST['job_id']
+        try:
+            with transaction.atomic():
+                # Make database lock on job in queue
+                job = ValidationJob.objects.select_for_update().get(id=job_id, locked_by=user_id)
+                data = {
+                    'user_id': user_id,
+                    'column': request.POST['column'],
+                    'regex': request.POST['regex'],
+                    'annotations': dict(json.loads(request.POST['values'])),
+                }
+
+                # Save validation with used column and regex
+                serie_validation = save_validation(job.series_tag_id, data)
+
+                message = 'Saved {} validations for {}'.format(
+                    len(data['annotations']),
+                    serie_validation.tag.tag_name)
+                messages.success(request, message)
+
+                return redirect(request.get_full_path())
+
+        except ValidationJob.DoesNotExist:
+            # TODO: fast-acquire lock if available
+            messages.error(
+                request,
+                'Validation task timed out. Someone else could have done it.')
+            return redirect(request.get_full_path())
+        except AnnotationError as err:
+            messages.error(request, unicode(err))
+            return redirect(request.get_full_path())
 
     try:
         job = lock_validation_job(request.user.id)
@@ -130,55 +137,6 @@ def validate(request):
         'columns': columns,
         'samples': samples,
     }
-
-def save_validation(request):
-    # Do not check input, just crash for now
-    user_id = request.user.id
-    job_id = request.POST['job_id']
-    column = request.POST['column']
-    regex = request.POST['regex']
-    values = dict(json.loads(request.POST['values']))
-
-    with transaction.atomic():
-        # Make database lock on job in queue
-        try:
-            job = ValidationJob.objects.select_for_update().get(id=job_id, locked_by=user_id)
-        except ValidationJob.DoesNotExist:
-            # TODO: fast-acquire lock if available
-            messages.error(request, 'Validation task timed out. Someone else could have done it.')
-            return
-
-        # Save validation with used column and regex
-        st = job.series_tag
-        serie_validation, created = SerieValidation.objects.get_or_create(
-            series_tag_id=st.id, created_by_id=user_id,
-            defaults=dict(
-                column=column, regex=regex,
-                series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id
-            )
-        )
-        # Do not allow user validate same serie, same platform for same tag twice
-        if not created:
-            messages.error(request, 'You had already validated this annotation')
-            return redirect(request.get_full_path())
-
-        # Create all sample validations
-        SampleValidation.objects.bulk_create([
-            SampleValidation(sample_id=sample_id, serie_validation=serie_validation,
-                             annotation=annotation, created_by_id=user_id)
-            for sample_id, annotation in values.items()
-        ])
-
-        # Remove validation job from queue
-        job.delete()
-
-    message = 'Saved {} validations for {}'.format(len(values), serie_validation.tag.tag_name)
-    messages.success(request, message)
-
-    validation_workflow.delay(serie_validation.pk)
-
-    return redirect(request.get_full_path())
-
 
 @transaction.atomic
 def lock_validation_job(user_id):
@@ -210,7 +168,30 @@ def lock_validation_job(user_id):
 @render_to('tags/annotate.j2')
 def on_demand_validate(request):
     if request.method == 'POST':
-        return save_on_demand_validation(request)
+        series_tag_id = request.POST['series_tag_id']
+        data = {
+            'user_id': request.user.id,
+            'column': request.POST['column'],
+            'regex': request.POST['regex'],
+            'annotations': dict(json.loads(request.POST['values'])),
+            'on_demand': True,
+        }
+
+        # Save validation with used column and regex
+        try:
+            with transaction.atomic():
+                serie_validation = save_validation(series_tag_id, data)
+
+                message = 'Saved {} validations for {}, tagged {}'.format(
+                    len(data['annotations']),
+                    serie_validation.series.gse_name,
+                    serie_validation.tag.tag_name)
+                messages.success(request, message)
+                return redirect(on_demand_result, serie_validation.id)
+
+        except AnnotationError as err:
+            messages.error(request, unicode(err))
+            return redirect(request.get_full_path())
 
     series_tag_id = request.GET.get('series_tag_id')
     if series_tag_id:
@@ -239,38 +220,6 @@ def on_demand_validate(request):
         'columns': columns,
         'samples': samples,
     }
-
-def save_on_demand_validation(request):
-    user_id = request.user.id
-    series_tag_id = request.POST['series_tag_id']
-    column = request.POST['column']
-    regex = request.POST['regex']
-    values = dict(json.loads(request.POST['values']))
-
-    with transaction.atomic():
-        # Save validation with used column and regex
-        st = SeriesTag.objects.get(pk=series_tag_id)
-        serie_validation = SerieValidation.objects.create(
-            series_tag_id=st.id, created_by_id=user_id,
-            column=column, regex=regex,
-            series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id,
-            on_demand=True
-        )
-
-        # Create all sample validations
-        SampleValidation.objects.bulk_create([
-            SampleValidation(sample_id=sample_id, serie_validation=serie_validation,
-                             annotation=annotation, created_by_id=user_id)
-            for sample_id, annotation in values.items()
-        ])
-
-    message = 'Saved {} validations for {}, tagged {}'.format(
-        len(values), st.series.gse_name, st.tag.tag_name)
-    messages.success(request, message)
-
-    validation_workflow.delay(serie_validation.pk)
-
-    return redirect(on_demand_result, serie_validation.id)
 
 @login_required
 def on_demand_result(request, serie_validation_id):

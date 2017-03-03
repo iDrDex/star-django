@@ -2,24 +2,29 @@ import coreapi
 
 from cacheops import cached_as
 from django.http import JsonResponse, HttpResponse
+from django.db import transaction
 from funcy import walk_keys
+
 from pandas.computation.ops import UndefinedVariableError
 from rest_framework import viewsets, exceptions
 from rest_framework.decorators import list_route
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.renderers import CoreJSONRenderer
 from rest_framework.response import Response
 from rest_framework.schemas import SchemaGenerator
+from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 from rest_framework_swagger import renderers
 
-from tags.models import SerieAnnotation, Tag, SampleAnnotation
+from tags.models import SerieAnnotation, Tag, SampleAnnotation, SeriesTag
+from tags.annotate_core import save_annotation, save_validation, AnnotationError
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
 from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
 from .serializers import (PlatformSerializer, SeriesSerializer, AnalysisSerializer,
                           AnalysisParamSerializer, SerieAnnotationSerializer,
                           TagSerializer, MetaAnalysisSerializer, PlatformProbeSerializer,
+                          SampleAnnotationValidator,
                           )
 
 
@@ -74,6 +79,7 @@ class SerieAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SerieAnnotationSerializer
 
 class SampleAnnotationViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticatedOrReadOnly]
     KEYS = {
         'serie_annotation__tag__tag_name': 'tag_name',
         'serie_annotation__tag_id': 'tag_id',
@@ -87,6 +93,37 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
         'sample__platform_id': 'platform_id',
         'annotation': 'annotation',
     }
+
+    @transaction.atomic
+    def create(self, request):
+        serializer = SampleAnnotationValidator(
+            data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        series_tag = SeriesTag.objects.filter(
+            series=data['series'],
+            tag=data['tag'],
+            platform=data['platform']).first()
+
+        data['user_id'] = request.user.id
+        data['from_api'] = True
+        data['tag_id'] = data['tag'].id
+        data['series_id'] = data['series'].id
+        del data['platform']
+        del data['series']
+        del data['tag']
+
+        try:
+            if series_tag:
+                save_validation(series_tag.id, data)
+            else:
+                save_annotation(data)
+        except AnnotationError as err:
+            raise ValidationError(
+                {'non_field_errors': [unicode(err)]})
+
+        return Response(status=201)
 
     def list(self, request, format=None):
         """

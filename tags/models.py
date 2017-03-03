@@ -83,6 +83,8 @@ class SeriesTag(models.Model):
     # (with whatever previous one, not necessarily initial)
     agreed = models.IntegerField(blank=True, null=True)
     fleiss_kappa = models.FloatField(blank=True, null=True)
+    note = models.TextField(default='')
+    from_api = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'series_tag'
@@ -192,13 +194,14 @@ class SerieValidation(models.Model):
     on_demand = models.BooleanField(default=False)
     ignored = models.BooleanField(default=False)
     by_incompetent = models.BooleanField(default=False)
+    note = models.TextField(default='')
+    from_api = models.BooleanField(default=False)
 
     # Calculated fields
     samples_total = models.IntegerField(null=True)
     samples_concordant = models.IntegerField(null=True)
     annotation_kappa = models.FloatField(blank=True, null=True)
     best_kappa = models.FloatField(blank=True, null=True)
-
     agrees_with = models.ForeignKey('self', blank=True, null=True, on_delete=models.SET_NULL)
 
     class Meta:
