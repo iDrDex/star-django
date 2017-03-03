@@ -16,8 +16,8 @@ from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 from rest_framework_swagger import renderers
 
-from tags.models import SerieAnnotation, Tag, SampleAnnotation
-from tags.annotate_core import save_annotation
+from tags.models import SerieAnnotation, Tag, SampleAnnotation, SeriesTag
+from tags.annotate_core import save_annotation, save_validation, AnnotationError
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
 from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
@@ -96,16 +96,30 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
 
     @transaction.atomic
     def create(self, request):
-
         serializer = SampleAnnotationValidator(
             data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.validated_data['user_id'] = request.user.id
-        serializer.validated_data['from_api'] = True
+        data = serializer.validated_data
+
+        series_tag = SeriesTag.objects.filter(
+            series=data['series'],
+            tag=data['tag'],
+            platform=data['platform']).first()
+
+        data['user_id'] = request.user.id
+        data['from_api'] = True
+        data['tag_id'] = data['tag'].id
+        data['series_id'] = data['series'].id
+        del data['platform']
+        del data['series']
+        del data['tag']
 
         try:
-            save_annotation(serializer.validated_data)
-        except Exception as err:
+            if series_tag:
+                save_validation(series_tag.id, data)
+            else:
+                save_annotation(data)
+        except AnnotationError as err:
             raise ValidationError(
                 {'non_field_errors': [unicode(err)]})
 

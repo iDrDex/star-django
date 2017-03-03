@@ -86,6 +86,7 @@ import os
 DATABASES = {
     'default': dj_database_url.config(),
 }
+DATABASES['default']['ENGINE'] = 'transaction_hooks.backends.postgresql_psycopg2'
 
 
 REDIS = {

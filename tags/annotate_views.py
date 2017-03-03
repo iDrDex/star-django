@@ -87,8 +87,6 @@ BLIND_FIELDS = {'id', 'gsm_name', 'platform_id'}
 def validate(request):
     if request.method == 'POST':
         # Do not check input, just crash for now
-        # we can't use SampleAnnotationValidator for this data
-        # because series and tag are passing implicitly via job param
 
         user_id = request.user.id
         job_id = request.POST['job_id']

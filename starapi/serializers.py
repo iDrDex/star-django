@@ -1,4 +1,4 @@
-from funcy import all
+from funcy import all, walk_keys
 
 from rest_framework import serializers
 
@@ -70,11 +70,10 @@ class SampleAnnotationValidator(serializers.Serializer):
         return annotations
 
     def validate(self, data):
-        samples = data['series'].samples.filter(
-            platform=data['platform']).values('id', 'gsm_name')
+        gsm_to_id = dict(data['series'].samples.filter(
+            platform=data['platform']).values_list('gsm_name', 'id'))
 
-        all_samples = {s['gsm_name'] for s in samples}
-        gsm_to_id = {s['gsm_name']: s['id'] for s in samples}
+        all_samples = set(gsm_to_id)
 
         tagged_samples = set(data['annotations'])
 
@@ -88,17 +87,11 @@ class SampleAnnotationValidator(serializers.Serializer):
         extra_annotations = tagged_samples - all_samples
         if extra_annotations:
             raise serializers.ValidationError(
-                "There is samples with id {0} which doesn't belongs to series {1}"
-                .format(extra_annotations, data['series'].id))
+                ["There is samples with id {0} which doesn't belongs to series {1}"
+                 .format(extra_annotations, data['series'].id)
+                 ])
 
-        data['annotations'] = {gsm_to_id[key]: value
-                               for key, value in data['annotations'].iteritems()}
-        del data['platform']
-        data['tag_id'] = data['tag'].id
-        del data['tag']
-        data['series_id'] = data['series'].id
-        del data['series']
-
+        data['annotations'] = walk_keys(gsm_to_id, data['annotations'])
         return data
 
 class TagSerializer(serializers.ModelSerializer):
