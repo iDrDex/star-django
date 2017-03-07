@@ -141,7 +141,7 @@ def _update_user_stats(serie_validation):
     stats.save()
 
     # Update annotation author payment stats
-    if serie_validation.concordant:
+    if serie_validation.concordant and serie_validation.series_tag.created_by_id:
         author_stats = lock_author_stats(serie_validation.series_tag)
         author_stats.earn_annotations(serie_validation.samples_total)
         author_stats.save()
