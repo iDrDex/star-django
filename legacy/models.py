@@ -67,6 +67,8 @@ class Sample(models.Model):
     # NOTE: leaving it as is for now to not mess with sample_view
     # is_active = models.BooleanField(default=True)
     deleted = models.CharField(max_length=1, blank=True, null=True)
+    # This field store 'T' for deleted itmes.
+    # Active items have 'F' or None
 
     class Meta:
         db_table = 'sample'

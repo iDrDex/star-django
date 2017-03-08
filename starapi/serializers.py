@@ -2,7 +2,7 @@ from funcy import all, walk_keys
 
 from rest_framework import serializers
 
-from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
+from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe, Sample
 from tags.models import SerieAnnotation, Tag
 
 from .fields import S3Field
@@ -93,6 +93,15 @@ class SampleAnnotationValidator(serializers.Serializer):
 
         data['annotations'] = walk_keys(gsm_to_id, data['annotations'])
         return data
+
+class SampleSerializer(serializers.ModelSerializer):
+    series = serializers.SlugRelatedField(slug_field='gse_name', read_only=True)
+    platform = serializers.SlugRelatedField(slug_field='gpl_name', read_only=True)
+    attrs = serializers.JSONField()
+
+    class Meta:
+        model = Sample
+        fields = ['series', 'platform', 'attrs', 'gsm_name']
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:

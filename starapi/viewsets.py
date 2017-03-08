@@ -18,13 +18,13 @@ from rest_framework_swagger import renderers
 
 from tags.models import SerieAnnotation, Tag, SampleAnnotation, SeriesTag
 from tags.annotate_core import save_annotation, save_validation, AnnotationError
-from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe
+from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe, Sample
 from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
 from .serializers import (PlatformSerializer, SeriesSerializer, AnalysisSerializer,
                           AnalysisParamSerializer, SerieAnnotationSerializer,
                           TagSerializer, MetaAnalysisSerializer, PlatformProbeSerializer,
-                          SampleAnnotationValidator,
+                          SampleAnnotationValidator, SampleSerializer,
                           )
 
 
@@ -161,6 +161,9 @@ class PlatformProbeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PlatformProbe.objects.all()
     serializer_class = PlatformProbeSerializer
 
+class SampleViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Sample.objects.exclude(deleted='T').select_related('platform', 'series')
+    serializer_class = SampleSerializer
 
 class SwaggerSchemaView(APIView):
     _ignore_model_permissions = True
