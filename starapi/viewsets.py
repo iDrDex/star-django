@@ -1,4 +1,5 @@
 import coreapi
+import django_filters
 
 from cacheops import cached_as
 from django.http import JsonResponse, HttpResponse
@@ -161,9 +162,18 @@ class PlatformProbeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PlatformProbe.objects.all()
     serializer_class = PlatformProbeSerializer
 
+class SampleFilter(django_filters.rest_framework.FilterSet):
+    series = django_filters.CharFilter(name='series__gse_name')
+    platform = django_filters.CharFilter(name='platform__gpl_name')
+
+    class Meta:
+        model = Sample
+        fields = ('series', 'platform')
+
 class SampleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Sample.objects.exclude(deleted='T').select_related('platform', 'series')
     serializer_class = SampleSerializer
+    filter_class = SampleFilter
 
 class SwaggerSchemaView(APIView):
     _ignore_model_permissions = True
