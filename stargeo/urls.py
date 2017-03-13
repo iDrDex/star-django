@@ -3,8 +3,8 @@ from django.contrib import admin
 from registration.backends.hmac.views import RegistrationView
 
 from core.forms import PasswordResetForm, MyRegistrationForm, MyAuthenticationForm
-from starapi.routers import router
-from starapi.viewsets import SwaggerSchemaView
+from api.routers import router
+from api.viewsets import SwaggerSchemaView
 
 urlpatterns = patterns('',  # noqa
     url(r'^accounts/login/$', 'django.contrib.auth.views.login',

@@ -41,16 +41,16 @@ INSTALLED_APPS = (
     'django_jinja.contrib._humanize',
     'bootstrapform_jinja',
     'datatableview',
+    'rest_framework',
+    'rest_framework_swagger',
+    'rest_framework.authtoken',
     'cacheops',
 
     'core',
     'legacy',
     'tags',
     'analysis',
-    'rest_framework',
-    'rest_framework_swagger',
-    'starapi',
-    'rest_framework.authtoken',
+    'api',
 )
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar', 'django_extensions')
