@@ -1,4 +1,4 @@
-from funcy import group_by, cached_property, partial
+from funcy import group_by, cached_property, partial, walk_keys, map
 from datatableview.views import DatatableView
 from datatableview.utils import DatatableOptions
 
@@ -10,15 +10,21 @@ from tags.models import SeriesTag, SerieAnnotation, SerieValidation, \
 from .tasks import validation_workflow
 
 
-# NOTE: to filter in a special way on GSE\d+ and GPL\d+ we parse options diffrently,
-#       and later filter queryset by that.
-
 class AnnotationsSearchOptions(DatatableOptions):
     def _normalize_options(self, query, options):
+        """
+        Here we parse some search tokens diffrently to enable filtering:
+            GSE\d+ and GPL\d+    filter by specific serie or platform
+            tag=\w+              filters by tag
+            valid                selects validated annotations
+        """
         options = DatatableOptions._normalize_options(self, query, options)
 
-        filters = group_by(r'^(GSE|GPL|)', options['search'].split())
-        options['search'] = ''.join(filters.pop('', []))
+        filters = group_by(r'^(GSE|GPL|[Tt]ag=|valid)', options['search'].split())
+        options['search'] = ' '.join(filters.pop(None, []))
+
+        filters = walk_keys(unicode.lower, filters)
+        filters['tag'] = map(r'^[Tt]ag=(.*)', filters.pop('tag=', []))
         options['filters'] = filters
 
         return options
@@ -49,10 +55,14 @@ class SeriesAnnotations(DatatableView):
     def apply_queryset_options(self, queryset):
         options = self._get_datatable_options()
 
-        if options['filters']['GSE']:
-            queryset = queryset.filter(series__gse_name__in=options['filters']['GSE'])
-        if options['filters']['GPL']:
-            queryset = queryset.filter(platform__gpl_name__in=options['filters']['GPL'])
+        if options['filters']['gse']:
+            queryset = queryset.filter(series__gse_name__in=options['filters']['gse'])
+        if options['filters']['gpl']:
+            queryset = queryset.filter(platform__gpl_name__in=options['filters']['gpl'])
+        if options['filters']['tag']:
+            queryset = queryset.filter(tag__tag_name__in=options['filters']['tag'])
+        if options['filters']['valid']:
+            queryset = queryset.filter(best_cohens_kappa=1)
 
         return super(SeriesAnnotations, self).apply_queryset_options(queryset)
 
