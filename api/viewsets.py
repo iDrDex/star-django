@@ -47,11 +47,12 @@ class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
     @list_route()
     def df(self, request, format=None):
         """
-        Download analysis data frame  
-        **Example of valid filter data**  
-        specie: `human`  
-        case_query: `PHT == 'PHT' or hypertension == 'hypertension'`  
-        control_query: `PHT_Control == 'PHT_Control' or hypertension_control == 'hypertension_control'`  
+        Download analysis data frame
+        **Example of valid filter data**
+        specie: `human`
+        case_query: `DF == 'DF' or hypertension == 'hypertension'`
+        control_query: `PHT_Control == 'PHT_Control'
+                            or hypertension_control == 'hypertension_control'`
         You can copy it and paste to inputs below to perform a API request.
         """
         serializer = AnalysisParamSerializer(data=request.GET)
@@ -128,8 +129,8 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
 
     def list(self, request, format=None):
         """
-        Download all samples annotations.  
-        This API method return the huge amout of data.  
+        Download all samples annotations.
+        This API method return the huge amout of data.
         Please use [this link](/api/sample_annotations.json) to dowload all samples annotations.
         """
         @cached_as(SampleAnnotation)

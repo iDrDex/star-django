@@ -1,6 +1,6 @@
 import os
 import honcho.environ
-from .celery import app as celery_app
+from .celery import app as celery_app  # noqa
 
 
 def load_env(filename):

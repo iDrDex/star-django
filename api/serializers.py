@@ -60,12 +60,11 @@ class SampleAnnotationValidator(serializers.Serializer):
 
     def validate_annotations(self, annotations):
         if not all(isinstance(v, (unicode, str)) for v in annotations.values()):
-            raise serializers.ValidationError(
-                "Annotations should be a dict with serie tag id as a key and tag value as a value")
+            raise serializers.ValidationError("Annotations should be a dict of GSMs -> tag values")
 
         if not all(isinstance(v, (unicode, str, int)) for v in annotations.keys()):
                 raise serializers.ValidationError(
-                    "Annotations should be a dict with serie tag id as a key and tag value as a value")
+                    "Annotations should be a dict of GSMs -> tag values")
 
         return annotations
 
