@@ -83,7 +83,7 @@ class SeriesTag(models.Model):
     # (with whatever previous one, not necessarily initial)
     agreed = models.IntegerField(blank=True, null=True)
     fleiss_kappa = models.FloatField(blank=True, null=True)
-    note = models.TextField(default='')
+    note = models.TextField(blank=True, default='')
     from_api = models.BooleanField(default=False)
 
     class Meta:
@@ -93,7 +93,7 @@ class SeriesTag(models.Model):
 class SampleTag(models.Model):
     sample = models.ForeignKey('legacy.Sample', blank=True, null=True)
     series_tag = models.ForeignKey(SeriesTag, blank=True, null=True, related_name='sample_tags')
-    annotation = models.TextField(blank=True)
+    annotation = models.TextField(blank=True, default='')
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey('core.User', db_column='created_by', blank=True, null=True,
@@ -194,7 +194,7 @@ class SerieValidation(models.Model):
     on_demand = models.BooleanField(default=False)
     ignored = models.BooleanField(default=False)
     by_incompetent = models.BooleanField(default=False)
-    note = models.TextField(default='')
+    note = models.TextField(blank=True, default='')
     from_api = models.BooleanField(default=False)
 
     # Calculated fields
@@ -223,7 +223,7 @@ class SerieValidation(models.Model):
 class SampleValidation(models.Model):
     sample = models.ForeignKey('legacy.Sample', blank=True, null=True)
     serie_validation = models.ForeignKey(SerieValidation, related_name='sample_validations')
-    annotation = models.TextField(blank=True)
+    annotation = models.TextField(blank=True, default='')
     created_on = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('core.User')
 
@@ -284,7 +284,7 @@ class SerieAnnotation(models.Model):
 class SampleAnnotation(models.Model):
     serie_annotation = models.ForeignKey(SerieAnnotation, related_name='sample_annotations')
     sample = models.ForeignKey('legacy.Sample')
-    annotation = models.TextField(blank=True)
+    annotation = models.TextField(blank=True, default='')
 
     objects = DataFrameManager()
 
