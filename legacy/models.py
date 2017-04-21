@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from funcy import distinct, keep, flatten
+from funcy import distinct, keep, re_all
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -52,7 +52,7 @@ class Series(models.Model):
         if len(taxid) == 1:
             self.specie = SPECIES.get(taxid[0])
 
-        self.platforms = flatten(p.split('|\n|') for p in self.attrs['platform_id'].split('---'))
+        self.platforms = re_all(r'GPL\d+', self.attrs['platform_id'])
         self.samples_count = len(self.attrs['sample_id'].split())
 
         super(Series, self).save(**kwargs)
