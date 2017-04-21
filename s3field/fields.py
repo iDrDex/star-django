@@ -20,6 +20,10 @@ class Resource(dict):
         assert {'bucket', 'key', 'name', 'size'} <= set(self)
 
     @property
+    def url(self):
+        return "http://{bucket}.s3.amazonaws.com/{key}".format(**self)
+
+    @property
     def human_size(self):
         if self['size'] == 0:
             return '0b'

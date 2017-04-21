@@ -74,9 +74,6 @@ def clean_key_name(key_name):
     return key_name[:MAX_KEY_LEN].strip(u'._/')
 
 
-def generate_url(desc):
-    return "http://{bucket}.s3.amazonaws.com/{key}".format(**desc)
-
 def frame_dumps(df):
     return df.to_json(orient='split')
 
