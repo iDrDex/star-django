@@ -21,7 +21,6 @@
                 columnDefs: [
                     {
                         render: function ( data, type, row ) {
-                            console.log(row)
                             return '<a href="/annotations/' + row[0] + '/samples/">' + data + '</a>';
                         },
                         targets: [4]
