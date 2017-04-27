@@ -44,16 +44,17 @@
     </p>
     <table class="table table-striped table-bordered" style="width: auto;">
         {# <tr><th>Pattern</th><th>Description</th></tr> #}
-        <tr><td>GSE&lt;digits&gt;</td><td>filter by serie</td></tr>
-        <tr><td>GPL&lt;digits&gt;</td><td>filter by platform</td></tr>
-        <tr><td>tag=&lt;tag name&gt;</td><td>filter by platform</td></tr>
-        <tr><td>valid</td><td>select only validated annotations</td></tr>
+        <tr><td><code>GSE&lt;digits&gt;</code></td><td>filter by serie</td></tr>
+        <tr><td><code>GPL&lt;digits&gt;</code></td><td>filter by platform</td></tr>
+        <tr><td><code>tag=&lt;tag name&gt;</code></td><td>filter by platform</td></tr>
+        <tr><td><code>valid</code></td><td>select only validated annotations</td></tr>
+        <tr><td><code>novalid</code></td><td>select not yet validated annotations</td></tr>
     </table>
     <p>Special search terms can be used more than once and combined with each other. Here are some examples:</p>
     <table class="table table-striped table-bordered" style="width: auto;">
-        <tr><td>GSE425 GSE24384</td><td>show annotations for any of these series</td></tr>
-        <tr><td>GSE21997 GPL7504</td><td>filter by both serie and platform</td></tr>
-        <tr><td>GSE25001 dengue</td><td>filter by serie and then search "dengue" in any field</td></tr>
-        <tr><td>tag=DF tag=DHF valid</td><td>select valild annotations of either DF or DHF tag</td></tr>
+        <tr><td><code>GSE425 GSE24384</code></td><td>show annotations for any of these series</td></tr>
+        <tr><td><code>GSE21997 GPL7504</code></td><td>filter by both serie and platform</td></tr>
+        <tr><td><code>GSE25001 dengue</code></td><td>filter by serie and then search "dengue" in any field</td></tr>
+        <tr><td><code>tag=DF tag=DHF valid</code></td><td>select valild annotations of either DF or DHF tag</td></tr>
     </table>
 {% endblock %}
