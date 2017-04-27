@@ -20,7 +20,7 @@ class AnnotationsSearchOptions(DatatableOptions):
         """
         options = DatatableOptions._normalize_options(self, query, options)
 
-        filters = group_by(r'^(GSE|GPL|[Tt]ag=|valid)', options['search'].split())
+        filters = group_by(r'^(GSE|GPL|[Tt]ag=|valid|novalid)', options['search'].split())
         options['search'] = ' '.join(filters.pop(None, []))
 
         filters = walk_keys(unicode.lower, filters)
@@ -63,6 +63,8 @@ class SeriesAnnotations(DatatableView):
             queryset = queryset.filter(tag__tag_name__in=options['filters']['tag'])
         if options['filters']['valid']:
             queryset = queryset.filter(best_cohens_kappa=1)
+        if options['filters']['novalid']:
+            queryset = queryset.exclude(best_cohens_kappa=1)
 
         return super(SeriesAnnotations, self).apply_queryset_options(queryset)
 
