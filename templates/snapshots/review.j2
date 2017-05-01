@@ -1,0 +1,79 @@
+{% extends "datatable.j2" %}
+
+{% set page_title = 'Reviewing new snapshot' %}
+
+{% block header %}
+    <h2 class="font-light" style="display: inline-block; margin-bottom: 0">{{ page_title }}</h2>
+
+    {% if snapshot %}
+    <form id="snapshot" action="{{ url('snapshot') }}" method="POST" class="form-inline pull-right">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        {% if not snapshot.empty %}
+        <button class="btn btn-primary" type="submit" name="action" value="freeze">
+            <i class="fa fa-lock"></i>
+            <span class="bold">Freeze</span>
+        </button>
+        {% endif %}
+        <button class="btn btn-danger" type="submit" name="action" value="delete">
+            <i class="fa fa-times"></i>
+            <span class="bold">Delete</span>
+        </button>
+    </form>
+    {% endif %}
+{% endblock %}
+
+
+{% block messages %}
+    {{ super() }}
+    {% if not snapshot %}
+        <div class="alert alert-warning">You don't have an active unfrozen snapshot right now. Go to <a href="{{ url('series_annotations') }}">annotations page</a> and make one.</div>
+    {% elif snapshot.empty %}
+        <div class="alert alert-warning">Your unfrozen snapshot is empty right now. Go to <a href="{{ url('series_annotations') }}">annotations page</a> and add some searches to it.</div>
+    {% else %}
+        <div class="alert alert-info">Here you can review captured annotations, remove unintended searches or return to <a href="{{ url('series_annotations') }}">annotations page</a> to add something. When you ready just press "Freeze" button above.</div>
+        {% if object_list.exclude(best_cohens_kappa=1) %}
+            <div class="alert alert-warning">You captured some annotations that were not validated properly - their best cohens kappa is less than 1. Note that you can add <code>valid</code> keyword to your search to skip not invalidated entries.</div>
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+
+{% block main %}
+    {% if snapshot %}
+        {{ super() }}
+    {% endif %}
+{% endblock %}
+
+
+{% block content %}
+    <form id="snapshot" action="{{ url('snapshot') }}" method="POST" class="form-inline searches">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="hidden" name="action" value="remove">
+        <input type="hidden" name="search" value="">
+            Searches:
+        {% for search in snapshot.metadata.searches %}
+            <span class="btn btn-warning2 btn-sm">
+                {{ search }}
+                <button class="btn-none" search="{{ search }}">
+                    <i class="fa fa-times"></i>
+                </button>
+            </span>
+        {% endfor %}
+    </form>
+    <script type="text/javascript">
+        $('.searches button').click(function () {
+            $('.searches [name=search]').val($(this).attr('search'));
+        })
+    </script>
+    <style type="text/css">
+        .alert a {text-decoration: underline}
+        .btn-none {background-color: transparent; border: none; padding: 0;}
+        .searches {margin-bottom: 1em}
+        .searches .btn {cursor: default;}
+        .searches button {margin-left: 3px; margin-right: -3px;}
+        .searches .fa  {color: white;}
+    </style>
+    {{ super() }}
+{% endblock %}

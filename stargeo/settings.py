@@ -266,6 +266,7 @@ AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY = os.environ['AWS_CREDENTIALS'].split('
 S3_BUCKETS = {
     'legacy.analysis.df': os.environ['AWS_BUCKET_TEMPLATE'] % 'analysis-df',
     'legacy.analysis.fold_changes': os.environ['AWS_BUCKET_TEMPLATE'] % 'fold-changes',
+    'tags.snapshot.files': os.environ['AWS_BUCKET_TEMPLATE'] % 'snapshots',
 }
 
 # Django REST framework settings

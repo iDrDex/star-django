@@ -1,0 +1,35 @@
+{% extends "base.j2" %}
+
+{% set page_title = snapshot.title or 'Snapshot #%s' % snapshot.pk %}
+
+
+{% block main %}
+<div class="hpanel"><div class="panel-body">
+    <table class="table table-bordered table-striped" style="width: auto; margin-bottom: 0">
+        {% if snapshot.title %}<tr><th>Title</th><td>{{ snapshot.title }}</td></tr>{% endif %}
+        {% if snapshot.description %}<tr><th>Description</th>
+            <td>{{ snapshot.description }}</td></tr>{% endif %}
+        <tr><th>Author</th><td>{{ snapshot.author.first_name }} {{ snapshot.author.last_name }}</td></tr>
+        <tr><th>Frozen On</th><td>{{ snapshot.frozen_on.strftime('%Y-%m-%d %T') }}</td></tr>
+        <tr><th>Files</th><td>
+            {% set delim = joiner() %}
+            {% for f in snapshot.files -%}
+                {{ delim() }}<a href="{{ url('snapshot_file', snapshot.pk, f.format) }}">{{ f.format or f.name }}</a> ({{ f.human_size }})
+            {%- endfor %}
+        </td></tr>
+    </table>
+</div></div>
+
+{% if form %}
+<div class="hpanel"><div class="panel-body">
+    <h2>Update title and description</h2>
+    <form class="form" role="form" method="post">
+        {% csrf_token %}
+        {{ form|bootstrap }}
+        <div class="form-group">
+            <input type="submit" class="btn btn-primary" value="Save" />
+        </div>
+    </form>
+</div></div>
+{% endif %}
+{% endblock %}

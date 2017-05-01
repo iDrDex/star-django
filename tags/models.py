@@ -1,9 +1,16 @@
 import re
+from collections import OrderedDict
 from decimal import Decimal
+import json
+from funcy import icat, walk_keys
+
 from django.db import models
 from django.db.models import Count
+from django.utils import timezone
+
 from handy.models import JSONField
 from django_pandas.managers import DataFrameManager
+from s3field import S3MultiField
 
 
 ANNOTATION_REWARD = Decimal('0.05')
@@ -290,3 +297,105 @@ class SampleAnnotation(models.Model):
 
     class Meta:
         db_table = 'sample_annotation'
+
+
+class Snapshot(models.Model):
+    author = models.ForeignKey('core.User')
+    title = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default='')
+    metadata = JSONField(default={})
+    created_on = models.DateTimeField(auto_now_add=True)
+    modified_on = models.DateTimeField(auto_now=True)
+
+    frozen = models.BooleanField(default=False)
+    frozen_on = models.DateTimeField(blank=True, null=True)
+    files = S3MultiField(compress='gzip')
+
+    class Meta:
+        db_table = 'snapshot'
+
+    @property
+    def empty(self):
+        return not self.metadata.get('searches')
+
+    def add(self, search, qs):
+        if self.frozen:
+            raise ValueError("Can't add anything to frozen snapshot")
+        if not search:
+            raise ValueError("Should not add all annotations to snapshot")
+
+        if search in self.metadata.get('searches', {}):
+            return False, "This search is already in"
+        ids = list(qs.values_list('id', flat=True))
+        if set(ids) <= set(self.metadata.get('ids', [])):
+            return False, "All matched annotations are already in"
+
+        self.metadata.setdefault('searches', {})
+        self.metadata['searches'][search] = {'count': qs.count(), 'ids': ids}
+        self.metadata.setdefault('ids', [])
+        self.metadata['ids'].extend(i for i in ids if i not in self.metadata['ids'])
+        return True, ""
+
+    def remove(self, search):
+        if search not in self.metadata.get('searches', {}):
+            return False, "This search is not in"
+
+        self.metadata['searches'].pop(search)
+        self.metadata['ids'] = list(set(icat(s['ids'] for s in self.metadata['searches'].values())))
+        return True, ""
+
+    def freeze(self):
+        filename = '%s-%s' % (self.pk, self.title) if self.title else str(self.pk)
+        data = self._get_data()
+        # JSON
+        json_data = json.dumps(data, ensure_ascii=True, separators=(',', ':'))
+        self.upload_files({'data': json_data, 'name': filename + '.json.gz', 'format': 'json'},
+                          lazy=True)
+        # CSV
+        csv_data = csv_dumps(data)
+        self.upload_files({'data': csv_data, 'name': filename + '.csv.gz', 'format': 'csv'},
+                          lazy=True)
+
+        # Freeze
+        self.frozen = True
+        self.frozen_on = timezone.now()
+        self.save()
+
+    # Prepare data
+    KEYS = OrderedDict([
+        ('sample_id', 'sample_id'),
+        ('sample__gsm_name', 'gsm_name'),
+        ('annotation', 'annotation'),
+        ('serie_annotation_id', 'serie_annotation_id'),
+        ('serie_annotation__series_id', 'serie_id'),
+        ('serie_annotation__series__gse_name', 'gse_name'),
+        ('sample__platform_id', 'platform_id'),
+        ('sample__platform__gpl_name', 'gpl_name'),
+        ('serie_annotation__tag_id', 'tag_id'),
+        ('serie_annotation__tag__tag_name', 'tag_name'),
+        ('serie_annotation__tag__concept_full_id', 'tag_concept_full_id'),
+    ])
+
+    def _get_data(self):
+        qs = SampleAnnotation.objects.values(*self.KEYS).prefetch_related(
+            'sample',
+            'sample__platform',
+            'serie_annotation__tag',
+        ).filter(serie_annotation_id__in=self.metadata.get('ids', []))
+        return [walk_keys(self.KEYS, annotation) for annotation in qs.iterator()]
+
+
+import csv
+from cStringIO import StringIO
+from contextlib import closing
+
+def csv_dumps(data):
+    if not data:
+        return ''
+    with closing(StringIO()) as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=data[0].keys())
+
+        writer.writeheader()
+        for row in data:
+            writer.writerow(row)
+        return csvfile.getvalue()

@@ -6,6 +6,7 @@ from core.forms import PasswordResetForm, MyRegistrationForm, MyAuthenticationFo
 from api.routers import router
 from api.viewsets import SwaggerSchemaView
 
+
 urlpatterns = patterns('',  # noqa
     url(r'^accounts/login/$', 'django.contrib.auth.views.login',
         {'authentication_form': MyAuthenticationForm}, name='login'),
@@ -39,12 +40,19 @@ urlpatterns = patterns('',  # noqa
         name='on_demand_result'),
     url(r'^competence/$', 'tags.annotate_views.competence', name='competence'),
 
+    # Annotations reviews and snapshots
     url(r'^annotations/$', 'tags.review_views.series_annotations',
         name='series_annotations'),
     url(r'^annotations/(\d+)/samples/$', 'tags.review_views.sample_annotations',
         name='sample_annotations'),
     url(r'^annotations/ignore/(\d+)/$', 'tags.review_views.ignore', name='ignore_validation'),
+    url(r'^snapshot/$', 'tags.review_views.snapshot', name='snapshot'),
+    url(r'^snapshots/review/$', 'tags.review_views.review_snapshot', name='review_snapshot'),
+    url(r'^snapshots/(\d+)/$', 'tags.review_views.snapshot_detail', name='snapshot_detail'),
+    url(r'^snapshots/(\d+)\.(\w+)', 'tags.review_views.snapshot_file', name='snapshot_file'),
+    url(r'^my/snapshots/$', 'tags.review_views.my_snapshots', name='my_snapshots'),
 
+    # Analysis
     url(r'^analysis/$', 'analysis.views.index', name='analysis'),
     url(r'^analysis/create/$', 'analysis.views.create', name='analysis_create'),
     url(r'^analysis/(\d+)/$', 'analysis.views.detail', name='analysis_results'),
@@ -57,6 +65,7 @@ urlpatterns = patterns('',  # noqa
     url(r'^analysis/(\d+)/rerun/$', 'analysis.views.rerun', name='analysis_rerun'),
     url(r'^analysis/(\d+)/delete/$', 'analysis.views.delete', name='analysis_delete'),
 
+    # Admin/profile areas
     url(r'^stats/$', 'tags.user_views.stats', name='stats'),
     url(r'^accounting/$', 'tags.user_views.accounting', name='accounting'),
     url(r'^account_info/$', 'tags.user_views.account_info', name='account_info'),

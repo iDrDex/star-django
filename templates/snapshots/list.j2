@@ -1,0 +1,33 @@
+{% extends "base.j2" %}
+
+{% set page_title = 'Your snapshots' %}
+
+
+{% block content %}
+  <table class="table table-striped table-bordered" style="width: auto; margin-bottom: 0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Frozen On</th>
+        <th>Files</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for snapshot in snapshots %}
+        <tr>
+          <td>{{ snapshot.pk }}</td>
+          <td><a href="{{ url('snapshot_detail', snapshot.pk) }}">
+            {{ snapshot.title or 'Snapshot #%s' % snapshot.pk }}</a></td>
+          <td>{{ snapshot.frozen_on.strftime('%Y-%m-%d %T') if snapshot.frozen else 'new' }}</td>
+          <td>
+            {% set delim = joiner() %}
+            {% for f in snapshot.files -%}
+                {{ delim() }}<a href="{{ url('snapshot_file', snapshot.pk, f.format) }}">{{ f.format or f.name }}</a> ({{ f.human_size }})
+            {%- endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

@@ -4,7 +4,6 @@ import zlib
 
 from funcy import cached_property, func_partial
 import pandas as pd
-from cacheops import file_cache
 
 from django.conf import settings
 from django.core.exceptions import ValidationError, ImproperlyConfigured
@@ -31,27 +30,52 @@ class Resource(dict):
         return '%d%s' % (math.ceil(self['size'] / 1024 ** i), ['b', 'kb', 'mb', 'gb', 'tb'][i])
 
     @cached_property
-    @file_cache.cached
     def frame(self):
+        return ops.frame_loads(self._raw())
+
+    def _raw(self):
         blob = ops.download_as_string(self['bucket'], self['key'])
-        if self.get('compressed'):
+        if self.get('compressed') in {True, 'zlib'}:
             blob = zlib.decompress(blob)
-        return ops.frame_loads(blob)
+        elif self.get('compressed') == 'gzip':
+            blob = gzip_decompress(blob)
+        return blob
+    raw = cached_property(_raw)
+
+    # def open(self):
+    #     key = ops.download_as_string.key(self['bucket'], self['key'])
+    #     filename = file_cache._key_to_filename(key)
+    #     return open(filename)
 
 
-class S3Field(models.TextField):
+class S3BaseField(models.TextField):
     """
-    A field representing an attachment stored in Amazon S3.
+    A base field representing an attachment stored in Amazon S3.
     """
     def __init__(self, verbose_name=None, name=None, make_name=None, compress=False, **kwargs):
         self.make_name = make_name
         self.compress = compress
         models.Field.__init__(self, verbose_name, name, **kwargs)
 
+    def contribute_to_class(self, cls, name, **kwargs):
+        super(S3BaseField, self).contribute_to_class(cls, name, **kwargs)
+        setattr(cls, 'upload_%s' % self.name, func_partial(_upload_FIELD, field=self))
+
+    def _get_bucket(self):
+        key = '%s.%s.%s' % (self.model._meta.app_label, self.model._meta.model_name, self.name)
+        try:
+            return settings.S3_BUCKETS[key]
+        except KeyError:
+            raise ImproperlyConfigured('Please specify S3 bucket for %s' % key)
+
+
+class S3Field(S3BaseField):
+    """
+    A field representing a single attachment stored in Amazon S3.
+    """
     def to_python(self, value):
         if value is None or value == '':
             return None
-
         if isinstance(value, Resource):
             return value
 
@@ -70,10 +94,6 @@ class S3Field(models.TextField):
             return None
         return json.dumps(value)
 
-    def contribute_to_class(self, cls, name, **kwargs):
-        super(S3Field, self).contribute_to_class(cls, name, **kwargs)
-        setattr(cls, 'upload_%s' % self.name, func_partial(_upload_FIELD, field=self))
-
     def _get_bucket(self):
         key = '%s.%s.%s' % (self.model._meta.app_label, self.model._meta.model_name, self.name)
         try:
@@ -82,16 +102,60 @@ class S3Field(models.TextField):
             raise ImproperlyConfigured('Please specify S3 bucket for %s' % key)
 
 
+class S3MultiField(S3BaseField):
+    def __init__(self, verbose_name=None, name=None, **kwargs):
+        if kwargs.get('null') or kwargs.get('default', list) is not list:
+            raise ValueError('S3MultiField is always not null and defaults to empty list')
+        S3BaseField.__init__(self, verbose_name, name, **kwargs)
+
+    def to_python(self, value):
+        if isinstance(value, list):
+            return value
+
+        if isinstance(value, basestring):
+            return map(Resource, json.loads(value))
+
+        raise ValidationError('Wrong resource description')
+
+    def from_db_value(self, value, expression, connection, context):
+        return map(Resource, json.loads(value))
+
+    def get_prep_value(self, value):
+        return json.dumps(value)
+
+
 def _upload_FIELD(self, desc, field=None, lazy=False):  # noqa
-    # NOTE: only dataframes for now
-    assert isinstance(desc, pd.DataFrame)
-    data = ops.frame_dumps(desc)
-    if field.compress:
-        data = zlib.compress(data)
-    desc = {
+    if isinstance(desc, pd.DataFrame):
+        desc = {'data': ops.frame_dumps(desc)}
+    if field.compress in {True, 'zlib'}:
+        desc['data'] = zlib.compress(desc['data'])
+    elif field.compress == 'gzip':
+        desc['data'] = gzip_compress(desc['data'])
+
+    if not desc.get('name'):
+        assert field.make_name
+        desc['name'] = field.make_name(self)
+
+    desc.update({
         'bucket': field._get_bucket(),
-        'name': field.make_name(self),
-        'data': data,
         'compressed': field.compress,
-    }
-    setattr(self, field.attname, Resource(ops.upload(desc, lazy=lazy)))
+    })
+    resource = Resource(ops.upload(desc, lazy=lazy))
+    if isinstance(self, S3Field):
+        setattr(self, field.attname, resource)
+    else:
+        getattr(self, field.attname).append(resource)
+
+
+from cStringIO import StringIO
+import gzip
+
+def gzip_compress(data):
+    out = StringIO()
+    with gzip.GzipFile(fileobj=out, mode="w") as f:
+        f.write(data)
+    return out.getvalue()
+
+def gzip_decompress(data):
+    with gzip.GzipFile(StringIO(data)) as f:
+        return f.read()

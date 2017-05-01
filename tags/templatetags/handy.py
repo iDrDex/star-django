@@ -29,3 +29,8 @@ def replace_get(context, **kwargs):
 def index(value, attribute):
     res = groupby(value, key=lambda o: getattr(o, attribute)[0].upper())
     return [(key, list(group)) for key, group in res]
+
+
+@library.filter('pluralize')
+def pluralize(number, singular='', plural='s'):
+    return singular if number % 100 in {1, 21, 31, 41, 51, 61, 71, 81, 91} else plural

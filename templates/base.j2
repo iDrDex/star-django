@@ -111,6 +111,9 @@
 
                 {% if request.user.is_authenticated() %}
                 <p style="margin-top: 1em">
+                    <a href="{{ url('my_snapshots') }}">
+                        <small class="text-mited">Snapshots</small>
+                    </a>
                     <a href="{{ url('redeem') }}">
                         <small class="text-mited">Redeem</small>
                     </a>
@@ -177,11 +180,13 @@
     {% endif %}
 
     <div class="content">
+    {% block messages %}
     {% if messages %}
       {% for message in messages %}
           <div class="alert alert-{{ 'danger' if message.tags == 'error' else message.tags }}">{{ message|safe }}</div>
       {% endfor %}
     {% endif %}
+    {% endblock %}
 
     {% block main %}
         <div class="hpanel"><div class="panel-body">

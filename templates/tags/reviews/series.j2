@@ -3,10 +3,50 @@
 {% set page_title = 'Series annotations' %}
 
 {% block header %}
-  <h2 class="font-light" style="display: inline-block; margin-bottom: 0">{{ page_title }}</h2>
-  <a href="{{ url('sampleannotation-list', format='json') }}" class="btn btn-success" style='float:right;'>
-    Export samples annotations
-  </a>
+    <h2 class="font-light" style="display: inline-block; margin-bottom: 0">{{ page_title }}</h2>
+
+    <form id="snapshot" action="{{ url('snapshot') }}" method="POST" class="form-inline pull-right">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="hidden" name="search" value="{{ request.GET.search }}">
+        {% if not snapshot %}
+            <button class="btn btn-success" type="submit" name="action" value="make">
+                <i class="fa fa-thumb-tack"></i>
+                <span class="bold">Make snapshot</span>
+            </button>
+        {% else %}
+            <div class="pull-right">
+                <span style="font-weight: bold; font-size: 14px">
+                    {%- with searches=snapshot.metadata.searches|count,
+                             ids=snapshot.metadata.ids|count -%}
+                    Snapshot ({{ searches }} search{{ searches|pluralize('', 'es') }},
+                              {{ ids }} annotation{{ ids|pluralize }}):
+                    {%- endwith -%}
+                </span>
+                <button class="btn btn-success" type="submit" name="action" value="add">
+                    <i class="fa fa-plus"></i>
+                    <span class="bold">Add to</span>
+                </button>
+                <a class="btn btn-primary" href="{{ url('review_snapshot') }}">
+                    <i class="fa fa-lock"></i>
+                    <span class="bold">Review and Freeze</span>
+                </a>
+                <button class="btn btn-danger" type="submit" name="action" value="delete">
+                    <i class="fa fa-times"></i>
+                    <span class="bold">Delete</span>
+                </button>
+            </div>
+        {% endif %}
+    </form>
+    <script type="text/javascript">
+        $(function () {
+            $('.datatable').on('search.dt', function (e, settings) {
+                console.log('search')
+                var search = $('.datatable').DataTable().search();
+                $('#snapshot [name=search]').val(search);
+            })
+        })
+    </script>
 {% endblock %}
 
 
@@ -16,7 +56,6 @@
         datatableview.auto_initialize = false;
         $(function(){
             datatableview.initialize($('.datatable'), {
-                scrollX: true,
                 pageLength: 50,
                 columnDefs: [
                     {
@@ -25,7 +64,8 @@
                         },
                         targets: [4]
                     }
-                ]
+                ],
+                search: {search: {{ (request.GET.search or '')|json }}}
             });
 
             // Add help link after search field

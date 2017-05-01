@@ -1,8 +1,11 @@
 from funcy import group_by, cached_property, partial, walk_keys, map
 from datatableview.views import DatatableView
 from datatableview.utils import DatatableOptions
+from handy.decorators import render_to, paginate
+from handy.utils import get_or_none
 
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, Http404
+from django.forms import ModelForm, CharField
 from django.shortcuts import get_object_or_404, redirect
 
 from tags.models import SeriesTag, SerieAnnotation, SerieValidation, \
@@ -19,6 +22,9 @@ class AnnotationsSearchOptions(DatatableOptions):
             valid                selects validated annotations
         """
         options = DatatableOptions._normalize_options(self, query, options)
+        # Try normally named field
+        if not options['search']:
+            options['search'] = query.get('search', '').strip()
 
         filters = group_by(r'^(GSE|GPL|[Tt]ag=|valid|novalid)', options['search'].split())
         options['search'] = ' '.join(filters.pop(None, []))
@@ -68,6 +74,11 @@ class SeriesAnnotations(DatatableView):
 
         return super(SeriesAnnotations, self).apply_queryset_options(queryset)
 
+    def get_context_data(self, **kwargs):
+        context = super(SeriesAnnotations, self).get_context_data(**kwargs)
+        if self.request.user.is_authenticated():
+            context['snapshot'] = get_or_none(Snapshot, author=self.request.user, frozen=False)
+        return context
 
 series_annotations = SeriesAnnotations.as_view()
 
@@ -152,3 +163,130 @@ def ignore(request, serie_validation_id):
     sv.save()
     validation_workflow.delay(sv.pk, is_new=False)
     return redirect('sample_annotations', sv.series_tag.canonical.id)
+
+
+# Snapshots
+
+import urllib
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+
+from tags.models import Snapshot
+
+
+@login_required
+@require_POST
+def snapshot(request):
+    action = request.POST.get('action')
+    search = request.POST.get('search')
+    next_url = '%s?%s' % (request.POST.get('next'), urllib.urlencode({'search': search}))
+
+    if action not in {'make', 'add', 'remove', 'delete', 'freeze'}:
+        return HttpResponseForbidden('Unknown action %s' % action)
+
+    if action == 'make':
+        snap, _ = Snapshot.objects.get_or_create(author=request.user, frozen=False)
+        messages.success(request, "Created an empty snapshot for you. "
+                                  "Now add searches to it.")
+        return redirect(next_url)
+
+    snap = get_or_none(Snapshot, author=request.user, frozen=False)
+    if not snap:
+        return HttpResponseForbidden('No unfrozen snapshot found')
+
+    if action == 'add':
+        if not search:
+            messages.error(request, "Can't add all the annotations to snapshot. "
+                                    "Make some search or go into any annotation.")
+        else:
+            added, message = snap.add(search, get_search_qs(request))
+            if added:
+                snap.save()
+                messages.success(request, 'Added "%s" to snaphot' % search)
+            else:
+                messages.warning(request, message)
+    elif action == 'remove':
+        removed, message = snap.remove(search)
+        if removed:
+            snap.save()
+        elif message:
+            messages.error(request, message)
+    elif action == 'delete':
+        snap.delete()
+    elif action == 'freeze':
+        snap.freeze()
+        return redirect('snapshot_detail', snap.id)
+
+    return redirect(next_url)
+
+
+def get_search_qs(request):
+    view = SeriesAnnotations()
+    view._datatable_options = view.datatable_options_class(
+        view.get_model(), request.POST,
+        **SeriesAnnotations.datatable_options)
+    view.request = request
+    qs = view.get_object_list()
+    return qs
+
+
+class ReviewSnapshot(SeriesAnnotations):
+    template_name = 'snapshots/review.j2'
+
+    def get_queryset(self):
+        snapshot = get_or_none(Snapshot, author=self.request.user, frozen=False)
+        if not snapshot:
+            return SerieAnnotation.objects.none()
+        return super(ReviewSnapshot, self).get_queryset() \
+                                          .filter(id__in=snapshot.metadata.get('ids', []))
+review_snapshot = login_required(ReviewSnapshot.as_view())
+
+
+@render_to('snapshots/detail.j2')
+def snapshot_detail(request, snap_id):
+    snap = get_object_or_404(Snapshot, pk=snap_id)
+    if not snap.frozen:
+        if snap.author == request.user:
+            return redirect('review_snapshot')
+        else:
+            raise Http404
+    form = None
+
+    if snap.author == request.user:
+        if request.method == 'POST':
+            form = SnapshotForm(request.POST, instance=snap)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Updated snapshot description")
+                return redirect('snapshot_detail', snap_id)
+        else:
+            form = SnapshotForm(instance=snap)
+
+    return {
+        'snapshot': snap,
+        'form': form,
+    }
+
+
+class SnapshotForm(ModelForm):
+    class Meta:
+        model = Snapshot
+        fields = ['title', 'description']
+
+    title = CharField()
+
+
+from funcy import first, where
+
+def snapshot_file(request, snap_id, format):
+    snap = get_object_or_404(Snapshot, pk=snap_id)
+    f = first(where(snap.files, format=format))
+    return redirect(f.url)
+
+
+@login_required
+@render_to('snapshots/list.j2')
+@paginate('snapshots', 10)
+def my_snapshots(request):
+    return {'snapshots': Snapshot.objects.filter(author=request.user).order_by('-frozen_on')}
