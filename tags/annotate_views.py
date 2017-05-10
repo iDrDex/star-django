@@ -192,6 +192,11 @@ def on_demand_validate(request):
         except AnnotationError as err:
             messages.error(request, unicode(err))
             return redirect(request.get_full_path())
+    else:
+        # Do not use session unless we have referer
+        referer = request.META.get('HTTP_REFERER')
+        if referer:
+            request.session['next'] = referer
 
     series_tag_id = request.GET.get('series_tag_id')
     if series_tag_id:
@@ -231,7 +236,10 @@ def on_demand_result(request, serie_validation_id):
         data = select_keys(r'kappa', serie_validation.__dict__)
         return JsonResponse(data)
 
-    return render(request, 'tags/on_demand_result.j2', {'serie_validation': serie_validation})
+    return render(request, 'tags/on_demand_result.j2', {
+        'serie_validation': serie_validation,
+        'next': request.session.get('next')
+    })
 
 
 @login_required

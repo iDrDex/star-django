@@ -4,7 +4,11 @@
 
 
 {% block header %}
-    <a href="{{ url('on_demand_validate') }}?series_tag_id={{ serie_validation.series_tag_id }}" class="btn btn-default" style="float: right">Back to validation</a>
+    {% if next %}
+        <a href="{{ next }}" class="btn btn-default" style="float: right">Back to start</a>
+    {% else %}
+        <a href="{{ url('on_demand_validate') }}?series_tag_id={{ serie_validation.series_tag_id }}" class="btn btn-default" style="float: right">Back to validation</a>
+    {% endif %}
     {{ super() }}
 {% endblock %}
 
