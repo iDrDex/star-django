@@ -22,9 +22,9 @@ gzip-reader==0.1
 pandas==0.18.1
 termcolor==1.1.0
 numpy==1.11.1
-numexpr==2.4.3
+numexpr==2.6.2
 scipy==0.16.0
-statsmodels==0.6.1
+statsmodels==0.8.0
 django_pandas==0.3.0
 easydict==1.6
 django-datatable-view==0.8.3
