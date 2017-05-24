@@ -141,7 +141,7 @@ def _upload_FIELD(self, desc, field=None, lazy=False):  # noqa
         'compressed': field.compress,
     })
     resource = Resource(ops.upload(desc, lazy=lazy))
-    if isinstance(self, S3Field):
+    if isinstance(field, S3Field):
         setattr(self, field.attname, resource)
     else:
         getattr(self, field.attname).append(resource)
