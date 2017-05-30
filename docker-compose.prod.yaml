@@ -1,0 +1,43 @@
+version: '2'
+services:
+  db:
+    image: postgres:9.4
+    environment:
+      POSTGRES_DB: star
+
+  redis:
+    image: redis:3
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+    - db
+    - redis
+    ports:
+    - "8000:8000"
+    env_file: .env.prod
+
+  celery:
+    build: Dockerfile.prod
+    command: celery -A stargeo worker -l info
+    depends_on:
+    - db
+    - redis
+    ports:
+    - "8000:8000"
+    env_file: .env.prod
+    environment:
+      C_FORCE_ROOT: "True"
+
+  # frontend:
+  #   build: frontend
+  #   command: yarn run dev
+  #   volumes:
+  #   - ./frontend:/app/user
+  #   ports:
+  #   - 8082:8082
+
+

@@ -1,1 +1,10 @@
+.env*
+.git
+
+*.pyc
+_errors
 stargeo.sql.gz
+bower_components
+frontend/node_modules
+frontend/dist
+frontend/npm-debug.log

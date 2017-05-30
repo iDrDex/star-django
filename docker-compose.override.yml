@@ -5,6 +5,7 @@ services:
     - .:/app/user
     - ~/.ssh:/root/.ssh
     environment:
+      DATABASE_URL: "postgres://postgres@db/star"
       REDIS_HOST: redis
       BROKER_URL: redis://redis/1
 
@@ -12,6 +13,7 @@ services:
     volumes:
     - .:/app/user
     environment:
+      DATABASE_URL: "postgres://postgres@db/star"
       REDIS_HOST: redis
       BROKER_URL: redis://redis/1
       C_FORCE_ROOT: "True"
