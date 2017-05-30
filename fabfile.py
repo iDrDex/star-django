@@ -191,7 +191,8 @@ from fabric.contrib import files
 def set_things_up():
     with cd('/home/ubuntu'):
         run('mkdir logs; chmod 777 logs;')
-        run('git clone https://github.com/idrdex/star-django.git app')
+        if not files.exists('app'):
+            run('git clone https://github.com/idrdex/star-django.git app')
 
     print(green('Installing packages...'))
     sudo('apt update')
@@ -233,7 +234,7 @@ def set_things_up():
 
     print(green('Configure nginx...'))
     sudo('apt install --yes nginx')
-    sudo('rm /etc/nginx/sites-enabled/default')
+    sudo('rm /etc/nginx/sites-enabled/default', quiet=True)
     files.upload_template('stuff/nginx.conf', '/etc/nginx/sites-enabled/stargeo.conf',
         use_sudo=True, backup=False)
     sudo('service nginx reload')
