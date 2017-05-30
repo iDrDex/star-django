@@ -196,7 +196,7 @@ def set_things_up():
     print(green('Installing packages...'))
     sudo('apt update')
     sudo('apt install --yes python2.7 python-pip virtualenv')
-    sudo('apt install --yes --no-install-recommends r-base-core r-base-core-dev')
+    sudo('apt install --yes --no-install-recommends r-base-core r-base-dev')
     sudo('apt install --yes redis-server')
 
     print(green('Configuring .env...'))
