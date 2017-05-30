@@ -7,13 +7,13 @@ from fabric.colors import green, red
 __all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
            'shell', 'ssh', 'config',
            'restart', 'manage', 'install_requirements', 'migrate',
-           'pull_db')
+           'pull_db', 'set_things_up')
 
 
 django.project('stargeo')
 env.cwd = '/home/ubuntu/app'
 env.use_ssh_config = True
-env.hosts = ['stargeo']
+env.hosts = ['sclone']
 activate = lambda: prefix('source ~/venv/bin/activate')
 node = lambda: prefix('source ~/.nvm/nvm.sh')
 
@@ -184,3 +184,67 @@ def pull_db(dump='app'):
 
     # Load dump
     local('gzip -cd stargeo.sql.gz | psql -Upostgres -f -')
+
+
+from fabric.contrib import files
+
+def set_things_up():
+    with cd('/home/ubuntu'):
+        run('mkdir logs; chmod 777 logs;')
+        run('git clone https://github.com/idrdex/star-django.git app')
+
+    print(green('Installing packages...'))
+    sudo('apt update')
+    sudo('apt install --yes python2.7 python-pip virtualenv')
+    sudo('apt install --yes --no-install-recommends r-base-core r-base-core-dev')
+    sudo('apt install --yes redis-server')
+
+    print(green('Configuring .env...'))
+    # Generate SECRET_KEY
+    from django.utils.crypto import get_random_string
+    chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    secret_key = get_random_string(50, chars)
+    files.upload_template('stuff/.env.prod', '.env', {'SECRET_KEY': secret_key},
+        use_jinja=True, keep_trailing_newline=True)
+
+    # Set up hosts
+    files.append('/etc/hosts', ['127.0.0.1 db', '127.0.0.1 redis'], use_sudo=True)
+
+    print(green('Setting up PostgreSQL...'))
+    sudo('apt install --yes postgresql-9.5 libpq-dev')
+    files.sed('/etc/postgresql/9.5/main/pg_hba.conf',
+        '^(local.*|host\s+all\s+all\s+127\.0\.0\.1/32.*)(peer|md5)$', '\\1trust',
+        use_sudo=True, shell=True)
+    sudo('service postgresql reload')
+    # TODO: configure postgres
+
+    print(green('Creating database and running migrations...'))
+    run('psql -Upostgres -f stuff/db-schema.sql')
+    run('psql -Upostgres star -f stuff/db-migrations.sql')
+    with activate():
+        run('./manage.py migrate')
+
+    print(green('Setting up Django server...'))
+    sudo('apt install --yes uwsgi-emperor uwsgi-plugin-python')
+    run('touch uwsgi-reload')
+    files.upload_template('stuff/uwsgi-web.ini', '/etc/uwsgi-emperor/vassals/stargeo.ini',
+        use_sudo=True, backup=False)
+    sudo('service uwsgi-emperor reload')
+
+    print(green('Configure nginx...'))
+    sudo('apt install --yes nginx')
+    sudo('rm /etc/nginx/sites-enabled/default')
+    files.upload_template('stuff/nginx.conf', '/etc/nginx/sites-enabled/stargeo.conf',
+        use_sudo=True, backup=False)
+    sudo('service nginx reload')
+
+    print(green('Configure celery...'))
+    sudo('apt install --yes supervisor')
+    files.upload_template('stuff/celery.conf', '/etc/supervisor/conf.d/celery.conf',
+        use_sudo=True, backup=False)
+    sudo('service supervisor reload')
+
+    # fill stats
+    manage('update_statistic_cache')
+
+    execute(deploy)
