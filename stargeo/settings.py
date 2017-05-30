@@ -257,7 +257,7 @@ LOGGING = {
 }
 
 # Log to console in DEBUG mode
-if DEBUG:
+if DEBUG or os.environ.get('CONSOLE_DEBUG'):
     for logger in LOGGING['loggers'].values():
         logger['handlers'] = ['console']
 
