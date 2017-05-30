@@ -11,3 +11,4 @@ cssselect
 django-extensions
 ipdb
 ipython
+fabric>=1.13.2
