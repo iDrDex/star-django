@@ -189,6 +189,11 @@ def pull_db(dump='app'):
 from fabric.contrib import files
 
 def set_things_up():
+    """
+    First deployment script, works with Amazon EC2 Ubuntu 16.04 image.
+    To make it work in other systems paths here and in configs should be changed.
+    As well as package installations.
+    """
     with cd('/home/ubuntu'):
         run('mkdir logs; chmod 777 logs;')
         if not files.exists('app'):
