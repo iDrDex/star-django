@@ -13,7 +13,7 @@ __all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
 django.project('stargeo')
 env.cwd = '/home/ubuntu/app'
 env.use_ssh_config = True
-env.hosts = ['sclone']
+env.hosts = ['stargeo']
 activate = lambda: prefix('source ~/venv/bin/activate')
 node = lambda: prefix('source ~/.nvm/nvm.sh')
 
