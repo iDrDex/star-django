@@ -212,6 +212,7 @@ def set_things_up():
     secret_key = get_random_string(50, chars)
     files.upload_template('stuff/.env.prod', '.env', {'SECRET_KEY': secret_key},
         use_jinja=True, keep_trailing_newline=True)
+    # TODO: ask or read from .env all other values
 
     # Set up hosts
     files.append('/etc/hosts', ['127.0.0.1 db', '127.0.0.1 redis'], use_sudo=True)
