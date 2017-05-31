@@ -39,12 +39,16 @@ class PlatformProbe(models.Model):
 class Series(models.Model):
     gse_name = models.TextField()
     specie = models.CharField(max_length=127, blank=True)
-    attrs = JSONField(default={})
-    platforms = ArrayField(models.CharField(max_length=127), default=[])
-    samples_count = models.IntegerField(default=0)
+    attrs = JSONField(default={}, blank=True)
+    platforms = ArrayField(models.CharField(max_length=127), default=[], blank=True)
+    samples_count = models.IntegerField(default=0, blank=True)
 
     class Meta:
+        verbose_name_plural = 'series'
         db_table = 'series'
+
+    def __str__(self):
+        return self.gse_name
 
     def save(self, **kwargs):
         # Only set specie when it's non-controversial
