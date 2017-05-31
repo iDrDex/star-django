@@ -206,11 +206,9 @@ def set_things_up():
     sudo('apt install --yes redis-server')
 
     print(green('Configuring .env...'))
-    # Generate SECRET_KEY
+
     from django.utils.crypto import get_random_string
-    chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    secret_key = get_random_string(50, chars)
-    files.upload_template('stuff/.env.prod', '.env', {'SECRET_KEY': secret_key},
+    files.upload_template('stuff/.env.prod', '.env', {'SECRET_KEY': get_random_string(32)},
         use_jinja=True, keep_trailing_newline=True)
     # TODO: ask or read from .env all other values
 
