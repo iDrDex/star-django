@@ -126,8 +126,8 @@ def insert_or_update_data(series_df, samples_df):
     assert len(gpls) == 1
     gpl_name = gpls[0]
     print "  %s" % gpl_name
-    platform, _ = Platform.objects.get_or_create(
-        gpl_name=gpl_name, defaults={'specie': SPECIES[attrs['platform_taxid']]})
+    specie = SPECIES.get(attrs['platform_taxid'], 'taxid-%s' % attrs['platform_taxid'])
+    platform, _ = Platform.objects.get_or_create(gpl_name=gpl_name, defaults={'specie': specie})
 
     # If updating check if some samples no longer present,
     # mark disappeared samples as deleted.
