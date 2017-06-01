@@ -54,7 +54,7 @@ class Series(models.Model):
         # Only set specie when it's non-controversial
         taxid = distinct(keep(self.attrs.get, ['platform_taxid', 'sample_taxid']))
         if len(taxid) == 1:
-            self.specie = SPECIES.get(taxid[0])
+            self.specie = SPECIES.get(taxid[0], 'taxid-%s' % taxid[0])
 
         self.platforms = re_all(r'GPL\d+', self.attrs['platform_id'])
         self.samples_count = len(self.attrs['sample_id'].split())
