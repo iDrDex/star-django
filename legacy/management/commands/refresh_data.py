@@ -56,9 +56,12 @@ class Command(BaseCommand):
         queue = DataQueue()
 
         # Only update existing series
-        gse_names = Series.objects.values_list('gse_name', flat=True)
-        print colored('Going to update %d series...' % len(gse_names), attrs=['bold'])
-        queue.put_dirs(gse_file(name) for name in gse_names)
+        qs = Series.objects.values_list('gse_name', flat=True)
+        if options['cond']:
+            cond = dict(re_iter(r'(\w+)=([^;]+)', options['cond']))
+            qs = qs.filter(**cond)
+        print colored('Going to update %d series...' % len(qs), attrs=['bold'])
+        queue.put_dirs(gse_file(name) for name in qs)
 
         # Launch worker threads
         for index in range(options['threads']):
