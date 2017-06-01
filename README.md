@@ -43,7 +43,7 @@
 
     ```
     mkvirtualenv star
-    pip install -r requirements-dev.txt
+    pip install -r requirements-deploy.txt
     ```
 
 5. Install and configure:
@@ -53,8 +53,9 @@
     fab config
     ```
 
-    The last command will open ~/app/.env remote file in vim,
+    The last command will open `~/app/.env` remote file in vim,
     alternatively you can ssh into instance and edit it directly.
+    You will need to specify `BIOPORTAL_API_KEY` ([get here][bioportal-key]), `FROM_EMAIL` and `ADMIN`.
 
 
 ## Making a working copy
@@ -68,7 +69,7 @@ Here are steps to make local deployment of this app in order to tinker it.
     cd star-django
     ```
 
-2. Install development dependencies (same as above):
+2. Install development dependencies (like above, different file):
 
     ```
     pip install -r requirements-dev.txt
@@ -124,7 +125,7 @@ Here are steps to make local deployment of this app in order to tinker it.
 [geo]: http://www.ncbi.nlm.nih.gov/geo/
 [virtualenv]: https://virtualenv.pypa.io/en/latest/
 [virtualenvwrapper]: https://virtualenvwrapper.readthedocs.org/en/latest/
-
+[bioportal-key]: https://bioportal.bioontology.org/help#Getting_an_API_key
 
 ## Deploying
 
@@ -132,9 +133,8 @@ Here are steps to make local deployment of this app in order to tinker it.
 
 2. Install deployment dependencies (see in install).
 
-2. Run locally:
+2. Run locally to deploy latest commited:
 
     ```bash
-    # to deploy latest commited
     fab deploy
     ```
