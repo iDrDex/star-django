@@ -31,6 +31,7 @@ def collect_static():
 
 
 def build_frontend():
+    return
     with cd('frontend'), node():
         run('npm install')
         run('npm run build')
