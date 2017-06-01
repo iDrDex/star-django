@@ -114,9 +114,6 @@
                     <a href="{{ url('my_snapshots') }}">
                         <small class="text-mited">Snapshots</small>
                     </a>
-                    <a href="{{ url('redeem') }}">
-                        <small class="text-mited">Redeem</small>
-                    </a>
                     <a href="{{ url('auth_logout') }}">
                         <small class="text-mited">Logout</small>
                     </a>
@@ -141,24 +138,9 @@
             <li{% if request.path.startswith('/annotations/') %} class="active"{% endif %}>
                 <a href="/annotations/"> <span class="nav-label">Annotations</span> </a>
             </li>
-            <li{% if request.path.startswith('/analysis/') %} class="active"{% endif %}>
-                <a href="/analysis/"> <span class="nav-label">Analysis</span> </a>
-            </li>
             {% if not request.user.is_competent %}
             <li{% if request.path.startswith('/competence/') %} class="active"{% endif %}>
                 <a href="/competence/"> <span class="nav-label">Competence Test</span> </a>
-            </li>
-            {% endif %}
-            <li>
-              <a href="/docs/"> <span clss="nav-label">API Docs</span></a>
-            </li>
-            {# HACK: hardcode my and Dexters ids #}
-            {% if request.user.is_superuser %}
-            <li{% if request.path == '/stats/' %} class="active"{% endif %}>
-                <a href="/stats/"> <span class="nav-label">Statistics</span> </a>
-            </li>
-            <li{% if request.path == '/accounting/' %} class="active"{% endif %}>
-                <a href="/accounting/"> <span class="nav-label">Accounting</span> </a>
             </li>
             {% endif %}
         </ul>
