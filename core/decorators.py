@@ -5,11 +5,12 @@ from funcy import decorator
 
 @decorator
 def block_POST_for_incompetent(call):  # noqa
-    if call.request.method != 'POST' or call.request.user.is_competent:
+    request = call.request
+    if request.method != 'POST' or request.user.is_competent or request.user.is_superuser:
         return call()
 
     messages.error(
-        call.request,
+        request,
         'You need to <a href="/competence/">confirm your competence</a> before making any changes.'
     )
-    return redirect(call.request.get_full_path())
+    return redirect(request.get_full_path())
