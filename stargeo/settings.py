@@ -191,12 +191,13 @@ CELERY_TASK_TIME_LIMIT = 60 * 60 * 12
 CELERY_SEND_TASK_ERROR_EMAILS = True
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'no-reply@stargeo.org'
+DEFAULT_FROM_EMAIL = os.environ.get('FROM_EMAIL', 'no-reply@stargeo.org')
 
 # Logging settings
-ADMINS = (
-    ('Alexander', 'suor.web@gmail.com'),
-)
+if 'ADMIN' in os.environ:
+    ADMINS = (
+        tuple(os.environ['ADMIN'].split(':')),
+    )
 
 LOGGING = {
     'version': 1,
