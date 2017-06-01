@@ -211,6 +211,7 @@ def set_things_up():
         files.upload_template('stuff/.env.prod', '.env', {'SECRET_KEY': get_random_string(32)},
             use_jinja=True, keep_trailing_newline=True)
         # TODO: ask or read from .env all other values
+        #       BIOPORTAL_API_KEY
 
     # Set up hosts
     files.append('/etc/hosts', ['127.0.0.1 db', '127.0.0.1 redis'], use_sudo=True, shell=True)
@@ -249,7 +250,8 @@ def set_things_up():
         use_sudo=True, backup=False)
     sudo('service supervisor reload')
 
-    # fill stats
+    # fill stats and ontologies
     manage('update_statistic_cache')
+    manage('update_ontologies')
 
     execute(deploy)
