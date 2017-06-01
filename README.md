@@ -3,6 +3,26 @@
 *The Search Tag & Analyze Resource* for collaborative annotation and interpretation of disease from open digital samples from [GEO][].
 
 
+## Installing from AMI
+
+1. Launch Stargeo Limited AMI
+
+2. SSH into it, complete env file and restart:
+
+    ```bash
+    vim ~/app/.env
+    touch ~/app/uwsgi-reload
+    ```
+
+    You will need to specify `BIOPORTAL_API_KEY` ([get here][bioportal-key]), `FROM_EMAIL` and `ADMIN`.
+
+3. Create a superuser for yourself (need one to log into admin):
+
+    ```bash
+    cd ~/app && ~/venv/bin/python manage.py createsuperuser
+    ```
+
+
 ## Installing from source
 
 1. Create an Ubuntu 16.04 instance.
@@ -51,12 +71,24 @@
     ```bash
     fab install
     fab config
+    fab restart
     ```
 
-    The last command will open `~/app/.env` remote file in vim,
+    Config command will open `~/app/.env` remote file in vim,
     alternatively you can ssh into instance and edit it directly.
     You will need to specify `BIOPORTAL_API_KEY` ([get here][bioportal-key]), `FROM_EMAIL` and `ADMIN`.
 
+6. Create a superuser for yourself (need one to log into admin):
+
+    ```bash
+    fab manage:createsuperuser
+    ```
+
+7. Prefill ontologies:
+
+    ```bash
+    fab manage:update_ontologies
+    ```
 
 ## Making a working copy
 
@@ -127,13 +159,14 @@ Here are steps to make local deployment of this app in order to tinker it.
 [virtualenvwrapper]: https://virtualenvwrapper.readthedocs.org/en/latest/
 [bioportal-key]: https://bioportal.bioontology.org/help#Getting_an_API_key
 
+
 ## Deploying
 
 1. Configure ssh connection (see in install).
 
 2. Install deployment dependencies (see in install).
 
-2. Run locally to deploy latest commited:
+2. Run locally to deploy latest commit:
 
     ```bash
     fab deploy
