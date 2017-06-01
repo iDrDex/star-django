@@ -3,18 +3,34 @@
 *The Search Tag & Analyze Resource* for collaborative annotation and interpretation of disease from open digital samples from [GEO][].
 
 
-## Making a working copy
+## Installing from source
 
-Here are steps to make local deployment of this app in order to tinker it.
+1. Create an Ubuntu 16.04 instance.
 
-1. Get sources:
+2. Configure ssh connection by adding something like this to `~/.ssh/config`:
 
-    ```bash
-    git clone git@github.com:idrdex/star-django.git
-    cd star-django
+    ```ini
+    Host stargeo
+      HostName 123.45.67.89
+      User ubuntu
+      IdentityFile /path/to/stargeo.pem
+      IdentitiesOnly yes
     ```
 
-2. Install dependencies:
+3. Clone code locally:
+
+    ```bash
+    git clone git@github.com:idrdex/star-django.git stargeo
+    cd stargeo
+    ```
+
+    Switch to branch:
+
+    ```bash
+    git checkout limited
+    ```
+
+4. Install deployment dependencies (unless you've already installed dev ones):
 
     We will use [virtualenv][] and [virtualenvwrapper][] to create isolated python environment,
     so start with:
@@ -27,6 +43,34 @@ Here are steps to make local deployment of this app in order to tinker it.
 
     ```
     mkvirtualenv star
+    pip install -r requirements-dev.txt
+    ```
+
+5. Install and configure:
+
+    ```bash
+    fab install
+    fab config
+    ```
+
+    The last command will open ~/app/.env remote file in vim,
+    alternatively you can ssh into instance and edit it directly.
+
+
+## Making a working copy
+
+Here are steps to make local deployment of this app in order to tinker it.
+
+1. Get sources:
+
+    ```bash
+    git clone git@github.com:idrdex/star-django.git
+    cd star-django
+    ```
+
+2. Install development dependencies (same as above):
+
+    ```
     pip install -r requirements-dev.txt
     ```
 
@@ -84,22 +128,13 @@ Here are steps to make local deployment of this app in order to tinker it.
 
 ## Deploying
 
-1. Configure ssh connection by adding something like this to `~/.ssh/config`:
+1. Configure ssh connection (see in install).
 
-    ```ini
-    Host stargeo
-    HostName ec2-52-11-148-105.us-west-2.compute.amazonaws.com
-    User ubuntu
-    IdentityFile /path/to/stargeo.pem
-    IdentitiesOnly yes
-    ```
+2. Install deployment dependencies (see in install).
 
 2. Run locally:
 
     ```bash
     # to deploy latest commited
     fab deploy
-
-    # to deploy whatever you have locally (not recommended)
-    fab dirty_deploy
     ```
