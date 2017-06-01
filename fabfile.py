@@ -1,6 +1,6 @@
 # encoding: utf-8
 from fabric.api import *
-from fabric.contrib import django
+from fabric.contrib import django, files
 from fabric.colors import green, red
 
 
@@ -187,9 +187,7 @@ def pull_db(dump='app'):
     local('gzip -cd stargeo.sql.gz | psql -Upostgres -f -')
 
 
-from fabric.contrib import files
-
-def set_things_up():
+def install():
     """
     First deployment script, works with Amazon EC2 Ubuntu 16.04 image.
     To make it work in other systems paths here and in configs should be changed.
@@ -211,8 +209,6 @@ def set_things_up():
         from django.utils.crypto import get_random_string
         files.upload_template('stuff/.env.prod', '.env', {'SECRET_KEY': get_random_string(32)},
             use_jinja=True, keep_trailing_newline=True)
-        # TODO: ask or read from .env all other values
-        #       BIOPORTAL_API_KEY
 
     # Set up hosts
     files.append('/etc/hosts', ['127.0.0.1 db', '127.0.0.1 redis'], use_sudo=True, shell=True)
