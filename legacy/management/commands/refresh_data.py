@@ -84,14 +84,6 @@ def load_data(header):
     assert len(series_df.index) == 1
     gse_name = series_df['series_geo_accession'][0]
 
-    # Skip multispcecies
-    if '|\n|' in series_df['series_platform_taxid'][0]:
-        cprint('Skip multispecies', 'red')
-        return
-    if series_df['series_platform_taxid'][0] != series_df['series_sample_taxid'][0]:
-        cprint('Skip sample-platform species mismatch', 'red')
-        return
-
     # Check if series updated
     try:
         old_last_update = Series.objects.get(gse_name=gse_name).attrs.get('last_update_date')
@@ -118,7 +110,6 @@ def insert_or_update_data(series_df, samples_df):
 
     # Create series and its attributes
     attrs = {cut_prefix(name, 'series_'): uni_cat(series_df[name]) for name in series_df.columns}
-    assert attrs['sample_taxid'] == attrs['platform_taxid']
     series, created = Series.objects.update_or_create(gse_name=gse_name, defaults={'attrs': attrs})
 
     # Create platform
