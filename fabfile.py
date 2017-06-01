@@ -105,7 +105,7 @@ def deploy():
 
 def deploy_fast():
     print(green('Updating working copy...'))
-    run('git pull origin master')
+    run('git pull')
 
     # Not restarting celery, make `fab restart` if you do want that
     print(green('Reloading uWSGI...'))
