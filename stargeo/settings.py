@@ -184,6 +184,7 @@ CACHEOPS_REDIS = {
 
 CACHEOPS = {
     'tags.sampleannotation': {'ops': [], 'timeout': 60 * 60},
+    'legacy.series': {'timeout': 60 * 60 * 24}
 }
 
 

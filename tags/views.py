@@ -7,6 +7,7 @@ from funcy import distinct, imapcat, join, keep, silent, split, map
 from handy.decorators import render_to
 from handy.shortcuts import paginate
 from handy.utils import get_or_none
+from cacheops import cached_as
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -28,21 +29,23 @@ def search(request):
     if specie != request.session.get('specie'):
         request.session['specie'] = specie
 
-    q = request.GET.get('q')
-    if not q:
-        return {'series': None}
-
-    exclude_tags = keep(silent(int), request.GET.getlist('exclude_tags'))
     serie_tags, tag_series, tag_ids = series_tags_data()
 
-    # Parse query
-    q_string, q_tags = _parse_query(q)
-    q_tags, wrong_tags = split(lambda t: t.lower() in tag_ids, q_tags)
-    if wrong_tags:
-        message = 'Unknown tag%s %s.' % ('s' if len(wrong_tags) > 1 else '', ', '.join(wrong_tags))
-        messages.warning(request, message)
-    if not q_string and not q_tags:
-        return {'series': None}
+    q = request.GET.get('q', '')
+    if q:
+        exclude_tags = keep(silent(int), request.GET.getlist('exclude_tags'))
+
+        # Parse query
+        q_string, q_tags = _parse_query(q)
+        q_tags, wrong_tags = split(lambda t: t.lower() in tag_ids, q_tags)
+        if wrong_tags:
+            plural = 's' if len(wrong_tags) > 1 else ''
+            message = 'Unknown tag%s %s.' % (plural, ', '.join(wrong_tags))
+            messages.warning(request, message)
+        if not q_string and not q_tags:
+            return {'series': None}
+    else:
+        q_string, q_tags, exclude_tags = '', None, []
 
     # Build qs
     qs = search_series_qs(q_string)
@@ -90,11 +93,14 @@ def _parse_query(q):
 
 
 def _search_stats(qs):
-    stats = qs.aggregate(samples=Sum('samples_count'),
-                         platforms=ArrayLength(ArrayConcatUniq('platforms')),
-                         species=ArrayAgg('specie'))
-    stats['species'] = set(stats['species']) - {''}
-    return stats
+    @cached_as(qs)
+    def _stats():
+        stats = qs.aggregate(samples=Sum('samples_count'),
+                             platforms=ArrayLength(ArrayConcatUniq('platforms')),
+                             species=ArrayAgg('specie'))
+        stats['species'] = set(stats['species']) - {''}
+        return stats
+    return _stats()
 
 
 @login_required
