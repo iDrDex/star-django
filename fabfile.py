@@ -79,7 +79,7 @@ def deploy():
     run('git fetch --progress')
 
     print(green('Updating the working copy...'))
-    result = run('git merge origin/master', warn_only=True)
+    result = run('git merge', warn_only=True)
 
     if result.return_code != 0:
         print(red('Git merge returned error, exiting'))
