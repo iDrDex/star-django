@@ -197,6 +197,7 @@ def install():
         run('mkdir logs; chmod 777 logs;')
         if not files.exists('app'):
             run('git clone https://github.com/idrdex/star-django.git app')
+            run('git checkout limited')
 
     print(green('Installing packages...'))
     sudo('apt update')
