@@ -379,7 +379,7 @@ def remove_constant_fields(rows):
         key
         for row in rows[1:]
         for key, value in row.items()
-        if rows[0][key] != value
+        if rows[0].get(key) != value
     }
     return [project(row, varying) for row in rows]
 
@@ -398,7 +398,7 @@ def fetch_samples(series_id, platform_id=None):
     if platform_id is not None:
         qs = qs.filter(platform=platform_id)
 
-    return [merge(d, json.loads(d['attrs'])) for d in qs.values()]
+    return [merge(d, d['attrs']) for d in qs.values()]
 
 
 def get_samples_columns(samples):
