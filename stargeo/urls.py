@@ -24,9 +24,7 @@ urlpatterns = patterns('',  # noqa
         name='password_reset'),
     url(r'^accounts/', include('registration.backends.hmac.urls')),
 
-    url(r'^$', 'core.views.dashboard', name='dashboard'),
-
-    url(r'^search/$', 'tags.views.search', name='search'),
+    url(r'^$', 'tags.views.search', name='search'),
     url(r'^tags/$', 'tags.views.tag_control', name='tag_control'),
     url(r'^tags/create/$', 'tags.views.create_tag', name='tag_create'),
     url(r'^tags/(\d+)/$', 'tags.views.tag', name='tag'),

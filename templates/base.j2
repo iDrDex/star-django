@@ -124,9 +124,6 @@
 
         <ul class="nav" id="side-menu">
             <li{% if request.path == '/' %} class="active"{% endif %}>
-                <a href="/"> <span class="nav-label">Dashboard</span></a>
-            </li>
-            <li{% if request.path == '/search/' %} class="active"{% endif %}>
                 <a href="/search/"> <span class="nav-label">Search</span> </a>
             </li>
             <li{% if request.path.startswith('/tags/') %} class="active"{% endif %}>
