@@ -30,6 +30,8 @@ SERIES_MATRIX_URL = urlparse.urlparse('ftp://ftp.ncbi.nih.gov/geo/series/')
 SOCKET_TIMEOUT = 20
 CACHE_TIMEOUT = 2 * 24 * 60 * 60
 
+global_options = {'force': False}
+
 
 class Command(BaseCommand):
     help = 'Updates series, series attributes, platforms, samples and samples attributes \n' \
@@ -46,9 +48,16 @@ class Command(BaseCommand):
             action='store', dest='cond',
             help='Update series satisfying condition'
         ),
+        make_option(
+            '--force',
+            action='store_true', dest='force',
+            help='Update series even if not changed since last run'
+        ),
     )
 
     def handle(self, **options):
+        global_options.update(options)
+
         def gse_file(name):
             truncated = re.sub(r'\d{1,3}$', 'nnn', name)
             return '%s%s/%s/matrix/' % (SERIES_MATRIX_URL.path, truncated, name)
@@ -93,7 +102,7 @@ def load_data(header):
     except Series.DoesNotExist:
         old_last_update = None
     new_last_update = series_df['series_last_update_date'][0]
-    if new_last_update == old_last_update:
+    if new_last_update == old_last_update and not global_options['force']:
         print colored('%s not changed since %s' % (gse_name, old_last_update), 'yellow')
         return
     else:
