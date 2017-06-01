@@ -55,7 +55,7 @@
             {{ samples }} sample{{ samples|pluralize }}.
             {{ platforms }} platform{{ platforms|pluralize }}.
             {% if species|count == 1 %}All{% else %}Species:{% endif %}
-            {{ ', '.join(species|sort) }}.
+            {{ ', '.join((species|sort)[:3]) }}{% if species|count > 3 %} and others{% endif %}.
         </span>
 
         {{ page.paginator.count }} serie{{ page.paginator.count|pluralize }} found,
