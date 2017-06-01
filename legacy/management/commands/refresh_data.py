@@ -54,16 +54,11 @@ class Command(BaseCommand):
             return '%s%s/%s/matrix/' % (SERIES_MATRIX_URL.path, truncated, name)
 
         queue = DataQueue()
-        if options['cond']:
-            cond = dict(re_iter(r'(\w+)=([^;]+)', options['cond']))
-            if 'attrs' in cond:
-                cond['attrs'] = json.loads(cond['attrs'])
 
-            gse_names = Series.objects.filter(**cond).values_list('gse_name', flat=True)
-            print colored('Going to update %d series...' % len(gse_names), attrs=['bold'])
-            queue.put_dirs(gse_file(name) for name in gse_names)
-        else:
-            queue.put_dirs([SERIES_MATRIX_URL.path])
+        # Only update existing series
+        gse_names = Series.objects.values_list('gse_name', flat=True)
+        print colored('Going to update %d series...' % len(gse_names), attrs=['bold'])
+        queue.put_dirs(gse_file(name) for name in gse_names)
 
         # Launch worker threads
         for index in range(options['threads']):
