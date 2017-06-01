@@ -7,6 +7,14 @@
   'competence': 'Competence Test'
 }[request.resolver_match.url_name] %}
 
+{% block messages %}
+    {{ super() }}
+    {% if not tags and not tag %}
+        <div class="alert alert-danger">You don't have any tags. Go to <a href="{{ url('tag_control') }}">tags page</a> and make some.</div>
+    {% endif %}
+{% endblock %}
+
+
 {% block content %}
 {% if serie %}
     {% if not job %}
@@ -156,7 +164,7 @@ $(function () {
 var columns = {{ columns|json }};
 var samples = {{ samples|json }};
 
-{% if tags %}
+{% if tags is defined %}
   var tags = {{ tags|json }};
   var tagNames = _.object(tags.map(function (tag) {
     return [tag.id, tag.tag_name]
