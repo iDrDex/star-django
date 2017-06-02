@@ -69,3 +69,22 @@ class StatisticCache(models.Model):
 
     def __unicode__(self):
         return self.slug
+
+class HistoryStatisticCacheManager(models.Manager):
+    def update_history(self):
+        pass
+
+class HistoryStatisticCache(models.Model):
+    date = models.DateField()
+    series_count = models.PositiveIntegerField()
+    samples_count = models.PositiveIntegerField()
+    platforms_count = models.PositiveIntegerField()
+    probes_count = models.PositiveIntegerField()
+    users_count = models.PositiveIntegerField()
+    tags_count = models.PositiveIntegerField()
+    annotations_count = models.PositiveIntegerField()
+
+    objects = HistoryStatisticCacheManager()
+
+    def __unicode__(self):
+        return 'Statisctic for {0}'.format(self.date)
