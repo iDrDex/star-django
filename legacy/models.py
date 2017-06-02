@@ -55,6 +55,8 @@ class Series(models.Model):
         taxid = distinct(keep(self.attrs.get, ['platform_taxid', 'sample_taxid']))
         if len(taxid) == 1:
             self.specie = SPECIES.get(taxid[0])
+        else:
+            self.specie = ''
 
         self.platforms = re_all(r'GPL\d+', self.attrs['platform_id'])
         self.samples_count = len(self.attrs['sample_id'].split())
