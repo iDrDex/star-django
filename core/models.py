@@ -77,4 +77,4 @@ class HistoricalCounter(models.Model):
     data = JSONField()
 
     def __unicode__(self):
-        return 'Counters for {0}'.format(self.date)
+        return 'Counters for {0}'.format(self.timestamp)
