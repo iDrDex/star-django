@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from legacy.models import Sample, Series, PlatformProbe, Platform, Analysis
 from tags.models import (Tag, SeriesTag, SerieValidation,
                          SampleTag, SampleValidation, )
+from handy.models import JSONField
 
 
 AbstractUser._meta.get_field('username').max_length = 127
@@ -70,21 +71,10 @@ class StatisticCache(models.Model):
     def __unicode__(self):
         return self.slug
 
-class HistoryStatisticCacheManager(models.Manager):
-    def update_history(self):
-        pass
 
-class HistoryStatisticCache(models.Model):
-    date = models.DateField()
-    series_count = models.PositiveIntegerField()
-    samples_count = models.PositiveIntegerField()
-    platforms_count = models.PositiveIntegerField()
-    probes_count = models.PositiveIntegerField()
-    users_count = models.PositiveIntegerField()
-    tags_count = models.PositiveIntegerField()
-    annotations_count = models.PositiveIntegerField()
-
-    objects = HistoryStatisticCacheManager()
+class HistoricalCounter(models.Model):
+    timestamp = models.DateTimeField()
+    data = JSONField()
 
     def __unicode__(self):
-        return 'Statisctic for {0}'.format(self.date)
+        return 'Counters for {0}'.format(self.date)
