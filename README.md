@@ -171,3 +171,20 @@ Here are steps to make local deployment of this app in order to tinker it.
     ```bash
     fab deploy
     ```
+
+## Management Tasks
+
+### Adding GSEs
+
+1. Go to admin panel - ``your-domain.com/admin/``.
+2. Log in as superuser.
+3. Go to Series -> Bulk add series and paste any GSEs you want to add.
+4. Series data is loaded once a day. To update immediately run:
+
+    ```bash
+    # on server
+    ~/venv/bin/python ~/app/manage.py refresh_data
+
+    # or locally
+    fab manage:refresh_data
+    ```
