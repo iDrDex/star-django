@@ -80,16 +80,6 @@ class Sample(models.Model):
         db_table = 'sample'
 
 
-# class SeriesMatrix(models.Model):
-#     gse_name = models.CharField(max_length=127)
-#     gpl_name = models.CharField(max_length=127)
-#     last_updated = models.DateField()
-#     matrix = S3Field()
-
-#     class Meta:
-#         unique_together = ('gse_name', 'gpl_name', 'last_updated')
-
-
 from s3field import S3Field
 
 def analysis_s3name(self):
@@ -107,7 +97,6 @@ class Analysis(models.Model):
     # Reproducibility
     df = S3Field(null=True, make_name=analysis_s3name)
     fold_changes = S3Field(null=True, make_name=analysis_s3name, compress=True)
-    # series_matrices = S3ArrayField(bucket='series_matrices')
     # Stats
     series_count = models.IntegerField(blank=True, null=True)
     platform_count = models.IntegerField(blank=True, null=True)
