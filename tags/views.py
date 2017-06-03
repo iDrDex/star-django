@@ -21,6 +21,7 @@ from core.decorators import block_POST_for_incompetent
 from legacy.models import Series
 from .models import Tag, SeriesTag, SerieAnnotation
 
+
 @render_to()
 def search(request):
     # Save last specie in session
@@ -60,7 +61,7 @@ def search(request):
             messages.warning(request, message)
             return {'series': []}
 
-    series_ids = qs.values_list('id', flat=True)
+    series_ids = qs.values_list('id', flat=True).order_by()
     tags = distinct(imapcat(serie_tags, series_ids), key=itemgetter('id'))
 
     if exclude_tags:
