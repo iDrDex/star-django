@@ -10,5 +10,5 @@ lxml
 cssselect
 django-extensions
 ipdb
-ipython
+ipython>=3.2.2
 fabric>=1.13.2

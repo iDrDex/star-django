@@ -1,5 +1,5 @@
 dj-database-url==0.3.0
-Django==1.8.13
+Django==1.8.18
 django-jinja==1.4.1
 django-jinja-bootstrap-form==4.0.3
 djangorestframework==3.5.3
@@ -13,7 +13,7 @@ Jinja2==2.7.3
 psycopg2==2.6
 redis==2.10.3
 celery==3.1.17
-tqdm==1.0
+tqdm==4.11.2
 requests==2.7.0
 ftptool==0.7.1
 django-cacheops==3.1.1
