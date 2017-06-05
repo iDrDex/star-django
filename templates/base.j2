@@ -73,7 +73,7 @@
         <div class="small-logo">
             <span class="text-primary">STAR APP</span>
         </div>
-        <form role="search" class="navbar-form-custom" method="get" action="/search/" style="width: 70%">
+        <form role="search" class="navbar-form-custom" method="get" action="/" style="width: 70%">
             <div class="form-group">
                 <input type="text" placeholder="Type in keywords" class="form-control" name="q">
             </div>
@@ -124,7 +124,7 @@
 
         <ul class="nav" id="side-menu">
             <li{% if request.path == '/' %} class="active"{% endif %}>
-                <a href="/search/"> <span class="nav-label">Search</span> </a>
+                <a href="/"> <span class="nav-label">Search</span> </a>
             </li>
             <li{% if request.path.startswith('/tags/') %} class="active"{% endif %}>
                 <a href="/tags/"> <span class="nav-label">Tag Control</span> </a>
