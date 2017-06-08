@@ -16,8 +16,8 @@ class Migration(migrations.Migration):
             name='HistoricalCounter',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('timestamp', models.DateTimeField()),
-                ('data', handy.models.fields.JSONField()),
+                ('created_on', models.DateTimeField()),
+                ('counters', handy.models.fields.JSONField()),
             ],
         ),
     ]
