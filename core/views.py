@@ -1,3 +1,4 @@
+import json
 from handy.decorators import render_to
 
 from django import forms
@@ -5,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
 from django.contrib.auth import get_user_model
 
-from .models import StatisticCache
+from .models import StatisticCache, HistoricalCounter
 from .conf import redis_client
 
 
@@ -55,3 +56,12 @@ class ReactivateForm(forms.Form):
             raise ValidationError('User with this email is already active. Just log in.')
         self.user = user
         return email
+
+
+@render_to(template='stats/stats.j2')
+def stats(request):
+    data = [
+        [h.created_on.strftime('%Y-%m-%d'), h.counters]
+        for h in HistoricalCounter.objects.all()
+    ]
+    return {'data': json.dumps(data)}

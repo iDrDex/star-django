@@ -1,0 +1,12 @@
+{% extends "base.j2" %}
+
+{% set page_title = 'Statistic' %}
+
+{% block content %}
+  <div id="chart"></div>
+  <script type="text/javascript" src="{{ FRONTEND }}stats.bundle.js"></script>
+  <script>
+    var data = {{ data|safe }};
+    window.FrontendApp.stats.showStats('#chart', data);
+  </script>
+{% endblock %}
