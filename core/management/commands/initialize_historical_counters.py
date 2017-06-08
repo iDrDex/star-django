@@ -22,7 +22,7 @@ def floor_date(date):
     return datetime(date.year, date.month, 1)
 
 
-START_DATE = datetime(2014, 1, 1)
+START_DATE = datetime(2014, 10, 1)
 CURRENT_DATE = floor_date(datetime.now())
 
 def accumulate(data):
