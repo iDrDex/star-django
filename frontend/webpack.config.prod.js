@@ -12,8 +12,8 @@ module.exports = Object.assign(require('./webpack.config.js'), {
         new webpack.NoErrorsPlugin(),
         new webpack.optimize.UglifyJsPlugin({
             compress: {
-                warnings: false
-            }
+                warnings: false,
+            },
         }),
     ],
 });

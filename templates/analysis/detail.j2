@@ -37,7 +37,7 @@
 {% block style %}
     <link href="https://fonts.googleapis.com/css?family=Ubuntu" rel="stylesheet">
     <link rel="stylesheet" href="{{ static('homer/vendor/datatables_plugins/integration/bootstrap/3/dataTables.bootstrap.css') }}" />
-    <script type="text/javascript" src="{{ FRONTEND }}bundle.js"></script>
+    <script type="text/javascript" src="{{ FRONTEND }}analysis.bundle.js"></script>
     <style type="text/css">
         table.dataTable th, table.dataTable td {white-space: nowrap;}
         .dataTables_scrollBody table.dataTable thead *:after {display: none !important}
@@ -140,7 +140,7 @@
                 alert('Error happend: ' + res.error + (res.help ? '\n' + res.help : ''))
             } else {
                 elem.html('');
-                window.showForestPlot(elem.get(0),tabWidth, res.data);
+                window.FrontendApp.analysis.showForestPlot(elem.get(0),tabWidth, res.data);
             }
         }
     </script>
