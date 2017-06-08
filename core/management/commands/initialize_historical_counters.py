@@ -34,11 +34,19 @@ def gather_by(fn, iterator, date_floor):
         return sum(map(fn, array))
     return walk_values(_gather_fn, group_by(date_floor, iterator))
 
+def get_value(keys, index):
+    """
+    There is no secuence with two or more holes in data array,
+    so we can do only one step back
+    """
+    def _getter(item):
+        return item.get(
+            keys[index],
+            item.get(keys[index - 1 if index > 0 else index], 0))
+    return _getter
+
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        # TODO
-        # * Fix holes
-
         series = accumulate(count_by(floor_attrs_date, Series.objects.all()))
 
         iterator = tqdm(queryset_iterator(Sample.objects.all(), 30000),
@@ -101,8 +109,8 @@ class Command(BaseCommand):
             HistoricalCounter.objects.bulk_create([
                 HistoricalCounter(
                     created_on=key,
-                    counters=walk_values(lambda item: item.get(key, 0), data))
-                for key in keys])
+                    counters=walk_values(get_value(keys, index), data))
+                for index, key in enumerate(keys)])
             HistoricalCounter.objects.create(
                 created_on=CURRENT_DATE,
                 counters={
