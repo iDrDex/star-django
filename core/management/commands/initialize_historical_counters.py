@@ -2,29 +2,30 @@ from funcy import (zipdict, isums, walk_values, group_by, count_by, second, comp
                    first, join_with, partial, compact)
 from tqdm import tqdm
 from handy.db import queryset_iterator
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db.models import Count
 from django.db import transaction
 from django.core.management import BaseCommand
 from core.models import HistoricalCounter
-from legacy.models import Series, Sample, Platform, PlatformProbe
+from legacy.models import Series, Sample, Platform
 from core.models import User
-from tags.models import Tag, SerieAnnotation, SampleAnnotation
+from tags.models import Tag, SerieAnnotation
 
 MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-def floor_attrs_date(model):
+def ceil_attrs_date(model):
     month, day, year = model.attrs.get('submission_date', 'Jan 1 1960').split()
     if month == 'Jans':
         month = 'Jan'
-    return datetime(int(year), MONTHS.index(month) + 1, 1)
+    return ceil_date(datetime(int(year), MONTHS.index(month) + 1, 1))
 
-def floor_date(date):
-    return datetime(date.year, date.month, 1)
+def ceil_date(date):
+    next_month = datetime(date.year, date.month, 1) + timedelta(days=31)
+    return datetime(next_month.year, next_month.month, 1)
 
 
-START_DATE = datetime(2014, 10, 1)
-CURRENT_DATE = floor_date(datetime.now())
+START_DATE = datetime(2014, 11, 1)
+CURRENT_DATE = ceil_date(datetime.now())
 
 def accumulate(data):
     dates, counts = zip(*sorted(data.items()))
@@ -43,16 +44,16 @@ def get_value(keys, index):
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        series = accumulate(count_by(floor_attrs_date, Series.objects.all()))
+        series = accumulate(count_by(ceil_attrs_date, Series.objects.all()))
 
         iterator = tqdm(queryset_iterator(Sample.objects.all(), 30000),
                         total=Sample.objects.count(),
                         desc='samples')
-        samples = accumulate(count_by(floor_attrs_date, iterator))
+        samples = accumulate(count_by(ceil_attrs_date, iterator))
 
         platform_created_on = join_with(
             min,
-            [{p: floor_attrs_date(s) for p in s.platforms}
+            [{p: ceil_attrs_date(s) for p in s.platforms}
              for s in Series.objects.all()])
         qs = Platform.objects.annotate(probes_count=Count('probes'))\
                              .values('gpl_name', 'probes_count')
@@ -65,18 +66,18 @@ class Command(BaseCommand):
         platforms_probes = accumulate(walk_values(
             compose(sum, compact, partial(map, second)), group))
 
-        users = accumulate(count_by(floor_date, User.objects.values_list('date_joined', flat=True)))
+        users = accumulate(count_by(ceil_date, User.objects.values_list('date_joined', flat=True)))
 
-        tags = accumulate(count_by(floor_date, Tag.objects.values_list('created_on', flat=True)))
+        tags = accumulate(count_by(ceil_date, Tag.objects.values_list('created_on', flat=True)))
 
         qs = SerieAnnotation.objects.values_list('created_on', flat=True)
-        serie_annotations = accumulate(count_by(floor_date, qs))
+        serie_annotations = accumulate(count_by(ceil_date, qs))
 
         values = SerieAnnotation.objects.all()\
             .annotate(samples_annotation_count=Count('sample_annotations'))\
             .values_list('created_on', 'samples_annotation_count')
 
-        group = group_by(compose(floor_date, first), values)
+        group = group_by(compose(ceil_date, first), values)
         sample_annotations = accumulate(walk_values(
             compose(sum, partial(map, second)), group))
 
@@ -108,15 +109,3 @@ class Command(BaseCommand):
                     created_on=key,
                     counters=walk_values(get_value(keys, index), data))
                 for index, key in enumerate(keys)])
-            HistoricalCounter.objects.create(
-                created_on=CURRENT_DATE,
-                counters={
-                    'series': Series.objects.count(),
-                    'samples': Sample.objects.count(),
-                    'platforms': Platform.objects.count(),
-                    'platforms_probes': PlatformProbe.objects.count(),
-                    'users': User.objects.count(),
-                    'tags': Tag.objects.count(),
-                    'serie_annotations': SerieAnnotation.objects.count(),
-                    'sample_annotations': SampleAnnotation.objects.count(),
-                })
