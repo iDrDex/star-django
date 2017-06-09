@@ -76,5 +76,5 @@ urlpatterns = patterns('',  # noqa
     url(r'^api/', include(router.urls)),
     url(r'^docs', SwaggerSchemaView.as_view()),
 
-    url(r'^statistics$', 'core.views.stats', name='statistics'),
+    url(r'^statistics/$', 'core.views.stats', name='statistics'),
 )

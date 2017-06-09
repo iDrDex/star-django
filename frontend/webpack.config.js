@@ -11,7 +11,7 @@ module.exports = {
     output: {
         path: path.join(__dirname, 'public'),
         filename: '[name].bundle.js',
-        library: ['FrontendApp', '[name]'],
+        library: ['App', '[name]'],
         libraryTarget: 'window',
     },
     resolve: {

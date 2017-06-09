@@ -140,7 +140,7 @@
                 alert('Error happend: ' + res.error + (res.help ? '\n' + res.help : ''))
             } else {
                 elem.html('');
-                window.FrontendApp.analysis.showForestPlot(elem.get(0),tabWidth, res.data);
+                window.App.analysis.showForestPlot(elem.get(0),tabWidth, res.data);
             }
         }
     </script>

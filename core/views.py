@@ -1,4 +1,3 @@
-import json
 from handy.decorators import render_to
 
 from django import forms
@@ -64,4 +63,4 @@ def stats(request):
         [h.created_on.strftime('%Y-%m-%d'), h.counters]
         for h in HistoricalCounter.objects.all()
     ]
-    return {'data': json.dumps(data)}
+    return {'data': data}
