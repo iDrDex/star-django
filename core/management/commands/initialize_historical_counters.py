@@ -1,4 +1,5 @@
-from funcy import zipdict, isums, walk_values, group_by, count_by, second, compose, first
+from funcy import (zipdict, isums, walk_values, group_by, count_by, second, compose,
+                   first, join_with, partial, compact)
 from tqdm import tqdm
 from handy.db import queryset_iterator
 from datetime import datetime
@@ -29,11 +30,6 @@ def accumulate(data):
     dates, counts = zip(*sorted(data.items()))
     return zipdict(dates, isums(counts))
 
-def gather_by(fn, iterator, date_floor):
-    def _gather_fn(array):
-        return sum(map(fn, array))
-    return walk_values(_gather_fn, group_by(date_floor, iterator))
-
 def get_value(keys, index):
     """
     There is no secuence with two or more holes in data array,
@@ -54,21 +50,20 @@ class Command(BaseCommand):
                         desc='samples')
         samples = accumulate(count_by(floor_attrs_date, iterator))
 
-        iterator = tqdm(Platform.objects.all().annotate(probes_count=Count('probes')).iterator(),
-                        total=Platform.objects.count(),
-                        desc='platforms')
+        platform_created_on = join_with(
+            min,
+            [{p: floor_attrs_date(s) for p in s.platforms}
+             for s in Series.objects.all()])
+        qs = Platform.objects.annotate(probes_count=Count('probes'))\
+                             .values('gpl_name', 'probes_count')
         platforms_data = [
-            {
-                'created_on': min(map(floor_attrs_date, platform.sample_set.all())),
-                'probes_count': platform.probes_count
-            }
-            for platform in iterator
+            [platform_created_on[item['gpl_name']], item['probes_count']]
+            for item in qs
         ]
-        platforms = accumulate(count_by(lambda p: p['created_on'], platforms_data))
-        platforms_probes = accumulate(gather_by(
-            lambda p: p['probes_count'],
-            platforms_data,
-            lambda p: p['created_on']))
+        platforms = accumulate(count_by(first, platforms_data))
+        group = group_by(first, platforms_data)
+        platforms_probes = accumulate(walk_values(
+            compose(sum, compact, partial(map, second)), group))
 
         users = accumulate(count_by(floor_date, User.objects.values_list('date_joined', flat=True)))
 
@@ -77,11 +72,13 @@ class Command(BaseCommand):
         qs = SerieAnnotation.objects.values_list('created_on', flat=True)
         serie_annotations = accumulate(count_by(floor_date, qs))
 
-        qs = SerieAnnotation.objects.all()\
+        values = SerieAnnotation.objects.all()\
             .annotate(samples_annotation_count=Count('sample_annotations'))\
             .values_list('created_on', 'samples_annotation_count')
 
-        sample_annotations = accumulate(gather_by(second, qs, compose(floor_date, first)))
+        group = group_by(compose(floor_date, first), values)
+        sample_annotations = accumulate(walk_values(
+            compose(sum, partial(map, second)), group))
 
         keys = sorted(
             [key for key in set(series.keys() +
