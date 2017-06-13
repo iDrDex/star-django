@@ -1,5 +1,5 @@
-from funcy import (zipdict, isums, walk_values, group_by, count_by, second, compose,
-                   first, join_with, partial, compact)
+from funcy import (zipdict, isums, walk_values, count_by, group_values,
+                   first, join_with, )
 from tqdm import tqdm
 from handy.db import queryset_iterator
 from datetime import datetime, timedelta
@@ -62,9 +62,8 @@ class Command(BaseCommand):
             for item in qs
         ]
         platforms = accumulate(count_by(first, platforms_data))
-        group = group_by(first, platforms_data)
-        platforms_probes = accumulate(walk_values(
-            compose(sum, compact, partial(map, second)), group))
+        group = group_values(platforms_data)
+        platforms_probes = accumulate(walk_values(sum, group))
 
         users = accumulate(count_by(ceil_date, User.objects.values_list('date_joined', flat=True)))
 
@@ -77,9 +76,8 @@ class Command(BaseCommand):
             .annotate(samples_annotation_count=Count('sample_annotations'))\
             .values_list('created_on', 'samples_annotation_count')
 
-        group = group_by(compose(ceil_date, first), values)
-        sample_annotations = accumulate(walk_values(
-            compose(sum, partial(map, second)), group))
+        group = group_values((ceil_date(date), count) for (date, count) in values.iterator())
+        sample_annotations = accumulate(walk_values(sum, group))
 
         keys = sorted(
             [key for key in set(series.keys() +
