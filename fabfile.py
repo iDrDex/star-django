@@ -251,3 +251,13 @@ def install():
     manage('update_ontologies')
 
     execute(deploy)
+
+
+def install_node():
+    # draft implementation
+    print(green('Installing node.js...'))
+    run('curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -')
+    sudo('apt install --yes nodejs')
+
+    with cd('frontend'):
+        run('npm install')
