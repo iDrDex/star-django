@@ -147,7 +147,7 @@ import dj_database_url
 DUMP_COMMAND = 'PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s ' \
                '| gzip --fast --rsyncable > stargeo.sql.gz'
 
-def pull_db(dump='app'):
+def pull_db(dump='backup'):
     app_env = honcho.environ.parse(open('.env').read())
     remote_db = dj_database_url.parse(app_env['REAL_DATABASE_URL'])
     local_db = dj_database_url.parse(app_env['DATABASE_URL'])
@@ -165,6 +165,9 @@ def pull_db(dump='app'):
         print('Downloading dump...')
         local('rsync -av --progress stargeo:/home/ubuntu/app/stargeo.sql.gz stargeo.sql.gz')
         run('rm stargeo.sql.gz')
+    elif dump == 'backup':
+        # Alternative: fetch latests db backup
+        local('rsync -av --progress stargeo:/home/ubuntu/db-backups/stargeo.sql.gz stargeo.sql.gz')
     elif dump == 'local':
         print('Using local dump...')
         if not os.path.exists('stargeo.sql.gz'):
