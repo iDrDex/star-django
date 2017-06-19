@@ -7,7 +7,7 @@ from fabric.colors import green, red
 __all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
            'shell', 'ssh', 'config',
            'restart', 'manage', 'install_requirements', 'migrate',
-           'pull_db', 'set_things_up')
+           'pull_db', 'backup_db', 'install')
 
 
 django.project('stargeo')
@@ -144,24 +144,24 @@ import os.path
 import honcho.environ
 import dj_database_url
 
+DUMP_COMMAND = 'PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s ' \
+               '| gzip --fast --rsyncable > stargeo.sql.gz'
+
 def pull_db(dump='app'):
     app_env = honcho.environ.parse(open('.env').read())
     remote_db = dj_database_url.parse(app_env['REAL_DATABASE_URL'])
     local_db = dj_database_url.parse(app_env['DATABASE_URL'])
 
-    DUMP_COMMAND = 'PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s ' \
-                   '| gzip --fast --rsyncable > stargeo.sql.gz' % remote_db
-
     # Make and download database dump
     if dump == 'direct':
         # Dump directly from remote database with local pg_dump
         print('Making database dump...')
-        local(DUMP_COMMAND)
+        local(DUMP_COMMAND % remote_db)
     elif dump == 'app':
         # Alternative: dump to app-server than rsync here,
         #              useful with slow or flaky internet connection.
         print('Making database dump...')
-        run(DUMP_COMMAND)
+        run(DUMP_COMMAND % remote_db)
         print('Downloading dump...')
         local('rsync -av --progress stargeo:/home/ubuntu/app/stargeo.sql.gz stargeo.sql.gz')
         run('rm stargeo.sql.gz')
@@ -184,6 +184,24 @@ def pull_db(dump='app'):
 
     # Load dump
     local('gzip -cd stargeo.sql.gz | psql -Upostgres -f -')
+
+
+def backup_db():
+    app_env = honcho.environ.parse(open('.env').read())
+    db = dj_database_url.parse(app_env['DATABASE_URL'])
+
+    local(DUMP_COMMAND % db)
+
+    local("mkdir -p ../db-backups")
+    local("rdiff-backup --include ./stargeo.sql.gz --exclude '**' . ../db-backups")
+    local("rdiff-backup --remove-older-than 30B ../db-backups")
+    local("rm stargeo.sql.gz")
+
+    # Restore
+    #   gzip -cd ../db-backups/strageo.sql.gz | psql -Upostgres -h db -f -
+    # Or
+    #   rdiff-backup -r 3D ../db-backups/stargeo.sql.gz stargeo.sql.gz
+    #   gzip -cd strageo.sql.gz | psql -Upostgres -h db -f -
 
 
 def install():

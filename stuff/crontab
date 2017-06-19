@@ -10,3 +10,5 @@
 15 1   * * 2-6 cd /home/ubuntu/app && ../venv/bin/python manage.py fill_probes --redo=100
 # Update ontologies from http://bioportal.bioontology.org/ API
 15 */8   * * 2-6 cd /home/ubuntu/app && ../venv/bin/python manage.py update_ontologies
+# Database backups
+20 0   * * *   cd /home/ubuntu/app && ../venv/bin/fab backup_db
