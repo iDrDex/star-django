@@ -1,5 +1,4 @@
 from handy.decorators import render_to
-from collections import defaultdict
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -12,14 +11,9 @@ from .conf import redis_client
 
 @render_to(template='dashboard.j2')
 def dashboard(request):
-    stats = defaultdict(str)
-    stats.update({
-        stat['slug']: stat['count'] for stat
-        in StatisticCache.objects.values('slug', 'count')
-    })
-    stats['graph'] = redis_client.get('core.graph')
     return {
-        'stats': stats
+        'stats': dict(StatisticCache.objects.values_list('slug', 'count')),
+        'graph': redis_client.get('core.graph'),
     }
 
 
