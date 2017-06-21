@@ -2,17 +2,10 @@ from funcy import all, walk_keys
 
 from rest_framework import serializers
 
-from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe, Sample
+from legacy.models import Platform, Series, Analysis, MetaAnalysis, Sample
 from tags.models import SerieAnnotation, Tag
 
 from .fields import S3Field
-
-
-class PlatformSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Platform
-        exclude = ('stats', 'history',
-                   'verdict', 'last_filled', )
 
 
 class SeriesSerializer(serializers.ModelSerializer):
@@ -113,7 +106,9 @@ class MetaAnalysisSerializer(serializers.ModelSerializer):
         model = MetaAnalysis
         fields = '__all__'
 
-class PlatformProbeSerializer(serializers.ModelSerializer):
+
+class PlatformSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PlatformProbe
-        fields = '__all__'
+        model = Platform
+        exclude = ('stats', 'history',
+                   'verdict', 'last_filled', )

@@ -24,7 +24,7 @@ from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
 from .serializers import (PlatformSerializer, SeriesSerializer, AnalysisSerializer,
                           AnalysisParamSerializer, SerieAnnotationSerializer,
-                          TagSerializer, MetaAnalysisSerializer, PlatformProbeSerializer,
+                          TagSerializer, MetaAnalysisSerializer,
                           SampleAnnotationValidator, SampleSerializer,
                           )
 
@@ -66,10 +66,9 @@ class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
             return Response(status=400, data=data)
     df.action = 'list'
 
-    @list_route(url_path="probes/(?P<gpl_name>[^/.]+)")
+    @list_route(url_path="probes/(?P<gpl_name>GPL\d+)")
     def probes(self, request, gpl_name):
-        qs = PlatformProbe.objects.filter(
-            platform__gpl_name=gpl_name).order_by('id')
+        qs = PlatformProbe.objects.filter(platform__gpl_name=gpl_name)
         probes_df = qs.to_dataframe(
             fieldnames=['probe', 'mygene_sym', 'mygene_entrez']
         )
@@ -158,10 +157,6 @@ class MetaAnalysisViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = MetaAnalysis.objects.all()
     serializer_class = MetaAnalysisSerializer
 
-
-class PlatformProbeViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = PlatformProbe.objects.all()
-    serializer_class = PlatformProbeSerializer
 
 class SampleFilter(django_filters.rest_framework.FilterSet):
     series = django_filters.CharFilter(name='series__gse_name')

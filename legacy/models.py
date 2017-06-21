@@ -25,7 +25,9 @@ class Platform(models.Model):
 
 
 class PlatformProbe(models.Model):
-    platform = models.ForeignKey(Platform, related_name='probes', db_index=True)
+    # The next line is phony primary_key to stop Django from creating id field.
+    # Field plus index weighed almost 2GB as of June 2017, so I got rid of them.
+    platform = models.ForeignKey(Platform, related_name='probes', primary_key=True)
     probe = models.TextField()
     mygene_sym = models.TextField()
     mygene_entrez = models.IntegerField()

@@ -268,7 +268,7 @@ def get_data(gse_name, gpl_name):
 
 @log_durations(logger.debug)
 def get_probes(gpl_name):
-    df = PlatformProbe.objects.filter(platform__gpl_name=gpl_name).order_by('id').to_dataframe()
+    df = PlatformProbe.objects.filter(platform__gpl_name=gpl_name).to_dataframe()
     df.columns = [col.lower().replace("platform_probe.", "") for col in df.columns]
     df.probe = df.probe.astype(str)  # must cast probes as str
     df = df.set_index('probe')

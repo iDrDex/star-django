@@ -76,6 +76,7 @@ WSGI_APPLICATION = 'stargeo.wsgi.application'
 
 AUTH_USER_MODEL = 'core.User'
 
+SILENCED_SYSTEM_CHECKS = ['fields.W342']
 
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
