@@ -240,7 +240,7 @@ def mygene_fetch(platform, probes, scopes):
     return results
 
 
-@file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key, extra=1)
+@file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key)
 @retry(50, errors=requests.HTTPError, timeout=60)
 def _mygene_fetch(queries, scopes, specie):
     fields = ['entrezgene', 'symbol']
@@ -268,8 +268,9 @@ def get_dna_probes(platform, probes):
     # Write probes file
     probes_name = os.path.join(settings.BASE_DIR, "_files/%s.probes" % platform.gpl_name)
     with open(probes_name + ".fa", "w") as f:
-        fasta = ">" + probes.index.map(str) + "\n" + probes
-        f.write("\n".join(fasta))
+        # Using numeric idents here cause probe names can contain spaces
+        i_to_probe = {str(i): probe for i, probe in enumerate(probes.index)}
+        f.write("\n".join('>%s\n%s' % (i, seq) for i, seq in enumerate(probes)))
 
     # Match sequences
     probes_fa = probes_name + ".fa"
@@ -295,7 +296,7 @@ def get_dna_probes(platform, probes):
         data = {}
         for result in parser:
             best_hit = max(result, key=lambda hit: max(hsp.score for hsp in hit))
-            data[best_hit.query_id] = best_hit.id
+            data[i_to_probe[best_hit.query_id]] = best_hit.id
     except AssertionError:
         # Failed parsing, probably broken psl
         if psl_written:
