@@ -180,12 +180,14 @@ def fill_probes(platform_id):
 SCOPE_COLUMNS = (
     ('dna', ['sequence', 'platform_sequence', 'probe_sequence', 'probeseq', 'mature_sequence',
              'probeset_target_sequence']),
-    ('unigene', ['unigene_id', 'unigene', 'clusterid', 'cluster_id', 'cluster_id_unigene']),
+    ('unigene', ['unigene_id', 'unigene', 'clusterid', 'cluster_id', 'cluster_id_unigene',
+                 'unigene_cluster_id']),
     ('refseq', ['refseq', 'refseq_transcript_id', 'representative_public_id']),
     ('accession', ['gb_acc', 'gene_bank_acc', 'gene_bank_accession', 'gen_bank_accession',
-                   'genbank_accession', 'gb_list', 'acc_no', 'accession']),
+                   'genbank_accession', 'gb_list', 'acc_no', 'accession',
+                   'unigene_accession']),
     ('symbol,alias', ['gene_symbol', 'unigene_symbol', 'symbol', 'genesymbol', 'gene',
-                      'ilmn_gene', 'gene_symbols']),
+                      'ilmn_gene', 'gene_symbols', 'unigene_gene_symbol']),
     ('entrezgene,retired', ['entrez', 'entrez_id', 'entrez_gene', 'entrez_gene_id']),
     ('ensemblgene', ['ensembl', 'ensembl_id', 'ensembl_gene', 'ensembl_gene_id', 'ensg_id',
                      'transcript_id', 'geneids_ensmusg']),
@@ -198,6 +200,18 @@ SCOPE_COLUMNS = (
         ['primary_sequence_name', 'sequence_code', 'sequence_name_s', 'spot_id', 'seq_id',
          'geneids']),
 )
+TRASH_COLUMS = {
+    'chromosome', 'chromosome_annotation', 'chromosome_location', 'unigene_chromosome',
+    'gene_title', 'nucleotide_title', 'unigene_gene_name', 'unigene_title',
+    'gi', 'platform_spotid', 'tissue',
+    'go_component', 'go_component_id', 'go_function', 'go_function_id', 'go_process',
+    'go_process_id',
+}
+# 'platform_cloneid', 'platform_orf' - check more
+
+def newcols(df):
+    known_cols = set(cat(cols for _, cols in SCOPE_COLUMNS)) | TRASH_COLUMS
+    return remove(known_cols, df.columns)
 
 
 def mygene_fetch(platform, probes, scopes):
