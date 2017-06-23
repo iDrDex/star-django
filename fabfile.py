@@ -6,7 +6,7 @@ from fabric.colors import green, red
 
 __all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
            'shell', 'ssh', 'config',
-           'restart', 'manage', 'install_requirements', 'migrate',
+           'restart', 'manage', 'install_requirements', 'install_crontab', 'migrate',
            'pull_db', 'backup_db', 'install')
 
 
@@ -71,7 +71,9 @@ def install_requirements():
 
 
 def install_crontab():
-    run('crontab stuff/crontab')
+    app_env = honcho.environ.parse(run('grep ADMIN= .env'))
+    name, email = app_env['ADMIN'].split(':')
+    run('sed s/{EMAIL}/%s/ stuff/crontab | crontab -' % email)
 
 
 def deploy():
