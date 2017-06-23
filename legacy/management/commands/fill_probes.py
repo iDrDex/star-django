@@ -240,18 +240,43 @@ def mygene_fetch(platform, probes, scopes):
     return results
 
 
-@file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key)
+import cPickle as pickle
+import redis
+redis_client = redis.StrictRedis.from_url('redis://localhost/2')
+
+
 @retry(50, errors=requests.HTTPError, timeout=60)
 def _mygene_fetch(queries, scopes, specie):
-    fields = ['entrezgene', 'symbol']
-    mg = mygene.MyGeneInfo()
     cprint('> Going to query %d genes in %s...' % (len(queries), scopes), 'cyan')
     cprint('>     sample queries: %s' % ', '.join(take(8, queries)), 'cyan')
-    data = mg.querymany(queries, scopes=scopes, fields=fields,
-                        species=specie, email='suor.web@gmail.com')
-    res = {item['query']: (item['entrezgene'], item['symbol'])
-           for item in data
-           if not item.get('notfound') and 'entrezgene' in item and 'symbol' in item}
+    # Read cache
+    prefix = '%s-%s:' % (specie, scopes)
+    keys = [prefix + q for q in queries]
+    res = {k: pickle.loads(v) if v else ''
+           for k, v in izip(queries, redis_client.mget(keys))
+           if v is not None}
+    if res:
+        queries = set(queries) - set(res)
+        print('Got %d from cache, %d queries left' % (len(res), len(queries)))
+
+    if queries:
+        fields = ['entrezgene', 'symbol']
+        mg = mygene.MyGeneInfo()
+        data = mg.querymany(queries, scopes=scopes, fields=fields,
+                            species=specie, email='suor.web@gmail.com')
+        new = {str(item['query']): (item['entrezgene'], item['symbol'])
+               for item in data
+               if not item.get('notfound') and 'entrezgene' in item and 'symbol' in item}
+        res.update(new)
+        # Cache results and fails
+        pipe = redis_client.pipeline(transaction=False)
+        for k, v in new.iteritems():
+            pipe.setex(prefix + k, CACHE_TIMEOUT, pickle.dumps(v, -1))
+        for k in queries - set(new):
+            pipe.setex(prefix + k, CACHE_TIMEOUT, '')
+        pipe.execute()
+
+    res = {k: v for k, v in res.iteritems() if v != ''}
     cprint('-> Got %d matches' % len(res), 'yellow')
     return res
 
