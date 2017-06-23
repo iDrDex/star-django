@@ -1,5 +1,5 @@
 from funcy import (zipdict, isums, walk_values, count_by, group_values,
-                   first, join_with, merge, )
+                   first, join_with, merge, walk_keys, silent)
 from collections import defaultdict
 from tqdm import tqdm
 from handy.db import queryset_iterator
@@ -55,9 +55,8 @@ def distribute_by_created_on(qs):
 
 def distribute_serie_and_sample_annotations(qs):
     serie_annotations = distribute_by_created_on(qs)
-    values = qs.annotate(samples_annotation_count=Count('sample_annotations'))\
-        .values_list('created_on', 'samples_annotation_count')
-    group = group_values((ceil_date(date), count) for (date, count) in values.iterator())
+    values = qs.values_list('created_on', 'samples')
+    group = group_values(walk_keys(ceil_date, values.iterator()))
     return serie_annotations, accumulate(walk_values(sum, group))
 
 
@@ -70,15 +69,18 @@ def get_serie_tag_history():
     qs = SeriesTag.objects.filter(is_active=True).prefetch_related('validations')
 
     for tag in tqdm(qs, total=qs.count(), desc='series tag history'):
+        validations = list(tag.validations.all())
         serie_tag_history['created'][ceil_date(tag.created_on)] += 1
-        validated = first(sorted([v.created_on
-                                  for v in tag.validations.all()
-                                  if v.annotation_kappa == 1]))
+        validated = silent(min)(
+            v.created_on
+            for v in validations
+            if v.annotation_kappa == 1)
         if validated:
             serie_tag_history['validated'][ceil_date(validated)] += 1
-            invalidated = first(sorted([v.created_on
-                                        for v in tag.validations.all()
-                                        if v.agrees_with is not None]))
+            invalidated = silent(min)(
+                v.created_on
+                for v in validations
+                if v.agrees_with is not None)
             if invalidated:
                 serie_tag_history['invalidated'][ceil_date(invalidated)] += 1
 
