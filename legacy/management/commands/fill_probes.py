@@ -285,18 +285,19 @@ def get_dna_probes(platform, probes):
                  -minIdentity=0
                  {probes_fa} {probes_psl}""".format(**locals())
         print "BLATTING RefSeq mRNAs..."
-        with print_durations('blatting %s' % platform.gpl_name):
+        with print_durations('blatting ' + platform.gpl_name):
             output = subprocess.check_call(cmd.split(), stdout=sys.stdout, stderr=sys.stderr)
             psl_written = True
 
     # Parse results
     try:
         print "Parsing %s psl..." % platform.gpl_name
-        parser = SearchIO.parse(probes_psl, "blat-psl")
-        data = {}
-        for result in parser:
-            best_hit = max(result, key=lambda hit: max(hsp.score for hsp in hit))
-            data[i_to_probe[best_hit.query_id]] = best_hit.id
+        with print_durations('parsing ' + platform.gpl_name):
+            parser = SearchIO.parse(probes_psl, "blat-psl")
+            data = {}
+            for result in parser:
+                best_hit = max(result, key=lambda hit: max(hsp.score for hsp in hit))
+                data[i_to_probe[best_hit.query_id]] = best_hit.id
     except AssertionError:
         # Failed parsing, probably broken psl
         if psl_written:
