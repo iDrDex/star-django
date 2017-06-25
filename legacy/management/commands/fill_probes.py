@@ -258,13 +258,25 @@ import cPickle as pickle
 import redis
 redis_client = redis.StrictRedis.from_url('redis://localhost/2')
 
+# Fill in prefixes to be shorter
+SPECIE_PREFIXES = {'human': 'h', 'rat': 'r', 'mouse': 'm'}
+PREFIXES = {
+    'ensemblgene': 'eg', 'ensembltranscript': 'et',
+    'symbol,alias,refseq,accession,ensemblgene,ensembltranscript,unigene': 'shit',
+}
+for scopes, _ in SCOPE_COLUMNS:
+    if scopes not in PREFIXES:
+        prefix = ''.join(w[0] for w in scopes.split(','))
+        assert prefix not in PREFIXES.values(), 'Dup prefix %s for %s' % (prefix, scopes)
+        PREFIXES[scopes] = prefix
+
 
 @retry(50, errors=requests.HTTPError, timeout=60)
 def _mygene_fetch(queries, scopes, specie):
     cprint('> Going to query %d genes in %s...' % (len(queries), scopes), 'cyan')
     cprint('>     sample queries: %s' % ', '.join(take(8, queries)), 'cyan')
     # Read cache
-    prefix = '%s-%s:' % (specie, scopes)
+    prefix = '%s-%s:' % (SPECIE_PREFIXES[specie], PREFIXES[scopes])
     keys = [prefix + q for q in queries]
     res = {k: pickle.loads(v) if v else ''
            for k, v in izip(queries, redis_client.mget(keys))
