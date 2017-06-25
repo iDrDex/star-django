@@ -195,7 +195,8 @@ def backup_db():
     app_env = honcho.environ.parse(open('.env').read())
     db = dj_database_url.parse(app_env['DATABASE_URL'])
 
-    local(DUMP_COMMAND % db)
+    with hide('stderr'):
+        local(DUMP_COMMAND % db)
 
     local("mkdir -p ../db-backups")
     local("rdiff-backup --include ./stargeo.sql.gz --exclude '**' . ../db-backups")
