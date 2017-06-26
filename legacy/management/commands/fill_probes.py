@@ -199,6 +199,15 @@ SCOPE_COLUMNS = (
         ['primary_sequence_name', 'sequence_code', 'sequence_name_s', 'spot_id', 'seq_id',
          'geneids']),
 )
+SCOPE_CHECK = {
+    'unigene': r'^[A-Za-z]+\.\d+$',
+    'refseq': r'^[A-Z]+_\d+$',
+    'accession': r'^[A-Z]+_?[\d.]+$',
+    'symbol': r'^([A-Za-z0-9][A-Za-z0-9_/()<>;.+-]*[A-Za-z0-9>@]|[A-Za-z])$',
+    'entrezgene': r'^\d+$', 'retired': r'^\d+$',
+    'ensembl': r'^ENS[A-Z]+\d+$',
+}
+SCOPE_CHECK['alias'] = SCOPE_CHECK['other_names'] = SCOPE_CHECK['symbol']
 TRASH_COLUMS = {
     'chromosome', 'chromosome_annotation', 'chromosome_location', 'unigene_chromosome',
     'gene_title', 'nucleotide_title', 'unigene_gene_name', 'unigene_title',
