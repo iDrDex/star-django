@@ -230,6 +230,7 @@ def mygene_fetch(platform, probes, scopes):
 
     def extract_queries(lines):
         queries = icat(re_iter(r'[\w+.-]+', l) for l in lines)
+        queries = iremove(r'_at$', queries)  # No such thing
         # Clean unicode for mygene
         # http://stackoverflow.com/questions/15321138/removing-unicode-u2026-like-characters
         return [q.decode('unicode_escape').encode('ascii', 'ignore') for q in queries]
