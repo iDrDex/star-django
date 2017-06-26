@@ -279,6 +279,9 @@ for scopes, _ in SCOPE_COLUMNS:
         assert prefix not in PREFIXES.values(), 'Dup prefix %s for %s' % (prefix, scopes)
         PREFIXES[scopes] = prefix
 
+def mget(keys):
+    return cat(redis_client.mget(chunk) for chunk in chunks(10000, keys))
+
 
 @retry(50, errors=requests.HTTPError, timeout=60)
 def _mygene_fetch(queries, scopes, specie):
@@ -288,7 +291,7 @@ def _mygene_fetch(queries, scopes, specie):
     prefix = '%s-%s:' % (SPECIE_PREFIXES[specie], PREFIXES[scopes])
     keys = [prefix + q for q in queries]
     res = {k: pickle.loads(v) if v else ''
-           for k, v in izip(queries, redis_client.mget(keys))
+           for k, v in izip(queries, mget(keys))
            if v is not None}
     if res:
         queries = set(queries) - set(res)
