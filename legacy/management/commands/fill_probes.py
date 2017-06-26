@@ -189,13 +189,14 @@ SCOPE_COLUMNS = (
     ('symbol,alias', ['gene_symbol', 'unigene_symbol', 'symbol', 'genesymbol', 'gene',
                       'ilmn_gene', 'gene_symbols', 'unigene_gene_symbol']),
     ('entrezgene,retired', ['entrez', 'entrez_id', 'entrez_gene', 'entrez_gene_id']),
-    ('ensembl', ['ensembl', 'ensembl_id', 'ensemblid' 'ensembl_gene', 'ensembl_gene_id', 'ensg_id',
-                 'transcript_id', 'geneids_ensmusg']),
+    ('ensemblgene,ensembltranscript',
+        ['ensembl', 'ensembl_id', 'ensemblid' 'ensembl_gene', 'ensembl_gene_id', 'ensg_id',
+         'transcript_id', 'geneids_ensmusg']),
     ('unigene,symbol,alias', ['compositesequence_identifier', 'compositesequence_name']),
-    ('entrezgene,retired,ensembl', ['gene_id', 'gene_ids', 'geneid_locusid']),
-    ('entrezgene,retired,ensembl,symbol,alias', ['orf', 'orf_list']),
+    ('entrezgene,retired,ensemblgene', ['gene_id', 'gene_ids', 'geneid_locusid']),
+    ('entrezgene,retired,ensemblgene,symbol,alias', ['orf', 'orf_list']),
     ('symbol,alias,other_names', ['reporter_name', 'gene_name', 'mirna_id', 'mirna_id_list']),
-    ('symbol,alias,refseq,accession,ensembl,unigene',
+    ('symbol,alias,refseq,accession,ensemblgene,ensembltranscript,unigene',
         ['primary_sequence_name', 'sequence_code', 'sequence_name_s', 'spot_id', 'seq_id',
          'geneids']),
 )
@@ -271,7 +272,7 @@ redis_client = redis.StrictRedis.from_url('redis://localhost/2')
 SPECIE_PREFIXES = {'human': 'h', 'rat': 'r', 'mouse': 'm'}
 PREFIXES = {
     'ensemblgene': 'eg', 'ensembltranscript': 'et',
-    'symbol,alias,refseq,accession,ensemblgene,ensembltranscript,unigene': 'shit',
+    'symbol,alias,refseq,accession,ensemblgene,ensembletranscript,unigene': 'shit',
 }
 for scopes, _ in SCOPE_COLUMNS:
     if scopes not in PREFIXES:
