@@ -7,7 +7,8 @@ from fabric.colors import green, red
 __all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
            'shell', 'ssh', 'config',
            'restart', 'manage', 'install_requirements', 'install_crontab', 'migrate',
-           'pull_db', 'backup_db', 'install')
+           'pull_db', 'backup_db', 'install',
+           'conf_nginx', 'offline', 'online')
 
 
 django.project('stargeo')
@@ -284,5 +285,14 @@ def install_node():
     run('curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -')
     sudo('apt install --yes nodejs')
 
-    with cd('frontend'):
-        run('npm install')
+
+def conf_nginx():
+    sudo('cp stuff/nginx.conf /etc/nginx/sites-enabled/stargeo.conf')
+    sudo('service nginx reload')
+
+
+def offline():
+    run('touch offline')
+
+def online():
+    run('rm offline')
