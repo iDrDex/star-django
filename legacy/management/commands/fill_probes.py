@@ -187,7 +187,7 @@ SCOPE_COLUMNS = (
                    'genbank_accession', 'gb_list', 'acc_no', 'accession',
                    'unigene_accession']),
     ('symbol,alias', ['gene_symbol', 'unigene_symbol', 'symbol', 'genesymbol', 'gene',
-                      'ilmn_gene', 'gene_symbols', 'unigene_gene_symbol']),
+                      'ilmn_gene', 'gene_symbols', 'unigene_gene_symbol', 'clone_id']),
     ('entrezgene,retired', ['entrez', 'entrez_id', 'entrez_gene', 'entrez_gene_id']),
     ('ensemblgene,ensembltranscript',
         ['ensembl', 'ensembl_id', 'ensemblid' 'ensembl_gene', 'ensembl_gene_id', 'ensg_id',
@@ -215,8 +215,17 @@ TRASH_COLUMS = {
     'gi', 'platform_spotid', 'tissue',
     'go_component', 'go_component_id', 'go_function', 'go_function_id', 'go_process',
     'go_process_id',
+    'penat', 'rowat', 'columnat', 'block', 'row', 'column', 'platepos',
+    # Names
+    'clonetitle'
 }
 # 'platform_cloneid', 'platform_orf' - check more
+# chromosomechromosomestart, chromosomeend, formsthatutilizeprobeset, orientation, targetid_at
+# uniqueprobesinset, platepos, plateId, start, stop, chr, position, snp_id, type
+# probeset_name,  probeset
+
+# 2971, 358, 37, 344, 598, 876, 891, 998,
+# Success - 484,
 
 def newcols(df):
     known_cols = set(cat(cols for _, cols in SCOPE_COLUMNS)) | TRASH_COLUMS
