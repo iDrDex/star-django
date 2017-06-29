@@ -247,9 +247,9 @@ class SerieAnnotation(models.Model):
     You can also restrict quality by filtering on fleiss_kappa or best_cohens_kappa.
     """
     series_tag = models.OneToOneField(SeriesTag, related_name='canonical')
-    series = models.ForeignKey('legacy.Series', blank=True, null=True)
-    platform = models.ForeignKey('legacy.Platform', blank=True, null=True)
-    tag = models.ForeignKey(Tag, blank=True, null=True)
+    series = models.ForeignKey('legacy.Series')
+    platform = models.ForeignKey('legacy.Platform')
+    tag = models.ForeignKey(Tag)
     header = models.CharField(max_length=512, blank=True)
     regex = models.CharField(max_length=512, blank=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
