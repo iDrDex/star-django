@@ -10,7 +10,7 @@ from django.core.management import BaseCommand
 from core.models import HistoricalCounter
 from legacy.models import Series, Sample, Platform
 from core.models import User
-from tags.models import (Tag, SerieAnnotation, SeriesTag, SampleTag,
+from tags.models import (Tag, SeriesAnnotation, SeriesTag, SampleTag,
                          SerieValidation, SampleValidation, )
 
 MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -53,15 +53,15 @@ def distribute_by_created_on(qs):
     return accumulate(count_by(ceil_date, qs.values_list('created_on', flat=True)))
 
 
-def distribute_serie_and_sample_annotations(qs):
-    serie_annotations = distribute_by_created_on(qs)
+def distribute_series_and_sample_annotations(qs):
+    series_annotations = distribute_by_created_on(qs)
     values = qs.values_list('created_on', 'samples')
     group = group_values(walk_keys(ceil_date, values.iterator()))
-    return serie_annotations, accumulate(walk_values(sum, group))
+    return series_annotations, accumulate(walk_values(sum, group))
 
 
-def get_serie_tag_history():
-    serie_tag_history = {
+def get_series_tag_history():
+    series_tag_history = {
         'created': defaultdict(int),
         'validated': defaultdict(int),
         'invalidated': defaultdict(int)
@@ -70,21 +70,21 @@ def get_serie_tag_history():
 
     for tag in tqdm(qs, total=qs.count(), desc='series tag history'):
         validations = list(tag.validations.all())
-        serie_tag_history['created'][ceil_date(tag.created_on)] += 1
+        series_tag_history['created'][ceil_date(tag.created_on)] += 1
         validated = silent(min)(
             v.created_on
             for v in validations
             if v.annotation_kappa == 1)
         if validated:
-            serie_tag_history['validated'][ceil_date(validated)] += 1
+            series_tag_history['validated'][ceil_date(validated)] += 1
             invalidated = silent(min)(
                 v.created_on
                 for v in validations
                 if v.agrees_with is not None)
             if invalidated:
-                serie_tag_history['invalidated'][ceil_date(invalidated)] += 1
+                series_tag_history['invalidated'][ceil_date(invalidated)] += 1
 
-    return walk_values(accumulate, serie_tag_history)
+    return walk_values(accumulate, series_tag_history)
 
 
 class Command(BaseCommand):
@@ -101,9 +101,9 @@ class Command(BaseCommand):
         platforms = {}
         platforms_probes = {}
 
-        serie_annotations = {}
+        series_annotations = {}
         sample_annotations = {}
-        concordant_serie_annotations = {}
+        concordant_series_annotations = {}
         concordant_sample_annotations = {}
 
         series_tags = {}
@@ -111,9 +111,9 @@ class Command(BaseCommand):
         sample_tags = {}
         concordant_sample_tags = {}
 
-        serie_validations = {}
+        series_validations = {}
         sample_validations = {}
-        concordant_serie_validations = {}
+        concordant_series_validations = {}
         concordant_sample_validations = {}
 
         for specie in SPECIES.values():
@@ -134,12 +134,12 @@ class Command(BaseCommand):
             group = group_values(platforms_data)
             platforms_probes[specie] = accumulate(walk_values(sum, group))
 
-            qs = SerieAnnotation.objects.filter(series__specie=specie)
-            serie_annotations[specie], \
-                sample_annotations[specie] = distribute_serie_and_sample_annotations(qs)
+            qs = SeriesAnnotation.objects.filter(series__specie=specie)
+            series_annotations[specie], \
+                sample_annotations[specie] = distribute_series_and_sample_annotations(qs)
 
-            concordant_serie_annotations[specie], \
-                concordant_sample_annotations[specie] = distribute_serie_and_sample_annotations(
+            concordant_series_annotations[specie], \
+                concordant_sample_annotations[specie] = distribute_series_and_sample_annotations(
                     qs.filter(best_cohens_kappa=1))
 
             qs = SeriesTag.objects.filter(platform__specie=specie, is_active=True)
@@ -153,8 +153,8 @@ class Command(BaseCommand):
                 qs.exclude(series_tag__agreed=None))
 
             qs = SerieValidation.objects.filter(ignored=False, by_incompetent=False)
-            serie_validations[specie] = distribute_by_created_on(qs)
-            concordant_serie_validations[specie] = distribute_by_created_on(
+            series_validations[specie] = distribute_by_created_on(qs)
+            concordant_series_validations[specie] = distribute_by_created_on(
                 qs.filter(best_kappa=1))
 
             qs = SampleValidation\
@@ -177,27 +177,27 @@ class Command(BaseCommand):
             'samples': samples,
             'platforms': platforms,
             'platforms_probes': platforms_probes,
-            'serie_annotations': serie_annotations,
+            'series_annotations': series_annotations,
             'sample_annotations': sample_annotations,
-            'concordant_serie_annotations': concordant_serie_annotations,
+            'concordant_series_annotations': concordant_series_annotations,
             'concordant_sample_annotations': concordant_sample_annotations,
             'series_tags': series_tags,
             'sample_tags': sample_tags,
             'concordant_series_tags': concordant_series_tags,
             'concordant_sample_tags': concordant_sample_tags,
-            'serie_validations': serie_validations,
+            'series_validations': series_validations,
             'sample_validations': sample_validations,
-            'concordant_serie_validations': concordant_serie_validations,
+            'concordant_series_validations': concordant_series_validations,
             'concordant_sample_validations': concordant_sample_validations,
-            'serie_tags_by_users': distribute_by_user_id(SeriesTag.objects.filter(is_active=True)),
+            'series_tags_by_users': distribute_by_user_id(SeriesTag.objects.filter(is_active=True)),
             'sample_tags_by_users': distribute_by_user_id(SampleTag.objects.filter(is_active=True)),
-            'serie_validations_by_users': distribute_by_user_id(
+            'series_validations_by_users': distribute_by_user_id(
                 SerieValidation.objects.filter(ignored=False, by_incompetent=False)),
             'sample_validations_by_users': distribute_by_user_id(
                 SampleValidation.objects.filter(
                     serie_validation__ignored=False,
                     serie_validation__by_incompetent=False)),
-            'serie_tag_history': get_serie_tag_history(),
+            'series_tag_history': get_series_tag_history(),
         }
 
         data = {

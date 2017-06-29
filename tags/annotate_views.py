@@ -17,7 +17,7 @@ from django.utils import timezone
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series, Sample
 from tags.models import Tag, SeriesTag
-from .models import ValidationJob, SerieValidation, SampleValidation, SerieAnnotation
+from .models import ValidationJob, SerieValidation, SampleValidation, SeriesAnnotation
 from .tasks import calc_validation_stats
 from .annotate_core import save_annotation, save_validation, AnnotationError
 
@@ -65,8 +65,8 @@ def annotate(request):
         .order_by('tag_name').values('id', 'tag_name', 'description')
 
     # Get annotations statuses
-    annos_qs = SerieAnnotation.objects.filter(series=serie) \
-                              .values_list('tag_id', 'best_cohens_kappa')
+    annos_qs = SeriesAnnotation.objects.filter(series=serie) \
+                               .values_list('tag_id', 'best_cohens_kappa')
     tags_validated = {t: k == 1 for t, k in annos_qs}
 
     return {
@@ -290,9 +290,9 @@ def competence(request):
     #         - first 3 tries select non-controversial annotations (fleiss_kappa = 1)
     #         - last 2 tries select less obvious annotations (fleiss_kappa < 1)
     #         - 2 of all tests should use captive tags
-    qs = SerieAnnotation.objects.exclude(series_tag__validations__created_by=request.user) \
-                                .filter(best_cohens_kappa=1) \
-                                .select_related('series_tag', 'series_tag__tag')
+    qs = SeriesAnnotation.objects.exclude(series_tag__validations__created_by=request.user) \
+                                 .filter(best_cohens_kappa=1) \
+                                 .select_related('series_tag', 'series_tag__tag')
 
     # These conds are lifted until some test material is found
     conds = [Q(fleiss_kappa=1) if progress < 3 else Q(fleiss_kappa__lt=1)]

@@ -45,7 +45,7 @@ class Tag(models.Model):
         return {
             'annotations': annotate(SampleTag.objects.filter(series_tag__tag=self)),
             'validations': annotate(SampleValidation.objects.filter(serie_validation__tag=self)),
-            'canonical': annotate(SampleAnnotation.objects.filter(serie_annotation__tag=self)),
+            'canonical': annotate(SampleAnnotation.objects.filter(series_annotation__tag=self)),
         }
 
     def remap_annotations(self, old, new):
@@ -58,18 +58,18 @@ class Tag(models.Model):
             SampleTag.objects.filter(series_tag__tag=self, annotation=old).update(annotation=new)
             SampleValidation.objects.filter(serie_validation__tag=self, annotation=old) \
                             .update(annotation=new)
-            SampleAnnotation.objects.filter(serie_annotation__tag=self, annotation=old) \
+            SampleAnnotation.objects.filter(series_annotation__tag=self, annotation=old) \
                             .update(annotation=new)
 
     def remap_refs(self, new_pk):
         """
         Remap any references to this tag to other one. Used in tag merge.
         """
-        from tags.models import SerieValidation, SerieAnnotation
+        from tags.models import SerieValidation, SeriesAnnotation
 
         SeriesTag.objects.filter(tag=self).update(tag=new_pk)
         SerieValidation.objects.filter(tag=self).update(tag=new_pk)
-        SerieAnnotation.objects.filter(tag=self).update(tag=new_pk)
+        SeriesAnnotation.objects.filter(tag=self).update(tag=new_pk)
 
 
 class SeriesTag(models.Model):
@@ -81,7 +81,7 @@ class SeriesTag(models.Model):
     is_active = models.BooleanField(default=True)
     created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     created_by = models.ForeignKey('core.User', db_column='created_by', blank=True, null=True,
-                                   related_name='serie_annotations')
+                                   related_name='+')
     modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
     modified_by = models.ForeignKey('core.User', db_column='modified_by', blank=True, null=True,
                                     related_name='+')
@@ -241,7 +241,7 @@ class SampleValidation(models.Model):
         db_table = 'sample_validation'
 
 
-class SerieAnnotation(models.Model):
+class SeriesAnnotation(models.Model):
     """
     This model is to store best available annotations.
     You can also restrict quality by filtering on fleiss_kappa or best_cohens_kappa.
@@ -278,18 +278,18 @@ class SerieAnnotation(models.Model):
         self.samples = len(sample_annos)
         self.save()
         SampleAnnotation.objects.bulk_create([
-            SampleAnnotation(serie_annotation=self,
+            SampleAnnotation(series_annotation=self,
                              sample_id=obj.sample_id, annotation=obj.annotation or '')
             for obj in sample_annos
         ])
 
     def save(self, **kwargs):
         self.captive = re.compile(self.regex or '').groups > 0
-        super(SerieAnnotation, self).save(**kwargs)
+        super(SeriesAnnotation, self).save(**kwargs)
 
 
 class SampleAnnotation(models.Model):
-    serie_annotation = models.ForeignKey(SerieAnnotation, related_name='sample_annotations')
+    series_annotation = models.ForeignKey(SeriesAnnotation, related_name='sample_annotations')
     sample = models.ForeignKey('legacy.Sample')
     annotation = models.TextField(blank=True, default='')
 
@@ -366,22 +366,22 @@ class Snapshot(models.Model):
         ('sample_id', 'sample_id'),
         ('sample__gsm_name', 'gsm_name'),
         ('annotation', 'annotation'),
-        ('serie_annotation_id', 'serie_annotation_id'),
-        ('serie_annotation__series_id', 'serie_id'),
-        ('serie_annotation__series__gse_name', 'gse_name'),
+        ('series_annotation_id', 'series_annotation_id'),
+        ('series_annotation__series_id', 'serie_id'),
+        ('series_annotation__series__gse_name', 'gse_name'),
         ('sample__platform_id', 'platform_id'),
         ('sample__platform__gpl_name', 'gpl_name'),
-        ('serie_annotation__tag_id', 'tag_id'),
-        ('serie_annotation__tag__tag_name', 'tag_name'),
-        ('serie_annotation__tag__concept_full_id', 'tag_concept_full_id'),
+        ('series_annotation__tag_id', 'tag_id'),
+        ('series_annotation__tag__tag_name', 'tag_name'),
+        ('series_annotation__tag__concept_full_id', 'tag_concept_full_id'),
     ])
 
     def _get_data(self):
         qs = SampleAnnotation.objects.values(*self.KEYS).prefetch_related(
             'sample',
             'sample__platform',
-            'serie_annotation__tag',
-        ).filter(serie_annotation_id__in=self.metadata.get('ids', []))
+            'series_annotation__tag',
+        ).filter(series_annotation_id__in=self.metadata.get('ids', []))
         return [walk_keys(self.KEYS, annotation) for annotation in qs.iterator()]
 
 

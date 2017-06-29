@@ -8,7 +8,7 @@ from django.http import HttpResponseForbidden, Http404
 from django.forms import ModelForm, CharField
 from django.shortcuts import get_object_or_404, redirect
 
-from tags.models import SeriesTag, SerieAnnotation, SerieValidation, \
+from tags.models import SeriesTag, SeriesAnnotation, SerieValidation, \
     SampleAnnotation, SampleValidation
 from .tasks import validation_workflow
 
@@ -37,7 +37,7 @@ class AnnotationsSearchOptions(DatatableOptions):
 
 
 class SeriesAnnotations(DatatableView):
-    model = SerieAnnotation
+    model = SeriesAnnotation
     template_name = 'tags/reviews/series.j2'
     datatable_options = {
         'columns': [
@@ -56,7 +56,7 @@ class SeriesAnnotations(DatatableView):
     datatable_options_class = AnnotationsSearchOptions
 
     def get_queryset(self):
-        return SerieAnnotation.objects.select_related('series', 'platform', 'tag')
+        return SeriesAnnotation.objects.select_related('series', 'platform', 'tag')
 
     def apply_queryset_options(self, queryset):
         options = self._get_datatable_options()
@@ -93,25 +93,25 @@ class SampleAnnotations(DatatableView):
         ]
     }
 
-    def get(self, request, serie_annotation_id):
-        self.serie_annotation = get_object_or_404(
-            SerieAnnotation.objects.select_related('series'),
-            pk=serie_annotation_id
+    def get(self, request, series_annotation_id):
+        self.series_annotation = get_object_or_404(
+            SeriesAnnotation.objects.select_related('series'),
+            pk=series_annotation_id
         )
-        return super(SampleAnnotations, self).get(request, serie_annotation_id)
+        return super(SampleAnnotations, self).get(request, series_annotation_id)
 
     @cached_property
     def sources(self):
-        series_tag = self.serie_annotation.series_tag
+        series_tag = self.series_annotation.series_tag
         return [series_tag] + list(series_tag.validations.filter(ignored=False).order_by('id'))
 
     def get_queryset(self):
         return SampleAnnotation.objects.select_related('sample') \
-                               .filter(serie_annotation=self.serie_annotation)
+                               .filter(series_annotation=self.series_annotation)
 
     def get_context_data(self, **kwargs):
         context = super(SampleAnnotations, self).get_context_data(**kwargs)
-        context['serie_annotation'] = self.serie_annotation
+        context['series_annotation'] = self.series_annotation
         context['source_ids'] = [s.id for s in self.sources]
         return context
 
@@ -237,7 +237,7 @@ class ReviewSnapshot(SeriesAnnotations):
     def get_queryset(self):
         snapshot = get_or_none(Snapshot, author=self.request.user, frozen=False)
         if not snapshot:
-            return SerieAnnotation.objects.none()
+            return SeriesAnnotation.objects.none()
         return super(ReviewSnapshot, self).get_queryset() \
                                           .filter(id__in=snapshot.metadata.get('ids', []))
 review_snapshot = login_required(ReviewSnapshot.as_view())

@@ -43,7 +43,7 @@ class StatisticCacheManager(models.Manager):
             'experiments_attributes': Series.objects.count() * ATTR_PER_SERIE,
 
             'tags': Tag.objects.count(),
-            'serie_annotations': SeriesTag.objects.count() + SerieValidation.objects.count(),
+            'series_annotations': SeriesTag.objects.count() + SerieValidation.objects.count(),
             'sample_annotations': SampleTag.objects.count() + SampleValidation.objects.count(),
 
             'gene_probes': PlatformProbe.objects.count(),

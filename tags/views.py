@@ -19,7 +19,7 @@ from core.aggregations import ArrayAgg, ArrayConcatUniq, ArrayLength
 from core.conf import redis_client
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series
-from .models import Tag, SeriesTag, SerieAnnotation
+from .models import Tag, SeriesTag, SeriesAnnotation
 
 
 @render_to()
@@ -71,8 +71,8 @@ def search(request):
     series = paginate(request, qs, 10)
 
     # Get annotations statuses
-    annos_qs = SerieAnnotation.objects.filter(series__in=series) \
-                              .values_list('series_id', 'tag_id', 'best_cohens_kappa')
+    annos_qs = SeriesAnnotation.objects.filter(series__in=series) \
+                               .values_list('series_id', 'tag_id', 'best_cohens_kappa')
     tags_validated = {(s, t): k == 1 for s, t, k in annos_qs}
 
     return dict({

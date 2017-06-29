@@ -1,13 +1,15 @@
 from funcy import group_by, project
 from django.db import connection
 from tags.models import (SeriesTag, SampleTag, ValidationJob,
-                         SerieAnnotation, SerieValidation,
-                         SampleValidation, )
+                         SeriesAnnotation, SerieValidation,
+                         SampleValidation)
 from legacy.models import Sample
 from tags.tasks import validation_workflow
 
+
 class AnnotationError(Exception):
     pass
+
 
 def save_annotation(data):
     user_id = data['user_id']
@@ -33,7 +35,7 @@ def save_annotation(data):
 
         ValidationJob.objects.create(series_tag=series_tag)
 
-        sa = SerieAnnotation.create_from_series_tag(series_tag)
+        sa = SeriesAnnotation.create_from_series_tag(series_tag)
         sa.fill_samples(sample_tags)
 
 

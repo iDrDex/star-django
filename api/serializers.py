@@ -3,7 +3,7 @@ from funcy import all, walk_keys
 from rest_framework import serializers
 
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, Sample
-from tags.models import SerieAnnotation, Tag
+from tags.models import SeriesAnnotation, Tag
 
 from .fields import S3Field
 
@@ -38,9 +38,9 @@ class AnalysisParamSerializer(serializers.ModelSerializer):
         self.fields['specie'].allow_blank = False
 
 
-class SerieAnnotationSerializer(serializers.ModelSerializer):
+class SeriesAnnotationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SerieAnnotation
+        model = SeriesAnnotation
         exclude = ['series_tag', 'created_on', 'modified_on', ]
 
 

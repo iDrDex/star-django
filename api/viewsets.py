@@ -17,13 +17,13 @@ from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 from rest_framework_swagger import renderers
 
-from tags.models import SerieAnnotation, Tag, SampleAnnotation, SeriesTag
+from tags.models import SeriesAnnotation, Tag, SampleAnnotation, SeriesTag
 from tags.annotate_core import save_annotation, save_validation, AnnotationError
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe, Sample
 from s3field.ops import frame_dumps
 from analysis.analysis import get_analysis_df
 from .serializers import (PlatformSerializer, SeriesSerializer, AnalysisSerializer,
-                          AnalysisParamSerializer, SerieAnnotationSerializer,
+                          AnalysisParamSerializer, SeriesAnnotationSerializer,
                           TagSerializer, MetaAnalysisSerializer,
                           SampleAnnotationValidator, SampleSerializer,
                           )
@@ -75,19 +75,19 @@ class AnalysisViewSet(viewsets.ReadOnlyModelViewSet):
         return HttpResponse(frame_dumps(probes_df), content_type='application/json')
 
 
-class SerieAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = SerieAnnotation.objects.all()
-    serializer_class = SerieAnnotationSerializer
+class SeriesAnnotationViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = SeriesAnnotation.objects.all()
+    serializer_class = SeriesAnnotationSerializer
 
 class SampleAnnotationViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     KEYS = {
-        'serie_annotation__tag__tag_name': 'tag_name',
-        'serie_annotation__tag_id': 'tag_id',
-        'serie_annotation__tag__concept_full_id': 'tag_concept_full_id',
-        'serie_annotation__series__gse_name': 'gse_name',
-        'serie_annotation__series_id': 'serie_id',
-        'serie_annotation_id': 'serie_annotation_id',
+        'series_annotation__tag__tag_name': 'tag_name',
+        'series_annotation__tag_id': 'tag_id',
+        'series_annotation__tag__concept_full_id': 'tag_concept_full_id',
+        'series_annotation__series__gse_name': 'gse_name',
+        'series_annotation__series_id': 'serie_id',
+        'series_annotation_id': 'series_annotation_id',
         'sample__gsm_name': 'gsm_name',
         'sample_id': 'sample_id',
         'sample__platform__gpl_name': 'gpl_name',
@@ -139,7 +139,7 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
                  SampleAnnotation.objects.values(*self.KEYS).prefetch_related(
                      'sample',
                      'sample__platform',
-                     'serie_annotation__tag',
+                     'series_annotation__tag',
                 ).iterator()],
                 safe=False)
         response = get_annotation()
