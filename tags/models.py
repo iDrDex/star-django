@@ -363,13 +363,10 @@ class Snapshot(models.Model):
 
     # Prepare data
     KEYS = OrderedDict([
-        ('sample_id', 'sample_id'),
         ('sample__gsm_name', 'gsm_name'),
         ('annotation', 'annotation'),
         ('series_annotation_id', 'series_annotation_id'),
-        ('series_annotation__series_id', 'serie_id'),
         ('series_annotation__series__gse_name', 'gse_name'),
-        ('sample__platform_id', 'platform_id'),
         ('sample__platform__gpl_name', 'gpl_name'),
         ('series_annotation__tag_id', 'tag_id'),
         ('series_annotation__tag__tag_name', 'tag_name'),
