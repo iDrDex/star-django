@@ -4,8 +4,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import F
 from tqdm import tqdm
 
-from legacy.models import SeriesTag
-from tags.models import SerieValidation, UserStats, ValidationJob
+from tags.models import SeriesTag, SerieValidation, UserStats, ValidationJob
 from tags.tasks import calc_validation_stats
 
 
@@ -35,7 +34,6 @@ class Command(BaseCommand):
             SerieValidation.objects.update(
                 samples_total=None,
                 samples_concordant=None,
-                samples_concordancy=None
             )
             UserStats.objects.update(
                 serie_validations=0,
