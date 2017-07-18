@@ -152,14 +152,16 @@ class Command(BaseCommand):
             concordant_sample_tags[specie] = distribute_by_created_on(
                 qs.exclude(series_tag__agreed=None))
 
-            qs = SerieValidation.objects.filter(ignored=False, by_incompetent=False)
+            qs = SerieValidation.objects.filter(platform__specie=specie,
+                                                ignored=False, by_incompetent=False)
             series_validations[specie] = distribute_by_created_on(qs)
             concordant_series_validations[specie] = distribute_by_created_on(
                 qs.filter(best_kappa=1))
 
             qs = SampleValidation\
                 .objects\
-                .filter(serie_validation__ignored=False,
+                .filter(sample__platform__specie=specie,
+                        serie_validation__ignored=False,
                         serie_validation__by_incompetent=False)
             sample_validations[specie] = distribute_by_created_on(qs)
             concordant_sample_validations[specie] = distribute_by_created_on(
