@@ -19,7 +19,7 @@ from core.aggregations import ArrayAgg, ArrayConcatUniq, ArrayLength
 from core.conf import redis_client
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series
-from .models import Tag, SeriesTag, SeriesAnnotation
+from .models import Tag, SeriesAnnotation
 
 
 @render_to()
@@ -34,7 +34,7 @@ def search(request):
         return {'series': None}
 
     exclude_tags = keep(silent(int), request.GET.getlist('exclude_tags'))
-    serie_tags, tag_series, tag_ids = series_tags_data()
+    series_tags, tag_series, tag_ids = series_tags_data()
 
     # Parse query
     q_string, q_tags = _parse_query(q)
@@ -62,7 +62,7 @@ def search(request):
             return {'series': []}
 
     series_ids = qs.values_list('id', flat=True).order_by()
-    tags = distinct(imapcat(serie_tags, series_ids), key=itemgetter('id'))
+    tags = distinct(imapcat(series_tags, series_ids), key=itemgetter('id'))
 
     if exclude_tags:
         exclude_series = join(tag_series[t] for t in exclude_tags)
@@ -80,7 +80,7 @@ def search(request):
         'page': series,
         'tags_validated': tags_validated,
         'tags': tags,
-        'serie_tags': serie_tags,
+        'series_tags': series_tags,
     }, **_search_stats(qs))
 
 
@@ -248,15 +248,15 @@ def search_series_qs(query_string):
 
 
 def series_tags_data():
-    pairs = SeriesTag.objects.filter(tag__is_active=True) \
-                     .values_list('series_id', 'tag_id', 'tag__tag_name').distinct()
+    pairs = SeriesAnnotation.objects.filter(tag__is_active=True) \
+                            .values_list('series_id', 'tag_id', 'tag__tag_name').distinct()
 
-    serie_tags = defaultdict(list)
+    series_tags = defaultdict(list)
     tag_series = defaultdict(set)
     tag_ids = {}
-    for serie_id, tag_id, tag_name in pairs:
+    for series_id, tag_id, tag_name in pairs:
         tag_ids[tag_name.lower()] = tag_id
-        serie_tags[serie_id].append({'id': tag_id, 'name': tag_name})
-        tag_series[tag_id].add(serie_id)
+        series_tags[series_id].append({'id': tag_id, 'name': tag_name})
+        tag_series[tag_id].add(series_id)
 
-    return serie_tags, tag_series, tag_ids
+    return series_tags, tag_series, tag_ids

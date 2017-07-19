@@ -5,8 +5,7 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
 from legacy.models import Sample, Series, PlatformProbe, Platform, Analysis
-from tags.models import (Tag, SeriesTag, SerieValidation,
-                         SampleTag, SampleValidation, )
+from tags.models import Tag, RawSeriesAnnotation, RawSampleAnnotation
 from handy.models import JSONField
 
 
@@ -33,8 +32,7 @@ class StatisticCacheManager(models.Manager):
     def update_statistics(self):
         from core.tasks import update_graph
 
-        users = list(SeriesTag.objects.values_list('created_by', flat=True))
-        users += list(SerieValidation.objects.values_list('created_by', flat=True))
+        users = RawSeriesAnnotation.objects.values_list('created_by', flat=True).distinct().count()
 
         statistic_schema = {
             'samples': Sample.objects.count(),
@@ -43,14 +41,14 @@ class StatisticCacheManager(models.Manager):
             'experiments_attributes': Series.objects.count() * ATTR_PER_SERIE,
 
             'tags': Tag.objects.count(),
-            'series_annotations': SeriesTag.objects.count() + SerieValidation.objects.count(),
-            'sample_annotations': SampleTag.objects.count() + SampleValidation.objects.count(),
+            'series_annotations': RawSeriesAnnotation.objects.count(),
+            'sample_annotations': RawSampleAnnotation.objects.count(),
 
             'gene_probes': PlatformProbe.objects.count(),
             'platforms': Platform.objects.count(),
             'meta_analyses': Analysis.objects.count(),
 
-            'users': len(set(users)),
+            'users': users,
         }
 
         for slug, value in statistic_schema.iteritems():

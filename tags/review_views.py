@@ -1,16 +1,16 @@
-from funcy import group_by, cached_property, partial, walk_keys, map
+from funcy import group_by, cached_property, partial, walk_keys, map, first, where
 from datatableview.views import DatatableView
 from datatableview.utils import DatatableOptions
 from handy.decorators import render_to, paginate
 from handy.utils import get_or_none
 
+from django.db import transaction
 from django.http import HttpResponseForbidden, Http404
 from django.forms import ModelForm, CharField
 from django.shortcuts import get_object_or_404, redirect
 
-from tags.models import SeriesTag, SeriesAnnotation, SerieValidation, \
-    SampleAnnotation, SampleValidation
-from .tasks import validation_workflow
+from tags.models import SeriesAnnotation, SampleAnnotation, RawSeriesAnnotation, RawSampleAnnotation
+from .annotate_core import calc_validation_stats, update_canonical
 
 
 class AnnotationsSearchOptions(DatatableOptions):
@@ -102,8 +102,7 @@ class SampleAnnotations(DatatableView):
 
     @cached_property
     def sources(self):
-        series_tag = self.series_annotation.series_tag
-        return [series_tag] + list(series_tag.validations.filter(ignored=False).order_by('id'))
+        return list(self.series_annotation.raw_annotations.filter(is_active=True).order_by('id'))
 
     def get_queryset(self):
         return SampleAnnotation.objects.select_related('sample') \
@@ -134,35 +133,34 @@ class SampleAnnotations(DatatableView):
 
     def get_extra(self, src, instance, *args, **kwargs):
         if not hasattr(self, 'extra_data'):
-            st = self.sources[0]
-            sample_annotations = st.sample_tags.values_list('sample_id', 'annotation')
+            qs = RawSampleAnnotation.objects.filter(series_annotation__in=self.sources)
             self.extra_data = {
-                (SeriesTag, st.pk, sample_id): annotation
-                for sample_id, annotation in sample_annotations
+                (anno_id, sample_id): annotation
+                for anno_id, sample_id, annotation
+                in qs.values_list('series_annotation', 'sample_id', 'annotation')
             }
-            sample_validations = SampleValidation.objects \
-                .filter(serie_validation__in=self.sources[1:]) \
-                .values_list('serie_validation', 'sample_id', 'annotation')
-            self.extra_data.update({
-                (SerieValidation, sv, sample_id): annotation
-                for sv, sample_id, annotation in sample_validations
-            })
-
-        return self.extra_data[src.__class__, src.pk, instance.sample_id] or ''
-
+        return self.extra_data[src.pk, instance.sample_id] or ''
 
 sample_annotations = SampleAnnotations.as_view()
 
 
-def ignore(request, serie_validation_id):
+def ignore(request, series_annotation_id):
     if not request.user.is_staff:
         return HttpResponseForbidden()
 
-    sv = get_object_or_404(SerieValidation, pk=serie_validation_id)
-    sv.ignored = True
-    sv.save()
-    validation_workflow.delay(sv.pk, is_new=False)
-    return redirect('sample_annotations', sv.series_tag.canonical.id)
+    with transaction.atomic():
+        annotation = get_object_or_404(RawSeriesAnnotation, pk=series_annotation_id)
+        annotation.ignored = True
+        annotation.is_active = False
+        annotation.save()
+
+        # Recalc this and all subsequent raw annotations, update canonical
+        raw_annotations = annotation.canonical.raw_annotations.filter(pk__gte=annotation.pk)
+        for raw_annotation in raw_annotations:
+            calc_validation_stats(raw_annotation)
+        update_canonical(annotation.canonical)
+
+    return redirect('sample_annotations', annotation.canonical_id)
 
 
 # Snapshots
@@ -276,8 +274,6 @@ class SnapshotForm(ModelForm):
 
     title = CharField()
 
-
-from funcy import first, where
 
 def snapshot_file(request, snap_id, format):
     snap = get_object_or_404(Snapshot, pk=snap_id)

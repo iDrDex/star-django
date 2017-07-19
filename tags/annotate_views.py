@@ -2,7 +2,7 @@ import json
 import random
 from datetime import timedelta
 
-from funcy import project, select_keys, takewhile, without, distinct, merge, icat
+from funcy import project, takewhile, without, distinct, merge, icat
 from handy.decorators import render_to
 
 from django.core.urlresolvers import reverse
@@ -10,16 +10,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q
-from django.http import Http404, JsonResponse
+from django.http import Http404
 from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 
 from core.decorators import block_POST_for_incompetent
 from legacy.models import Series, Sample
-from tags.models import Tag, SeriesTag
-from .models import ValidationJob, SerieValidation, SampleValidation, SeriesAnnotation
-from .tasks import calc_validation_stats
-from .annotate_core import save_annotation, save_validation, AnnotationError
+from .models import Tag, ValidationJob, RawSeriesAnnotation, SeriesAnnotation
+from .annotate_core import AnnotationError, save_annotation, save_validation, is_samples_concordant
 
 
 @login_required
@@ -38,8 +36,8 @@ def annotate(request):
 
         try:
             with transaction.atomic():
-                if SeriesTag.objects.filter(series_id=data['series_id'],
-                                            tag_id=data['tag_id']).exists():
+                if RawSeriesAnnotation.objects.filter(series_id=data['series_id'],
+                                                      tag_id=data['tag_id']).exists():
                     raise AnnotationError(
                         'Serie %s is already annotated with tag %s'
                         % (data['series'].gse_name, data['tag'].tag_name))
@@ -56,26 +54,26 @@ def annotate(request):
     if not series_id:
         raise Http404
 
-    serie = Series.objects.get(pk=series_id)
+    series = Series.objects.get(pk=series_id)
     samples, columns = fetch_annotation_data(series_id)
 
-    done_tag_ids = SeriesTag.objects.filter(series_id=series_id).values('tag_id')
+    done_tag_ids = SeriesAnnotation.objects.filter(series_id=series_id).values('tag_id').distinct()
     done_tags = Tag.objects.filter(id__in=done_tag_ids, is_active=True).order_by('tag_name')
     tags = Tag.objects.filter(is_active=True).exclude(id__in=done_tag_ids) \
         .order_by('tag_name').values('id', 'tag_name', 'description')
 
     # Get annotations statuses
-    annos_qs = SeriesAnnotation.objects.filter(series=serie) \
+    annos_qs = SeriesAnnotation.objects.filter(series=series) \
                                .values_list('tag_id', 'best_cohens_kappa')
     tags_validated = {t: k == 1 for t, k in annos_qs}
 
     return {
-        'done_tags': done_tags,
+        'series': series,
         'tags': tags,
-        'serie': serie,
+        'done_tags': done_tags,
+        'tags_validated': tags_validated,
         'columns': columns,
         'samples': samples,
-        'tags_validated': tags_validated,
     }
 
 
@@ -102,11 +100,11 @@ def validate(request):
                 }
 
                 # Save validation with used column and regex
-                serie_validation = save_validation(job.series_tag_id, data)
+                raw_annotation = save_validation(job.annotation_id, data)
 
                 message = 'Saved {} validations for {}'.format(
                     len(data['annotations']),
-                    serie_validation.tag.tag_name)
+                    raw_annotation.tag.tag_name)
                 messages.success(request, message)
 
                 return redirect(request.get_full_path())
@@ -126,14 +124,14 @@ def validate(request):
     except ValidationJob.DoesNotExist:
         return {'TEMPLATE': 'tags/nothing_to_validate.j2'}
 
-    tag = job.series_tag.tag
-    samples, columns = fetch_annotation_data(
-        job.series_tag.series_id, platform_id=job.series_tag.platform_id, blind=BLIND_FIELDS)
+    canonical = job.annotation
+    samples, columns = fetch_annotation_data(canonical.series_id,
+                                             platform_id=canonical.platform_id, blind=BLIND_FIELDS)
 
     return {
         'job': job,
-        'serie': job.series_tag.series,
-        'tag': tag,
+        'series': canonical.series,
+        'tag': canonical.tag,
         'columns': columns,
         'samples': samples,
     }
@@ -141,16 +139,14 @@ def validate(request):
 @transaction.atomic
 def lock_validation_job(user_id):
     # Get a job that:
-    #   - not authored by this user,
+    #   - not annotated by this user before,
     #   - either not locked or locked by this user or lock expired,
-    #   - not validated by this user,
-    #   - with non-deleted tag.
+    #   - with active tag.
     stale_lock = timezone.now() - timedelta(minutes=30)
     lock_cond = Q(locked_by__isnull=True) | Q(locked_by=user_id) | Q(locked_on__lt=stale_lock)
-    job = ValidationJob.objects.filter(lock_cond)                            \
-                       .exclude(series_tag__created_by=user_id)              \
-                       .exclude(series_tag__validations__created_by=user_id) \
-                       .filter(series_tag__tag__is_active=True)              \
+    job = ValidationJob.objects.filter(lock_cond)                                \
+                       .exclude(annotation__raw_annotations__created_by=user_id) \
+                       .filter(annotation__tag__is_active=True)                  \
                        .select_for_update().earliest('priority')
     job.locked_by_id = user_id
     job.locked_on = timezone.now()
@@ -168,7 +164,7 @@ def lock_validation_job(user_id):
 @render_to('tags/annotate.j2')
 def on_demand_validate(request):
     if request.method == 'POST':
-        series_tag_id = request.POST['series_tag_id']
+        canonical_id = request.POST['canonical_id']
         data = {
             'user_id': request.user.id,
             'column': request.POST['column'],
@@ -179,15 +175,14 @@ def on_demand_validate(request):
 
         # Save validation with used column and regex
         try:
-            with transaction.atomic():
-                serie_validation = save_validation(series_tag_id, data)
+            raw_annotation = save_validation(canonical_id, data)
 
-                message = 'Saved {} validations for {}, tagged {}'.format(
-                    len(data['annotations']),
-                    serie_validation.series.gse_name,
-                    serie_validation.tag.tag_name)
-                messages.success(request, message)
-                return redirect(on_demand_result, serie_validation.id)
+            message = 'Saved {} validations for {}, tagged {}'.format(
+                len(data['annotations']),
+                raw_annotation.series.gse_name,
+                raw_annotation.tag.tag_name)
+            messages.success(request, message)
+            return redirect(on_demand_result, raw_annotation.id)
 
         except AnnotationError as err:
             messages.error(request, unicode(err))
@@ -198,46 +193,43 @@ def on_demand_validate(request):
         if referer:
             request.session['next'] = referer
 
-    series_tag_id = request.GET.get('series_tag_id')
-    if series_tag_id:
-        series_tag = get_object_or_404(SeriesTag, id=series_tag_id)
-        series_id = series_tag.series_id
+    canonical_id = request.GET.get('canonical_id')
+    if canonical_id:
+        canonical = get_object_or_404(SeriesAnnotation, id=canonical_id)
+        series_id = canonical.series_id
     else:
         # Guess or select actual annotation
         series_id = request.GET['series_id']
         tag_id = request.GET['tag_id']
 
-        series_tags = SeriesTag.objects.filter(series_id=series_id, tag_id=tag_id) \
-                               .select_related('series', 'platform', 'tag')
-        if len(series_tags) > 1:
-            return render(request, 'tags/select_to_validate.j2', {'series_tags': series_tags})
+        series_annotations = SeriesAnnotation.objects.filter(series_id=series_id, tag_id=tag_id) \
+                                             .select_related('series', 'platform', 'tag')
+        if len(series_annotations) > 1:
+            return render(request, 'tags/select_to_validate.j2',
+                          {'series_annotations': series_annotations})
         else:
-            series_tag = series_tags[0]
+            canonical = series_annotations[0]
 
-    serie = Series.objects.get(pk=series_id)
-    tag = series_tag.tag
-    samples, columns = fetch_annotation_data(series_id, series_tag.platform_id, blind=BLIND_FIELDS)
+    series = Series.objects.get(pk=series_id)
+    tag = canonical.tag
+    samples, columns = fetch_annotation_data(series_id, canonical.platform_id, blind=BLIND_FIELDS)
 
     return {
-        'series_tag': series_tag,
-        'serie': serie,
+        'canonical': canonical,
+        'series': series,
         'tag': tag,
         'columns': columns,
         'samples': samples,
     }
 
 @login_required
-def on_demand_result(request, serie_validation_id):
-    serie_validation = get_object_or_404(SerieValidation, id=serie_validation_id)
-    if serie_validation.created_by_id != request.user.id:
+def on_demand_result(request, raw_annotation_id):
+    raw_annotation = get_object_or_404(RawSeriesAnnotation, id=raw_annotation_id)
+    if raw_annotation.created_by_id != request.user.id:
         raise Http404
 
-    if 'json' in request.GET:
-        data = select_keys(r'kappa', serie_validation.__dict__)
-        return JsonResponse(data)
-
     return render(request, 'tags/on_demand_result.j2', {
-        'serie_validation': serie_validation,
+        'raw_annotation': raw_annotation,
         'next': request.session.get('next')
     })
 
@@ -245,20 +237,38 @@ def on_demand_result(request, serie_validation_id):
 @login_required
 @render_to('tags/annotate.j2')
 def competence(request):
+    def same_as_canonical(raw_annotation):
+        return is_samples_concordant(raw_annotation, raw_annotation.canonical)
+
     if request.user.is_competent:
         return redirect(validate)
 
     if request.method == 'POST':
-        return save_competence(request)
+        canonical_id = request.POST['canonical_id']
+        data = {
+            'user_id': request.user.id,
+            'column': request.POST['column'],
+            'regex': request.POST['regex'],
+            'annotations': dict(json.loads(request.POST['values'])),
+            'is_active': False,
+            'by_incompetent': True,
+        }
+
+        # Save validation marking by_incompetent
+        try:
+            save_validation(canonical_id, data)
+        except AnnotationError as err:
+            messages.error(request, unicode(err))
+        return redirect(competence)
 
     # Check how many tries and progress = number of successful tries in a row
-    validations = SerieValidation.objects.filter(created_by=request.user, by_incompetent=True) \
-                                 .order_by('-id')[:5] \
-                                 .prefetch_related('sample_validations', 'series_tag__canonical',
-                                                   'series_tag__canonical__sample_annotations')
-    first_try = len(validations) == 0
-    validations = list(takewhile(lambda v: v.same_as_canonical, validations))
-    progress = len(validations)
+    annotations = RawSeriesAnnotation.objects.filter(created_by=request.user, by_incompetent=True) \
+                                     .order_by('-id')[:5] \
+                                     .prefetch_related('sample_annotations', 'canonical',
+                                                       'canonical__sample_annotations')
+    first_try = len(annotations) == 0
+    annotations = list(takewhile(same_as_canonical, annotations))
+    progress = len(annotations)
 
     # 5 successful tries in a row is test pass
     if progress >= 5:
@@ -285,24 +295,24 @@ def competence(request):
     # Select canonical annotation to test against
     # NOTE: several conditions play here:
     #         - exclude annotations seen before
-    #         - exclude tags seen in this test run
     #         - only use agreed upon ones (best_cohens_kappa = 1 means there are 2 concordant annos)
     #         - first 3 tries select non-controversial annotations (fleiss_kappa = 1)
+    #         - exclude tags seen in this test run
     #         - last 2 tries select less obvious annotations (fleiss_kappa < 1)
     #         - 2 of all tests should use captive tags
-    qs = SeriesAnnotation.objects.exclude(series_tag__validations__created_by=request.user) \
+    qs = SeriesAnnotation.objects.exclude(raw_annotations__created_by=request.user) \
                                  .filter(best_cohens_kappa=1) \
                                  .select_related('series_tag', 'series_tag__tag')
 
     # These conds are lifted until some test material is found
     conds = [Q(fleiss_kappa=1) if progress < 3 else Q(fleiss_kappa__lt=1)]
-    seen_tags = [v.tag_id for v in validations]
+    seen_tags = [a.tag_id for a in annotations]
     if seen_tags:
         conds += [~Q(tag__in=seen_tags)]
     if progress == 0:
         conds += [Q(captive=False)]
     else:
-        captive_left = 2 - sum(v.series_tag.canonical.captive for v in validations)
+        captive_left = 2 - sum(a.canonical.captive for a in annotations)
         conds += [Q(captive=random.randint(0, 5 - progress) < captive_left)]
 
     canonical = get_sample(qs, conds)
@@ -310,17 +320,13 @@ def competence(request):
         messages.error(request, '''Too many tries, we are out of test material.''')
         return redirect(validate)
 
-    series_tag = canonical.series_tag
-    series_id = series_tag.series_id
-
-    serie = Series.objects.get(pk=series_id)
-    tag = series_tag.tag
-    samples, columns = fetch_annotation_data(series_id, series_tag.platform_id, blind=BLIND_FIELDS)
+    samples, columns = fetch_annotation_data(canonical.series_id, canonical.platform_id,
+                                             blind=BLIND_FIELDS)
 
     return {
-        'series_tag': series_tag,
-        'serie': serie,
-        'tag': tag,
+        'canonical': canonical,
+        'series': canonical.series,
+        'tag': canonical.tag,
         'columns': columns,
         'samples': samples,
         'progress': progress
@@ -339,34 +345,6 @@ def get_sample(qs, optional_conds=()):
             optional_conds.pop()
         else:
             return None
-
-def save_competence(request):
-    user_id = request.user.id
-    series_tag_id = request.POST['series_tag_id']
-    column = request.POST['column']
-    regex = request.POST['regex']
-    values = dict(json.loads(request.POST['values']))
-
-    with transaction.atomic():
-        # Save validation with used column and regex
-        st = SeriesTag.objects.get(pk=series_tag_id)
-        serie_validation = SerieValidation.objects.create(
-            series_tag_id=st.id, created_by_id=user_id,
-            column=column, regex=regex,
-            series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id,
-            ignored=True, by_incompetent=True,
-        )
-
-        # Create all sample validations
-        SampleValidation.objects.bulk_create([
-            SampleValidation(sample_id=sample_id, serie_validation=serie_validation,
-                             annotation=annotation, created_by_id=user_id)
-            for sample_id, annotation in values.items()
-        ])
-
-    calc_validation_stats.delay(serie_validation.pk)
-
-    return redirect(competence)
 
 
 # Data utils

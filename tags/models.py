@@ -65,10 +65,7 @@ class Tag(models.Model):
         """
         Remap any references to this tag to other one. Used in tag merge.
         """
-        from tags.models import SerieValidation, SeriesAnnotation
-
-        SeriesTag.objects.filter(tag=self).update(tag=new_pk)
-        SerieValidation.objects.filter(tag=self).update(tag=new_pk)
+        RawSeriesAnnotation.objects.filter(tag=self).update(tag=new_pk)
         SeriesAnnotation.objects.filter(tag=self).update(tag=new_pk)
 
 
@@ -178,7 +175,8 @@ class Payment(models.Model):
 
 
 class ValidationJob(models.Model):
-    series_tag = models.ForeignKey(SeriesTag, on_delete=models.CASCADE)
+    annotation = models.ForeignKey('SeriesAnnotation', null=True)
+    series_tag = models.ForeignKey(SeriesTag, null=True, on_delete=models.CASCADE)  # TODO: drop
     locked_on = models.DateTimeField(blank=True, null=True)
     locked_by = models.ForeignKey('core.User', blank=True, null=True)
     # generation = models.IntegerField(default=1)
@@ -241,19 +239,82 @@ class SampleValidation(models.Model):
         db_table = 'sample_validation'
 
 
+class RawSeriesAnnotation(models.Model):
+    canonical = models.ForeignKey('tags.SeriesAnnotation', related_name='raw_annotations')
+    series = models.ForeignKey('legacy.Series')
+    platform = models.ForeignKey('legacy.Platform')
+    tag = models.ForeignKey(Tag)
+    column = models.CharField(max_length=512, blank=True)
+    regex = models.CharField(max_length=512, blank=True)
+    created_by = models.ForeignKey('core.User', related_name='+')
+    created_on = models.DateTimeField(default=timezone.now)
+    modified_on = models.DateTimeField(auto_now=True)
+    # NOTE: should be false for ignored or incompetent
+    is_active = models.BooleanField(default=True)
+
+    # Special flags on source and history
+    # original = models.BooleanField(default=False)  # ???
+    on_demand = models.BooleanField(default=False)
+    ignored = models.BooleanField(default=False)
+    by_incompetent = models.BooleanField(default=False)
+    from_api = models.BooleanField(default=False)
+    note = models.TextField(blank=True, default='')
+    accounted_for = models.BooleanField(default=False)
+
+    # Calculated fields
+    agreed = models.BooleanField(default=False)
+    agrees_with = models.ForeignKey('self', blank=True, null=True, on_delete=models.SET_NULL)
+    best_kappa = models.FloatField(blank=True, null=True)
+
+    # Temporary fields to support incremental data migation
+    from_series_tag = models.ForeignKey(SeriesTag, null=True)
+    from_validation = models.ForeignKey(SerieValidation, null=True)
+
+    class Meta:
+        db_table = 'raw_series_annotation'
+
+    def save(self, **kwargs):
+        if self.ignored or self.by_incompetent:
+            assert not self.is_active
+        super(RawSeriesAnnotation, self).save(**kwargs)
+
+    def fill_samples(self, annotations):
+        RawSampleAnnotation.objects.bulk_create([
+            RawSampleAnnotation(series_annotation=self,
+                                sample_id=sample_id, annotation=annotation)
+            for sample_id, annotation in annotations
+        ])
+
+    @property
+    def same_as_canonical(self):
+        samples = dict(self.sample_annotations.values_list('sample_id', 'annotation'))
+        canonical_samples = dict(self.canonical.sample_annotations
+                                               .values_list('sample_id', 'annotation'))
+        return samples == canonical_samples
+
+
+class RawSampleAnnotation(models.Model):
+    series_annotation = models.ForeignKey(RawSeriesAnnotation, related_name='sample_annotations')
+    sample = models.ForeignKey('legacy.Sample')
+    annotation = models.TextField(blank=True, default='')
+
+    class Meta:
+        db_table = 'raw_sample_annotation'
+
+
 class SeriesAnnotation(models.Model):
     """
     This model is to store best available annotations.
     You can also restrict quality by filtering on fleiss_kappa or best_cohens_kappa.
     """
-    series_tag = models.OneToOneField(SeriesTag, related_name='canonical')
+    series_tag = models.OneToOneField(SeriesTag, null=True, related_name='canonical')  # TODO: drop
     series = models.ForeignKey('legacy.Series')
     platform = models.ForeignKey('legacy.Platform')
     tag = models.ForeignKey(Tag)
-    header = models.CharField(max_length=512, blank=True)
+    column = models.CharField(max_length=512, blank=True)
     regex = models.CharField(max_length=512, blank=True)
-    created_on = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    modified_on = models.DateTimeField(blank=True, null=True, auto_now=True)
+    created_on = models.DateTimeField(default=timezone.now)
+    modified_on = models.DateTimeField(auto_now=True)
 
     annotations = models.IntegerField()
     authors = models.IntegerField()
@@ -265,22 +326,13 @@ class SeriesAnnotation(models.Model):
     class Meta:
         db_table = 'series_annotation'
 
-    @classmethod
-    def create_from_series_tag(cls, st):
-        return cls.objects.create(
-            series_tag_id=st.id,
-            series_id=st.series_id, platform_id=st.platform_id, tag_id=st.tag_id,
-            header=st.header, regex=st.regex or '',
-            annotations=1, authors=1
-        )
-
-    def fill_samples(self, sample_annos):
-        self.samples = len(sample_annos)
+    def fill_samples(self, annotations):
+        self.samples = len(annotations)
         self.save()
         SampleAnnotation.objects.bulk_create([
             SampleAnnotation(series_annotation=self,
-                             sample_id=obj.sample_id, annotation=obj.annotation or '')
-            for obj in sample_annos
+                             sample_id=sample_id, annotation=annotation)
+            for sample_id, annotation in annotations
         ])
 
     def save(self, **kwargs):

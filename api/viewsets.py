@@ -17,7 +17,7 @@ from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 from rest_framework_swagger import renderers
 
-from tags.models import SeriesAnnotation, Tag, SampleAnnotation, SeriesTag
+from tags.models import Tag, SeriesAnnotation, SampleAnnotation
 from tags.annotate_core import save_annotation, save_validation, AnnotationError
 from legacy.models import Platform, Series, Analysis, MetaAnalysis, PlatformProbe, Sample
 from s3field.ops import frame_dumps
@@ -102,7 +102,7 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        series_tag = SeriesTag.objects.filter(
+        canonical = SeriesAnnotation.objects.filter(
             series=data['series'],
             tag=data['tag'],
             platform=data['platform']).first()
@@ -116,8 +116,8 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
         del data['tag']
 
         try:
-            if series_tag:
-                save_validation(series_tag.id, data)
+            if canonical:
+                save_validation(canonical.id, data)
             else:
                 save_annotation(data)
         except AnnotationError as err:

@@ -77,9 +77,9 @@
                     {% with platforms = serie.platforms %}
                         Platform{{ platforms|count|pluralize }}: {{ platforms|join(', ') }}
                     {%- endwith -%}
-                    {%- if serie_tags[serie.id] -%}
+                    {%- if series_tags[serie.id] -%}
                         , Tags:
-                        {%- for tag in serie_tags[serie.id] %}
+                        {%- for tag in series_tags[serie.id] %}
                             <a href="{{ url('on_demand_validate') }}?series_id={{ serie.id }}&amp;tag_id={{ tag.id }}" class="label label-{{ 'success' if tags_validated[serie.id, tag.id] else 'grey' }}">{{ tag.name }}</a>
                         {% endfor %}
                     {% endif %}

@@ -16,25 +16,25 @@
 
 
 {% block content %}
-{% if serie %}
+{% if series %}
     {% if not job %}
-        <h4 style="margin-top: 0">{{ serie.attrs.title }} <small>{{ serie.gse_name }}</small></h4>
+        <h4 style="margin-top: 0">{{ series.attrs.title }} <small>{{ series.gse_name }}</small></h4>
     {% endif %}
     {% if done_tags %}
     <p>Tags done:
         {%- for tag in done_tags %}
-            <a href="{{ url('on_demand_validate') }}?series_id={{ serie.id }}&amp;tag_id={{ tag.id }}" class="label label-{{ 'success' if tags_validated[tag.id] else 'grey' }}">{{ tag.tag_name }}</a>
+            <a href="{{ url('on_demand_validate') }}?series_id={{ series.id }}&amp;tag_id={{ tag.id }}" class="label label-{{ 'success' if tags_validated[tag.id] else 'grey' }}">{{ tag.tag_name }}</a>
         {% endfor %}
     </p>
     {% endif %}
 
     <p id="less-desc" class="desc">
-        {{ serie.attrs.summary|truncate(150, True) }}
+        {{ series.attrs.summary|truncate(150, True) }}
         <a href="#">More</a>
     </p>
     <div id="more-desc" class="desc" style="display: none">
-        <p>{{ serie.attrs.summary }}
-        <p><b>Overall design:</b> {{ serie.attrs.overall_design }}</p>
+        <p>{{ series.attrs.summary }}
+        <p><b>Overall design:</b> {{ series.attrs.overall_design }}</p>
         <p><a href="#">Less</a></p>
     </div>
 
@@ -60,11 +60,11 @@
 <div id="tag-form-placeholder"></div>
 <form method="post" class="form-inline well" id="tag-form">
   {% csrf_token %}
-  {% if serie %}
-    <input type="hidden" name="series_id" value="{{ serie.id }}">
+  {% if series %}
+    <input type="hidden" name="series_id" value="{{ series.id }}">
   {% endif %}
-  {% if series_tag %}
-    <input type="hidden" name="series_tag_id" value="{{ series_tag.id }}">
+  {% if canonical %}
+    <input type="hidden" name="canonical_id" value="{{ canonical.id }}">
   {% endif %}
   <input type="hidden" name="values" value="">
   {% if job %}
