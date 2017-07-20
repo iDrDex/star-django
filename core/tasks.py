@@ -9,26 +9,37 @@ from .conf import redis_client
 # TODO: debounce this task
 @shared_task
 def update_graph():
-    samples_graph_sql = """
-        SELECT date_trunc('day', created_on),
-               sum(count(*)) over (order by date_trunc('day', created_on))
-        FROM sample_tag GROUP BY 1 ORDER BY 1
+    total_graph_sql = """
+        SELECT date_trunc('day', S.created_on),
+               sum(count(*)) over (order by date_trunc('day', S.created_on))
+        FROM raw_sample_annotation A
+        JOIN raw_series_annotation S on (A.series_annotation_id = S.id)
+        WHERE S.is_active
+        GROUP BY 1 ORDER BY 1
     """
-    # TODO: update this to use concordant field
-    validations_graph_sql = """
-        SELECT date_trunc('day', V.created_on),
-               sum(count(*)) over (order by date_trunc('day', V.created_on))
-            FROM sample_validation V
-            JOIN series_validation SV on (V.serie_validation_id = SV.id)
-            JOIN series_tag ST on (SV.series_tag_id = ST.id)
-            JOIN sample_tag T on (V.sample_id = T.sample_id and T.series_tag_id = ST.id)
-        WHERE V.annotation %s T.annotation
+    agreed_graph_sql = """
+        SELECT date_trunc('day', S.created_on),
+               sum(count(*)) over (order by date_trunc('day', S.created_on))
+        FROM raw_sample_annotation A
+        JOIN raw_series_annotation S on (A.series_annotation_id = S.id)
+        WHERE S.is_active and (S.agrees_with_id is not null or S.agreed)
+        GROUP BY 1 ORDER BY 1
+    """
+    disagreed_graph_sql = """
+        SELECT date_trunc('day', S.created_on),
+               sum(count(*)) over (order by date_trunc('day', S.created_on))
+        FROM raw_sample_annotation A
+        JOIN raw_series_annotation S on (A.series_annotation_id = S.id)
+        WHERE S.is_active and S.agrees_with_id is null and not S.agreed
+            and (S.canonical_id not in (select annotation_id from validation_job)
+                or S.id = (select min(id) from raw_series_annotation
+                           where canonical_id = S.canonical_id))
         GROUP BY 1 ORDER BY 1
     """
 
-    total = fetch_all(samples_graph_sql)
-    right = fetch_all(validations_graph_sql % '=')
-    wrong = fetch_all(validations_graph_sql % '!=')
+    total = fetch_all(total_graph_sql)
+    right = fetch_all(agreed_graph_sql)
+    wrong = fetch_all(disagreed_graph_sql)
     graph_data = {'total': total, 'right': right, 'wrong': wrong}
     redis_client.set('core.graph', json.dumps(graph_data, default=defaultencode))
 
