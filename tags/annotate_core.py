@@ -103,7 +103,6 @@ def calc_validation_stats(raw_annotation):
         )
         raw_annotation.best_kappa = max(_cohens_kappa(raw_samples, a.sample_annotations.all())
                                         for a in earlier_annotations)
-        raw_annotation.agrees = bool(raw_annotation.agrees_with)
 
     # Fill in user stats and earnings unless already did
     if not raw_annotation.accounted_for and raw_annotation.is_active \
