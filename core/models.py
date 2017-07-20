@@ -1,10 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models import Sum
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
-from legacy.models import Sample, Series, PlatformProbe, Platform, Analysis
+from legacy.models import Sample, Series, Platform, Analysis
 from tags.models import Tag, RawSeriesAnnotation, RawSampleAnnotation
 from handy.models import JSONField
 
@@ -31,20 +32,23 @@ ATTR_PER_SERIE = 4
 class StatisticCacheManager(models.Manager):
     def update_statistics(self):
         from core.tasks import update_graph
+        update_graph()
 
         users = RawSeriesAnnotation.objects.values_list('created_by', flat=True).distinct().count()
+        samples = Sample.objects.exclude(deleted='T').count()
+        series = Series.objects.count()
 
         statistic_schema = {
-            'samples': Sample.objects.count(),
-            'samples_attributes': Sample.objects.count() * ATTR_PER_SAMPLE,
-            'experiments': Series.objects.count(),
-            'experiments_attributes': Series.objects.count() * ATTR_PER_SERIE,
+            'samples': samples,
+            'samples_attributes': samples * ATTR_PER_SAMPLE,
+            'experiments': series,
+            'experiments_attributes': series * ATTR_PER_SERIE,
 
             'tags': Tag.objects.count(),
             'series_annotations': RawSeriesAnnotation.objects.count(),
             'sample_annotations': RawSampleAnnotation.objects.count(),
 
-            'gene_probes': PlatformProbe.objects.count(),
+            'gene_probes': Platform.objects.aggregate(s=Sum('probes_matched'))['s'],
             'platforms': Platform.objects.count(),
             'meta_analyses': Analysis.objects.count(),
 
@@ -56,8 +60,6 @@ class StatisticCacheManager(models.Manager):
                 slug=slug)[0]
             statistic.count = value
             statistic.save()
-
-        update_graph()
 
 
 class StatisticCache(models.Model):
