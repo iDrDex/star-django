@@ -15,6 +15,7 @@ class AnnotationError(Exception):
     pass
 
 
+@transaction.atomic
 def save_annotation(data):
     user_id = data['user_id']
     annotations = data['annotations']
