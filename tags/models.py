@@ -257,6 +257,7 @@ class RawSeriesAnnotation(models.Model):
     on_demand = models.BooleanField(default=False)
     ignored = models.BooleanField(default=False)
     by_incompetent = models.BooleanField(default=False)
+    obsolete = models.BooleanField(default=False)
     from_api = models.BooleanField(default=False)
     note = models.TextField(blank=True, default='')
     accounted_for = models.BooleanField(default=False)
@@ -315,6 +316,7 @@ class SeriesAnnotation(models.Model):
     regex = models.CharField(max_length=512, blank=True)
     created_on = models.DateTimeField(default=timezone.now)
     modified_on = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=False)
 
     annotations = models.IntegerField()
     authors = models.IntegerField()

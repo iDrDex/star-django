@@ -90,6 +90,7 @@ def calc_validation_stats(raw_annotation):
     if {s.sample_id for s in canonical_samples} != raw_sample_ids:
         for e in earlier_annotations:
             if {s.sample_id for s in e.sample_annotations.all()} != raw_sample_ids:
+                e.obsolete = True
                 e.is_active = False
                 e.save()
         # Force refetch
@@ -138,13 +139,14 @@ def update_user_stats(raw_annotation, samples):
 
     # Update annotation author payment stats
     ref = raw_annotation.agrees_with
-    if ref and not ref.agreed:
-        ref_stats = lock_author_stats(ref)
-        ref_stats.earn_annotations(samples)
-        ref_stats.save()
+    if ref:
+        if not ref.agreed:
+            ref.agreed = True  # Prevent dup annotation stats and earnings
+            ref_stats = lock_author_stats(ref)
+            ref_stats.earn_annotations(samples)
+            ref_stats.save()
 
-        # Prevent dup annotation stats and earnings
-        ref.agreed = True
+        ref.agrees_with = raw_annotation
         ref.save()
 
 
@@ -152,6 +154,8 @@ def update_user_stats(raw_annotation, samples):
 def update_canonical(canonical):
     raw_annos = canonical.raw_annotations.prefetch_related('sample_annotations') \
                                          .filter(is_active=True).order_by('pk')
+    # Disable if no raw sources
+    canonical.is_active = bool(raw_annos)
 
     best_cohens_kappa = max(a.best_kappa for a in raw_annos) if raw_annos else None
 
@@ -169,7 +173,8 @@ def update_canonical(canonical):
         canonical.column = source.column
         canonical.regex = source.regex
     # Calculate fleiss kappa for all existing annotations/validations
-    canonical.fleiss_kappa = _fleiss_kappa([a.sample_annotations.all() for a in raw_annos])
+    canonical.fleiss_kappa = _fleiss_kappa([a.sample_annotations.all() for a in raw_annos]) \
+        if raw_annos else None
     canonical.best_cohens_kappa = best_cohens_kappa
     canonical.annotations = raw_annos.count()
     canonical.authors = len(set(a.created_by_id for a in raw_annos))

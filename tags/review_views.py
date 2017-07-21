@@ -56,7 +56,8 @@ class SeriesAnnotations(DatatableView):
     datatable_options_class = AnnotationsSearchOptions
 
     def get_queryset(self):
-        return SeriesAnnotation.objects.select_related('series', 'platform', 'tag')
+        return SeriesAnnotation.objects.filter(is_active=True) \
+                                       .select_related('series', 'platform', 'tag')
 
     def apply_queryset_options(self, queryset):
         options = self._get_datatable_options()
@@ -160,7 +161,10 @@ def ignore(request, series_annotation_id):
             calc_validation_stats(raw_annotation)
         update_canonical(annotation.canonical)
 
-    return redirect('sample_annotations', annotation.canonical_id)
+    if annotation.canonical.is_active:
+        return redirect('sample_annotations', annotation.canonical_id)
+    else:
+        return redirect('series_annotations')
 
 
 # Snapshots
