@@ -187,7 +187,7 @@ def reschedule_validation(canonical):
     # If failed too much then postpone next validation
     failed = canonical.raw_annotations.filter(is_active=True).count()
     if failed >= 5:
-        priority = 4
+        priority = canonical.fleiss_kappa + 4
 
     ValidationJob.objects.create(annotation=canonical, priority=priority)
 
