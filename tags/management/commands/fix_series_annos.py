@@ -12,9 +12,7 @@ class Command(BaseCommand):
     def handle(self, **options):
         SeriesAnnotation.objects.filter(annotations__gt=0).update(is_active=True)
 
-        qs = RawSeriesAnnotation.objects.filter(is_active=False, ignored=False) \
-                                        .prefetch_related('sample_annotations') \
-                                        .order_by('id')
+        qs = RawSeriesAnnotation.objects.order_by('id')
         by_canonical = group_by(lambda a: a.canonical_id, qs)
 
         for anno in tqdm(qs):
@@ -22,6 +20,7 @@ class Command(BaseCommand):
                 continue
             later_annos = [a for a in by_canonical[anno.canonical_id] if a.pk > anno.pk]
             if not all(is_samples_concordant(anno, a) for a in later_annos):
+                anno.is_active = False
                 anno.obsolete = True
                 anno.save()
             else:
