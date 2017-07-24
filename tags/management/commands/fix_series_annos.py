@@ -5,7 +5,6 @@ from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
 
 from tags.models import RawSeriesAnnotation, SeriesAnnotation
-from tags.annotate_core import is_samples_concordant
 
 
 class Command(BaseCommand):
@@ -18,12 +17,13 @@ class Command(BaseCommand):
         for anno in tqdm(qs):
             if anno.ignored or anno.by_incompetent:
                 continue
-            later_annos = [a for a in by_canonical[anno.canonical_id] if a.pk > anno.pk]
-            if not all(is_samples_concordant(anno, a) for a in later_annos):
+            last_anno = by_canonical[anno.canonical_id][-1]
+            if not samples_match(anno, last_anno):
                 anno.is_active = False
                 anno.obsolete = True
                 anno.save()
             else:
+                anno.obsolete = False
                 try:
                     anno.is_active = True
                     anno.save()
@@ -31,3 +31,9 @@ class Command(BaseCommand):
                     anno.is_active = False
                     anno.note += '# dup'
                     anno.save()
+
+
+def samples_match(anno1, anno2):
+    ref1 = {s.sample_id for s in anno1.sample_annotations.all()}
+    ref2 = {s.sample_id for s in anno2.sample_annotations.all()}
+    return ref1 == ref2
