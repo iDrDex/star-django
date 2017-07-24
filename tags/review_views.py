@@ -150,7 +150,8 @@ def ignore(request, series_annotation_id):
         return HttpResponseForbidden()
 
     with transaction.atomic():
-        annotation = get_object_or_404(RawSeriesAnnotation, pk=series_annotation_id)
+        annotation = get_object_or_404(RawSeriesAnnotation.objects.select_for_update(),
+                                       pk=series_annotation_id)
         annotation.ignored = True
         annotation.is_active = False
         annotation.save()
@@ -159,7 +160,7 @@ def ignore(request, series_annotation_id):
         raw_annotations = annotation.canonical.raw_annotations.filter(pk__gte=annotation.pk)
         for raw_annotation in raw_annotations:
             calc_validation_stats(raw_annotation)
-        update_canonical(annotation.canonical)
+        update_canonical(annotation.canonical_id)
 
     if annotation.canonical.is_active:
         return redirect('sample_annotations', annotation.canonical_id)

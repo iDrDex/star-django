@@ -68,7 +68,7 @@ def save_validation(canonical_id, data):
 
     calc_validation_stats(raw_annotation)
     if raw_annotation.is_active:
-        update_canonical(canonical)
+        update_canonical(canonical.pk)
     if canonical.best_cohens_kappa != 1:
         reschedule_validation(canonical)
 
@@ -151,7 +151,8 @@ def update_user_stats(raw_annotation, samples):
 
 
 @transaction.atomic
-def update_canonical(canonical):
+def update_canonical(canonical_pk):
+    canonical = SeriesAnnotation.objects.select_for_update().get(pk=canonical_pk)
     raw_annos = canonical.raw_annotations.prefetch_related('sample_annotations') \
                                          .filter(is_active=True).order_by('pk')
     # Disable if no raw sources
