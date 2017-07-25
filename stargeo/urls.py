@@ -1,28 +1,22 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
-from registration.backends.hmac.views import RegistrationView
 
-from core.forms import PasswordResetForm, MyRegistrationForm, MyAuthenticationForm
+from core.forms import PasswordResetForm, MyAuthenticationForm
 from api.routers import router
 from api.viewsets import SwaggerSchemaView
 
 
 urlpatterns = patterns('',  # noqa
     url(r'^accounts/login/$', 'django.contrib.auth.views.login',
-        {'authentication_form': MyAuthenticationForm}, name='login'),
+        {'authentication_form': MyAuthenticationForm}, name='auth_login'),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout',
-        {'next_page': '/'}),
-    url(r'^accounts/register/$',
-        RegistrationView.as_view(form_class=MyRegistrationForm),
-        name='registration_register'),
-    url(r'^accounts/reactivate/$', 'core.views.reactivate', name='reactivate'),
-    url(r'^accounts/reactivate_sent/$', 'core.views.reactivate_sent', name='reactivate_sent'),
+        {'next_page': '/'}, name='auth_logout'),
     url(r'^accounts/password_reset/$', 'django.contrib.auth.views.password_reset',
         {'post_reset_redirect': 'auth_password_reset_done',
          'email_template_name': 'registration/password_reset_email.txt',
          'password_reset_form': PasswordResetForm},
         name='password_reset'),
-    url(r'^accounts/', include('registration.backends.hmac.urls')),
+    url(r'^accounts/', include('registration.auth_urls')),
 
     url(r'^$', 'tags.views.search', name='search'),
     url(r'^tags/$', 'tags.views.tag_control', name='tag_control'),

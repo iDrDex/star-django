@@ -104,8 +104,6 @@
                         {{ request.user.first_name }} {{ request.user.last_name }}
                     {% else %}
                         <a href="{{ url('auth_login') }}">Log in</a>
-                        &nbsp;
-                        <a href="{{ url('registration_register') }}">Register</a>
                     {% endif %}
                 </span>
 
