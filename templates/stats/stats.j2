@@ -7,6 +7,7 @@
   <script type="text/javascript" src="{{ FRONTEND }}stats.bundle.js"></script>
   <script>
     var data = {{ data|json }};
-    window.App.stats.showStats('chart', data);
+    var users = {{ users|json }};
+    window.App.stats.showStats('chart', data, users);
   </script>
 {% endblock %}

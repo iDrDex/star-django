@@ -1,3 +1,4 @@
+from funcy import walk_values
 from handy.decorators import render_to
 
 from django import forms
@@ -5,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
 from django.contrib.auth import get_user_model
 
-from .models import StatisticCache, HistoricalCounter
+from .models import StatisticCache, HistoricalCounter, User
 from .conf import redis_client
 
 
@@ -45,7 +46,6 @@ class ReactivateForm(forms.Form):
     def clean_email(self):
         email = self.cleaned_data.get('email')
 
-        User = get_user_model()  # noqa
         try:
             user = User._default_manager.get(email__iexact=email)
         except User.DoesNotExist:
@@ -56,6 +56,9 @@ class ReactivateForm(forms.Form):
         self.user = user
         return email
 
+def format_username(u):
+    text = '{first_name} {last_name}'.format(**u)
+    return text if text != ' ' else u['pk']
 
 @render_to(template='stats/stats.j2')
 def stats(request):
@@ -63,4 +66,11 @@ def stats(request):
         [h.created_on.strftime('%Y-%m-%d'), h.counters]
         for h in HistoricalCounter.objects.all()
     ]
-    return {'data': data}
+    users = {
+        u['pk']: format_username(u)
+        for u in User.objects.values('pk', 'first_name', 'last_name')
+    }
+    return {
+        'data': data,
+        'users': users,
+    }

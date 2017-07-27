@@ -1,8 +1,10 @@
 import _ from 'lodash';
 import c3 from 'c3';
+import * as d3 from 'd3';
 import 'c3/c3.css';
+import './styles.css';
 
-function showByKeys(bindto, data) {
+function showByKeys(table, data, opts={}) {
     const keysData = _.map(data, _.head);
     const keys = _.keys(data[0][1]);
 
@@ -15,12 +17,12 @@ function showByKeys(bindto, data) {
     });
 
     const chart = c3.generate({
-        bindto,
+        bindto: `#${table}_by_species`,
         data: {
             x: 'x',
             columns: _.concat([
                 _.concat('x', keysData),
-                _.concat('total', dataColumns.total),
+                opts.showTotal ? _.concat('total', dataColumns.total) : [],
             ], _.map(keys, (key) => _.concat(key, dataColumns[key]))),
         },
         axis: {
@@ -31,7 +33,22 @@ function showByKeys(bindto, data) {
                 },
             },
         },
+        legend: {
+            show: !opts.mapX,
+        },
     });
+    if (opts.mapX) {
+        d3.select(`#${table}_legenda`).insert('div', '.chart').attr('class', 'legend').selectAll('span')
+            .data(keys)
+            .enter().append('span')
+                .attr('data-id', _.identity)
+                .style('background-color', (id) => chart.color(id))
+                .html(opts.mapX)
+                .on('mouseover', (id) => chart.focus(id))
+                .on('mouseout', () => chart.revert())
+                .on('click', (id) => chart.toggle(id));
+
+    }
 }
 
 function showAll(bindto, data) {
@@ -61,7 +78,7 @@ function showAll(bindto, data) {
     });
 }
 
-export function showStats(bindto, data) {
+export function showStats(bindto, data, users) {
 
     const bySpecies = [
         'platforms_probes', 'platforms',
@@ -74,7 +91,7 @@ export function showStats(bindto, data) {
 
     const bySpeciesHtml = _.join(
         _.map(bySpecies,
-              (table) => `<h3>${table}</h3><div id="${table}_by_species"></div>`),
+              (table) => `<h3>${table}</h3><div id="${table}_by_species"></div><div id="${table}_legenda"></div>`),
         '');
 
     const elem = document.getElementById(bindto);
@@ -90,7 +107,9 @@ export function showStats(bindto, data) {
 
     _.forEach(bySpecies, (table) => {
         showByKeys(
-            `#${table}_by_species`,
-            _.map(data, ([date, value]) => [date, value[table]]));
+            table,
+            _.map(data, ([date, value]) => [date, value[table]]),
+            _.includes(['sample_validations_by_users', 'series_validations_by_users'], table) ?
+                { mapX: (key) => _.get(users, `${key}`, key) } : { showTotal: true });
     });
 }

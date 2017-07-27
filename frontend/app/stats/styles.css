@@ -1,0 +1,8 @@
+div.legend span {
+    margin: 5px;
+    padding: 5px;
+    display: inline-block;
+    text-align: center;
+    cursor: pointer;
+    color: white;
+}
