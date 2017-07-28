@@ -17,7 +17,7 @@ function showByKeys(table, data, opts={}) {
     });
 
     const chart = c3.generate({
-        bindto: `#${table}_by_species`,
+        bindto: `#${table}`,
         data: {
             x: 'x',
             columns: _.concat([
@@ -34,21 +34,26 @@ function showByKeys(table, data, opts={}) {
             },
         },
         legend: {
-            show: !opts.mapX,
+            show: false,
+        },
+        tooltip: {
+            format: {
+                name: opts.mapX || _.identity,
+            },
         },
     });
-    if (opts.mapX) {
-        d3.select(`#${table}_legenda`).insert('div', '.chart').attr('class', 'legend').selectAll('span')
-            .data(keys)
-            .enter().append('span')
-                .attr('data-id', _.identity)
-                .style('background-color', (id) => chart.color(id))
-                .html(opts.mapX)
-                .on('mouseover', (id) => chart.focus(id))
-                .on('mouseout', () => chart.revert())
-                .on('click', (id) => chart.toggle(id));
 
-    }
+    d3.select(`#${table}_legenda`).insert('div', '.chart').attr('class', 'legend').selectAll('span')
+        .data(_.concat(opts.showTotal ? ['total'] : [], keys))
+        .enter().append('span')
+            .attr('data-id', _.identity)
+            .style('background-color', (id) => chart.color(id))
+            .html(opts.mapX || _.identity)
+            .on('mouseover', (id) => chart.focus(id))
+            .on('mouseout', () => chart.revert())
+            .on('click', (id) => chart.toggle(id));
+
+    return chart;
 }
 
 function showAll(bindto, data) {
@@ -75,41 +80,148 @@ function showAll(bindto, data) {
                 },
             },
         },
+        legend: {
+            show: false,
+        },
     });
+
+    d3.select(`${bindto}_legenda`).insert('div', '.chart').attr('class', 'legend').selectAll('span')
+        .data(_.keys(data[0][1]))
+        .enter().append('span')
+        .attr('data-id', _.identity)
+        .style('background-color', (id) => chart.color(id))
+        .html(_.identity)
+        .on('mouseover', (id) => chart.focus(id))
+        .on('mouseout', () => chart.revert())
+        .on('click', (id) => chart.toggle(id));
+
+    return chart;
 }
 
-export function showStats(bindto, data, users) {
+function graphicHtml(table) {
+    return `<h3>${_.capitalize(_.lowerCase(table))}</h3><div id="${table}"></div><div id="${table}_legenda"></div>`;
+}
 
-    const bySpecies = [
-        'platforms_probes', 'platforms',
-        'samples', 'sample_annotations', 'sample_validations',
-        'series', 'series_annotations', 'series_validations',
-        'concordant_sample_annotations', 'concordant_sample_tags', 'concordant_sample_validations',
-        'concordant_series_annotations', 'concordant_series_tags', 'concordant_series_validations',
-        'sample_tags_by_users', 'sample_validations_by_users', 'series_validations_by_users',
+function showGeneralStats(data) {
+    const general = [
+        'platforms', 'platforms_probes', 'series_tag_history',
     ];
+    const generalElem = document.getElementById('general_container');
 
-    const bySpeciesHtml = _.join(
-        _.map(bySpecies,
-              (table) => `<h3>${table}</h3><div id="${table}_by_species"></div><div id="${table}_legenda"></div>`),
-        '');
-
-    const elem = document.getElementById(bindto);
-    elem.innerHTML = `
-    <h3>tags and users</h3>
-    <div id="usersAndTags"></div>
-    ${bySpeciesHtml}
+    generalElem.innerHTML = `
+    <h3>Tags and Users</h3>
+    <div id="users_and_tags"></div>
+    <div id="users_and_tags_legenda"></div>
+    ${_.join(_.map(general, graphicHtml), '')}
     `;
-    showAll(
-        '#usersAndTags',
+
+    const chart = showAll(
+        '#users_and_tags',
         _.map(data, ([date, value]) =>
               [date, _.pick(value, ['users', 'tags'])]));
 
-    _.forEach(bySpecies, (table) => {
+    const charts = _.map(general, (table) =>
         showByKeys(
             table,
             _.map(data, ([date, value]) => [date, value[table]]),
-            _.includes(['sample_validations_by_users', 'series_validations_by_users'], table) ?
-                { mapX: (key) => _.get(users, `${key}`, key) } : { showTotal: true });
-    });
+            { showTotal: !_.isEqual(table, 'series_tag_history') })
+    );
+    return _.concat([chart], charts);
 }
+
+function showSamplesStats(data, idToUsername) {
+    const samples = [
+        'samples', 'sample_annotations', 'sample_validations',
+        'sample_tags',
+        'concordant_sample_annotations', 'concordant_sample_tags', 'concordant_sample_validations',
+        'sample_tags_by_users', 'sample_validations_by_users',
+    ];
+
+    const samples_by_users = [
+        'sample_tags_by_users', 'sample_validations_by_users',
+    ];
+
+    const generalElem = document.getElementById('samples_container');
+    generalElem.innerHTML = _.join(_.map(samples, graphicHtml), '');
+
+    return _.map(samples, (table) =>
+        showByKeys(
+            table,
+            _.map(data, ([date, value]) => [date, value[table]]),
+            _.includes(samples_by_users, table) ?
+                { mapX: idToUsername } : { showTotal: true })
+    );
+}
+
+function showSeriesStats(data, idToUsername) {
+    const series = [
+        'series', 'series_annotations', 'series_validations',
+        'series_tags',
+        'concordant_series_annotations', 'concordant_series_tags', 'concordant_series_validations',
+        'series_tags_by_users', 'series_validations_by_users',
+    ];
+
+    const series_by_users = [
+        'series_tags_by_users', 'series_validations_by_users',
+    ];
+
+    const generalElem = document.getElementById('series_container');
+    generalElem.innerHTML = _.join(_.map(series, graphicHtml), '');
+
+    return _.map(series, (table) =>
+        showByKeys(
+            table,
+            _.map(data, ([date, value]) => [date, value[table]]),
+                _.includes(series_by_users, table) ?
+                { mapX: idToUsername } : { showTotal: true })
+    );
+}
+
+export function showStats(bindto, data, users) {
+    function idToUsername(key) {
+        return _.get(users, `${key}`, key);
+    }
+
+    document.getElementById(bindto).innerHTML = html;
+
+    const generalCharts = showGeneralStats(data);
+    const samplesCharts = showSamplesStats(data, idToUsername);
+    const seriesCharts = showSeriesStats(data, idToUsername);
+
+    _.forEach([['#general_link', generalCharts],
+               ['#samples_link', samplesCharts],
+               ['#series_link', seriesCharts],
+              ],
+              ([id, charts]) =>
+              $(id).click(() =>
+                          _.map(charts,
+                                (chart) => setTimeout(
+                                    () => chart.resize(), 0))));
+}
+
+const html = `
+  <div class="hpanel">
+      <div class="hpanel">
+
+      <ul class="nav nav-tabs">
+          <li class="active"><a id="general_link" data-toggle="tab" href="#tab-1">General information</a></li>
+          <li class=""><a id="samples_link" data-toggle="tab" href="#tab-2">Samples</a></li>
+          <li class=""><a id="series_link" data-toggle="tab" href="#tab-3">Series</a></li>
+      </ul>
+      <div class="tab-content">
+          <div id="tab-1" class="tab-pane active">
+              <div class="panel-body" id="general_container">
+              </div>
+          </div>
+          <div id="tab-2" class="tab-pane">
+              <div class="panel-body" id="samples_container">
+              </div>
+          </div>
+          <div id="tab-3" class="tab-pane">
+              <div class="panel-body" id="series_container">
+              </div>
+          </div>
+      </div>
+      </div>
+  </div>
+`;
