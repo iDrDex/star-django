@@ -66,7 +66,7 @@ urlpatterns = patterns('',  # noqa
     url(r'^analysis/(\d+)/delete/$', 'analysis.views.delete', name='analysis_delete'),
 
     # Admin/profile areas
-    url(r'^stats/$', 'tags.user_views.stats', name='stats'),
+    url(r'^users/$', 'tags.user_views.stats', name='stats'),
     url(r'^accounting/$', 'tags.user_views.accounting', name='accounting'),
     url(r'^account_info/$', 'tags.user_views.account_info', name='account_info'),
     url(r'^redeem/$', 'tags.user_views.redeem', name='redeem'),
@@ -76,5 +76,5 @@ urlpatterns = patterns('',  # noqa
     url(r'^api/', include(router.urls)),
     url(r'^docs', SwaggerSchemaView.as_view()),
 
-    url(r'^statistics/$', 'core.views.stats', name='statistics'),
+    url(r'^stats/$', 'core.views.stats', name='statistics'),
 )

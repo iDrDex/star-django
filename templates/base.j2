@@ -144,6 +144,9 @@
             <li{% if request.path.startswith('/analysis/') %} class="active"{% endif %}>
                 <a href="/analysis/"> <span class="nav-label">Analysis</span> </a>
             </li>
+            <li{% if request.path == '/stats/' %} class="active"{% endif %}>
+                <a href="/stats/"> <span class="nav-label">Statistics</span> </a>
+            </li>
             {% if not request.user.is_competent %}
             <li{% if request.path.startswith('/competence/') %} class="active"{% endif %}>
                 <a href="/competence/"> <span class="nav-label">Competence Test</span> </a>
@@ -154,8 +157,8 @@
             </li>
             {# HACK: hardcode my and Dexters ids #}
             {% if request.user.is_superuser %}
-            <li{% if request.path == '/stats/' %} class="active"{% endif %}>
-                <a href="/stats/"> <span class="nav-label">Statistics</span> </a>
+            <li{% if request.path == '/users/' %} class="active"{% endif %}>
+                <a href="/users/"> <span class="nav-label">User statistics</span> </a>
             </li>
             <li{% if request.path == '/accounting/' %} class="active"{% endif %}>
                 <a href="/accounting/"> <span class="nav-label">Accounting</span> </a>
