@@ -166,11 +166,11 @@ def pull_db(dump='backup'):
         print('Making database dump...')
         run(DUMP_COMMAND % remote_db)
         print('Downloading dump...')
-        local('rsync -av --progress stargeo:/home/ubuntu/app/stargeo.sql.gz stargeo.sql.gz')
+        local('rsync -avP stargeo:/home/ubuntu/app/stargeo.sql.gz stargeo.sql.gz')
         run('rm stargeo.sql.gz')
     elif dump == 'backup':
         # Alternative: fetch latests db backup
-        local('rsync -av --progress stargeo:/home/ubuntu/db-backups/stargeo.sql.gz stargeo.sql.gz')
+        local('rsync -avP stargeo:/home/ubuntu/db-backups/stargeo.sql.gz stargeo.sql.gz')
     elif dump == 'local':
         print('Using local dump...')
         if not os.path.exists('stargeo.sql.gz'):
