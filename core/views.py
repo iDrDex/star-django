@@ -1,10 +1,8 @@
-from funcy import walk_values
 from handy.decorators import render_to
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
-from django.contrib.auth import get_user_model
 
 from .models import StatisticCache, HistoricalCounter, User
 from .conf import redis_client
