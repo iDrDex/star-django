@@ -37,8 +37,6 @@ class Tag(models.Model):
         db_table = 'tag'
 
     def get_stats(self):
-        from tags.models import SampleValidation, SampleAnnotation
-
         def annotate(qs):
             return list(qs.values_list('annotation').annotate(Count('id')).order_by('annotation'))
 
@@ -52,12 +50,9 @@ class Tag(models.Model):
         """
         When boolean tag changes its name we need to update all annotations.
         """
-        from tags.models import SampleValidation, SampleAnnotation
-
         if old != new:
-            SampleTag.objects.filter(series_tag__tag=self, annotation=old).update(annotation=new)
-            SampleValidation.objects.filter(serie_validation__tag=self, annotation=old) \
-                            .update(annotation=new)
+            RawSampleAnnotation.objects.filter(series_annotation__tag=self, annotation=old) \
+                               .update(annotation=new)
             SampleAnnotation.objects.filter(series_annotation__tag=self, annotation=old) \
                             .update(annotation=new)
 
