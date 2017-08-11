@@ -2,6 +2,7 @@
 Principles:
 - library not framework (helpers + decorators)
 - reuse django (i.e. validation)
+    - when impossible to reuse, mimic it
 - do not hide intentions
     - the less abstraction the better (.json() instead of .response())
 
