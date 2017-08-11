@@ -8,15 +8,16 @@ Principles:
 DWIM, practicality
 """
 
+import six
 import json as _json
-from funcy import decorator, is_iter, chain
-from funcy import cached_property, rcompose, memoize, iffy, isa, partial, walk_values
+from funcy import decorator, is_iter, chain, select_values
+from funcy import cached_property, rcompose, memoize, iffy, isa, partial, walk_values, flip
 
 import django
 from django.conf import settings
 from django.core.exceptions import FieldError
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import models
+from django.db.models import QuerySet, F
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.views import defaults
 from django.shortcuts import _get_queryset
@@ -25,7 +26,7 @@ from django.utils.module_loading import import_string
 
 class SmarterJSONEncoder(DjangoJSONEncoder):
     def default(self, o):
-        if isinstance(o, models.QuerySet) or is_iter(o):
+        if isinstance(o, QuerySet) or is_iter(o):
             return list(o)
         else:
             return super(SmarterJSONEncoder, self).default(o)
@@ -92,16 +93,22 @@ def _extend_queryset_class(base):
         def map_types(self, types, func):
             return self.map(partial(walk_values, iffy(isa(types), func)))
 
-        def values(self, *fields, **renames):
+        def values(self, *fields, **expressions):
             """
             Extended version supporting renames:
                 .values('id', 'name', author__name='author')
             """
+            renames = select_values(isa(six.string_types), expressions)
             if not renames:
-                return base.values(self, *fields)
+                return base.values(self, *fields, **expressions)
+            elif django.VERSION >= (1, 11):
+                rename_expressions = walk_values(F, renames)
+                expressions.update(rename_expressions)
+                return base.values(self, *fields, **expressions)
             else:
-                rename = lambda d: {renames.get(k, k): v for k, v in d.items()}
-                return base.values(self, *chain(fields, renames)).map(rename)
+                f_to_name = flip(renames)
+                rename = lambda d: {f_to_name.get(k, k): v for k, v in d.items()}
+                return base.values(self, *chain(fields, f_to_name)).map(rename)
 
         def values_but(self, *exclude):
             exclude = set(exclude)
@@ -200,14 +207,19 @@ def auth_required(call):
         return call()
     else:
         return json_error(403, 'Authorization required')
+# Changed from method to property
+if django.VERSION >= (1, 10):
+    is_authenticated = lambda user: user.is_authenticated
+else:
+    is_authenticated = lambda user: user.is_authenticated()
 
 def attempt_auth(request):
-    if request.user.is_authenticated():
+    if is_authenticated(request.user):
         return True
     hooks = getattr(settings, 'DJAPI_AUTH', [])
     for hook in hooks:
         import_string(hook)(request)
-        if request.user.is_authenticated():
+        if is_authenticated(request.user):
             return True
     else:
         return False
