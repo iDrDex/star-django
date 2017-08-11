@@ -6,6 +6,8 @@ import djapi as api
 from s3field.ops import frame_dumps
 from legacy.models import Series, Platform, PlatformProbe, Analysis
 from tags.models import Tag
+from tags.views import TagForm
+
 
 
 tags_qs = api.queryset(Tag).filter(is_active=True) \
@@ -14,29 +16,10 @@ tags_qs = api.queryset(Tag).filter(is_active=True) \
 def tags(request):
     return api.json(tags_qs)
 
+@api.user_passes_test(lambda user: user.is_competent)
+@api.validate(TagForm)
 def tag_create(request):
-    assert 0
-
-# class TagForm(ModelForm):
-#     class Meta:
-#         model = Tag
-#         fields = ['tag_name', 'description', 'ontology_id',
-#                   'concept_full_id', 'concept_name']
-
-#     def clean_tag_name(self):
-#         tag_name = self.cleaned_data['tag_name']
-#         if ' ' in tag_name:
-#             raise ValidationError('Spaces are not allowed in tag names, use underscores instead.')
-#         elif not re.search(r'^[a-zA-Z]\w+$', tag_name):
-#             raise ValidationError('Wrong tag name format.')
-#         return tag_name
-
-#     def clean(self):
-#         clean_data = super(TagForm, self).clean()
-#         if 'tag_name' in clean_data and not self.instance.pk:
-#             if Tag.objects.filter(tag_name=clean_data['tag_name'], is_active=True).exists():
-#                 self.add_error('tag_name',
-#                                'Tag with name "%s" already exists' % clean_data['tag_name'])
+    raise NotImplementedError
 
 def tag_detail(request, pk):
     return api.json(api.get_or_404(tags_qs, pk=pk))
