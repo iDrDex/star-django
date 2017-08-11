@@ -103,6 +103,7 @@ class Analysis(models.Model):
     series_count = models.IntegerField(blank=True, null=True)
     platform_count = models.IntegerField(blank=True, null=True)
     sample_count = models.IntegerField(blank=True, null=True)
+    # TODO: make these JSON or ArrayFields?
     series_ids = models.TextField(blank=True)
     platform_ids = models.TextField(blank=True)
     sample_ids = models.TextField(blank=True)
