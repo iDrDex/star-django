@@ -89,6 +89,8 @@ def platform_probes(request, gpl_name):
 
 
 from s3field.fields import Resource
+from analysis.views import AnalysisForm
+from analysis.tasks import analysis_task
 
 analysis_qs = api.queryset(Analysis).filter(is_active=True) \
     .values_but('created_by', 'modified_by', 'is_active', 'created_on', 'modified_on',
@@ -102,10 +104,6 @@ def analysis_list(request):
 def analysis_detail(request, pk):
     return api.json(api.get_or_404(analysis_qs, pk=pk))
 
-
-from analysis.views import AnalysisForm
-from analysis.tasks import analysis_task
-
 # TODO: a helper for this?
 #       autouse when DEBUG=True?
 #       integrate with get_post() to autoprovide url?
@@ -114,7 +112,7 @@ def analysis_form(request):
     return render(request, 'test_form.j2', {'form': form, 'action': reverse('analysis')})
 
 @api.auth_required
-@api.validate(form=AnalysisForm)
+@api.validate(AnalysisForm)
 def analysis_create(request, analysis):
     analysis.created_by_id = analysis.modified_by_id = request.user.id
     analysis.save()
