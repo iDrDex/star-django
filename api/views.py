@@ -38,10 +38,9 @@ def series_detail(request, gse_name):
 @api.catch(Series.DoesNotExist, status=404)
 def series_samples(request, gse_name):
     series = Series.objects.get(gse_name=gse_name)
-    # renames = {'series__gse_name': 'gse_name', 'platform__gpl_name': 'gpl_name'}
     samples = api.queryset(series.samples.exclude(deleted='T')).values(
         'gsm_name', 'attrs',
-        series__gse_name='gse_name', platform__gpl_name='gpl_name')
+        gse_name='series__gse_name', gpl_name='platform__gpl_name')
 
     # Filter by platform
     if request.GET.get('gpl_name'):
