@@ -69,24 +69,6 @@ def platform_probes(request, gpl_name):
     return HttpResponse(frame_dumps(probes_df), content_type='application/json')
 
 
-# Platforms = api.Resource(
-#     Platform.objects.order_by('id'),
-#     exclude=['id', 'stats', 'history', 'verdict', 'last_filled'],
-# )
-# platforms = Platforms.views.list()
-# platforms_detail = Platforms.views.get(by='gpl_name')
-
-# class Analysis(models.Model):
-#     analysis_name = models.CharField(max_length=512)
-#     description = models.CharField(max_length=512, blank=True, default='')
-#     specie = models.CharField(max_length=127, blank=True,
-#                               choices=[('human', 'human'), ('mouse', 'mouse'), ('rat', 'rat')])
-#     case_query = models.CharField(max_length=512)
-#     control_query = models.CharField(max_length=512)
-#     modifier_query = models.CharField(max_length=512, blank=True, default='')
-#     min_samples = models.IntegerField(blank=True, null=True, default=3)
-
-
 from s3field.fields import Resource
 from analysis.views import AnalysisForm
 from analysis.tasks import analysis_task
