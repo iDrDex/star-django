@@ -54,6 +54,7 @@ INSTALLED_APPS = (
 )
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar', 'django_extensions')
+os.environ['WERKZEUG_DEBUG_PIN'] = 'off'
 
 MIGRATION_MODULES = {
     'auth': 'stargeo.auth_migrations'
