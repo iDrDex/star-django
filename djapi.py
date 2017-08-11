@@ -201,12 +201,6 @@ def validate(call, form=None):
     obj = form_instance.save(commit=False)
     return call(obj)
 
-@decorator
-def auth_required(call):
-    if attempt_auth(call.request):
-        return call()
-    else:
-        return json_error(403, 'Authorization required')
 # Changed from method to property
 if django.VERSION >= (1, 10):
     is_authenticated = lambda user: user.is_authenticated
@@ -223,6 +217,16 @@ def attempt_auth(request):
             return True
     else:
         return False
+
+@decorator
+def user_passes_test(call, test, message=None):
+    attempt_auth(call.request)
+    if test(call.request.user):
+        return call()
+    else:
+        return json_error(403, message or 'Permission required')
+
+auth_required = user_passes_test(is_authenticated, 'Authorization required')
 
 
 # Routing
