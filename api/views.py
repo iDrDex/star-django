@@ -9,6 +9,8 @@ from tags.models import Tag
 from tags.views import TagForm
 
 
+PER_PAGE = 10
+
 
 tags_qs = api.queryset(Tag).filter(is_active=True) \
     .values_but('created_by', 'modified_by', 'is_active', 'created_on', 'modified_on')
@@ -28,7 +30,7 @@ def tag_detail(request, pk):
 series_qs = api.queryset(Series).values_but('id', 'samples_count').order_by('id')
 
 def series(request):
-    return api.json(api.paginate(request, series_qs, per_page=10))
+    return api.json(api.paginate(request, series_qs, per_page=PER_PAGE))
 
 def series_detail(request, gse_name):
     return api.json(api.get_or_404(series_qs, gse_name=gse_name))
@@ -52,7 +54,7 @@ platforms_qs = api.queryset(Platform).order_by('id') \
     .values_but('id', 'stats', 'history', 'verdict', 'last_filled')
 
 def platforms(request):
-    return api.json(api.paginate(request, platforms_qs, per_page=10))
+    return api.json(api.paginate(request, platforms_qs, per_page=PER_PAGE))
 
 def platform_detail(request, gpl_name):
     return api.json(api.get_or_404(platforms_qs, gpl_name=gpl_name))
@@ -94,7 +96,8 @@ analysis_qs = api.queryset(Analysis).filter(is_active=True) \
     .map_types(Resource, lambda r: r.url)
 
 def analysis_list(request):
-    return api.json(api.paginate(request, analysis_qs, per_page=10))
+    return api.json(api.paginate(request, analysis_qs, per_page=PER_PAGE))
+
 
 def analysis_detail(request, pk):
     return api.json(api.get_or_404(analysis_qs, pk=pk))
