@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 from django.contrib import admin
 from registration.backends.hmac.views import RegistrationView
 
@@ -7,7 +7,7 @@ from api.routers import router
 from api.viewsets import SwaggerSchemaView
 
 
-urlpatterns = patterns('',  # noqa
+urlpatterns = [
     url(r'^accounts/login/$', 'django.contrib.auth.views.login',
         {'authentication_form': MyAuthenticationForm}, name='login'),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout',
@@ -78,7 +78,7 @@ urlpatterns = patterns('',  # noqa
     url(r'^docs', SwaggerSchemaView.as_view()),
 
     url(r'^stats/$', 'core.views.stats', name='statistics'),
-)
+]
 
 
 # from djapi import make_page_not_found

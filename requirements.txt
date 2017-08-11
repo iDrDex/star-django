@@ -5,7 +5,7 @@ django-jinja-bootstrap-form==4.0.3
 djangorestframework==3.5.3
 django-rest-swagger==2.1.1
 django-transaction-hooks==0.2
-django-filter==1.0.1
+django-filter==1.0.1 # Needs updating with Django
 fabric>=1.13.2
 funcy>=1.7.5,<2.0
 django-model-utils>=1.4,<2.4 # The version of django-model-utils should be mannual limited by 2.4
