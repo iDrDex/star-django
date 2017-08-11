@@ -4,6 +4,8 @@ Principles:
 - reuse django (i.e. validation)
 - do not hide intentions
     - the less abstraction the better (.json() instead of .response())
+
+DWIM, practicality
 """
 
 import json as _json
@@ -18,6 +20,7 @@ from django.db import models
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.views import defaults
 from django.shortcuts import _get_queryset
+from django.utils.module_loading import import_string
 
 
 class SmarterJSONEncoder(DjangoJSONEncoder):
@@ -177,6 +180,37 @@ def paginate(request, qs, per_page=None):
 def _request_uri(request):
     return '{scheme}://{host}{path}'.format(
         scheme=request.scheme, host=request.get_host(), path=request.path)
+
+
+# View helpers
+
+@decorator
+def validate(call, form=None):
+    # TODO: support json input, autodetect by content type
+    form_instance = form(call.request.POST)
+    if not form_instance.is_valid():
+        return json({'detail': 'Validation failed', 'errors': form_instance._errors}, status=400)
+
+    obj = form_instance.save(commit=False)
+    return call(obj)
+
+@decorator
+def auth_required(call):
+    if attempt_auth(call.request):
+        return call()
+    else:
+        return json_error(403, 'Authorization required')
+
+def attempt_auth(request):
+    if request.user.is_authenticated():
+        return True
+    hooks = getattr(settings, 'DJAPI_AUTH', [])
+    for hook in hooks:
+        import_string(hook)(request)
+        if request.user.is_authenticated():
+            return True
+    else:
+        return False
 
 
 # Routing

@@ -17,7 +17,7 @@ urlpatterns = [
     # url(r'^tags/form/$', views.tag_create),
     url(r'^tags/(\d+)/$', views.tag_detail),
 
-    url(r'^analyses/$', api.get_post(views.analyses, views.analysis_create)),
-    url(r'^analyses/form/$', views.analysis_create),
-    url(r'^analyses/(\d+)/$', views.analysis_detail),
+    url(r'^analysis/$', api.get_post(views.analysis_list, views.analysis_create), name='analysis'),
+    url(r'^analysis/form/$', views.analysis_form),
+    url(r'^analysis/(\d+)/$', views.analysis_detail),
 ]

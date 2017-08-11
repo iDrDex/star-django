@@ -1,4 +1,6 @@
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse
+from django.shortcuts import render
 import djapi as api
 
 from s3field.ops import frame_dumps
@@ -108,76 +110,27 @@ analysis_qs = api.queryset(Analysis).filter(is_active=True) \
                 'series_ids', 'platform_ids', 'sample_ids') \
     .map_types(Resource, lambda r: r.url)
 
-def analyses(request):
+def analysis_list(request):
     return api.json(api.paginate(request, analysis_qs, per_page=10))
 
 def analysis_detail(request, pk):
     return api.json(api.get_or_404(analysis_qs, pk=pk))
 
 
-from django.shortcuts import render
 from analysis.views import AnalysisForm
 from analysis.tasks import analysis_task
 
-# TODO: separate form thing
-# TODO: remove boilerplate
-# TODO: generate form?
-def analysis_create(request):
-    if request.method == 'GET':
-        form = AnalysisForm()
-        return render(request, 'test_form.j2', {'form': form, 'action': '/api2/analyses/'})
+# TODO: a helper for this?
+#       autouse when DEBUG=True?
+#       integrate with get_post() to autoprovide url?
+def analysis_form(request):
+    form = AnalysisForm()
+    return render(request, 'test_form.j2', {'form': form, 'action': reverse('analysis')})
 
-    # return api.create(request.POST, model=Analysis, fields=['analysis_name', 'description',
-    #     'specie', 'case_query', 'control_query', 'modifier_query', 'min_samples'])
-
-    return api.create(request.POST, form=AnalysisForm)
-
-    # hooks:
-    #  - write to some fields
-    #  - extra validation (to form?)
-
-    form = AnalysisForm(request.POST)
-    if not form.is_valid():
-        return api.json(form._errors, status=400)
-
-    analysis = form.save(commit=False)
+@api.auth_required
+@api.validate(form=AnalysisForm)
+def analysis_create(request, analysis):
     analysis.created_by_id = analysis.modified_by_id = request.user.id
     analysis.save()
     analysis_task.delay(analysis.pk)
     return api.json({'created': analysis.pk})
-
-
-# def analysis_create(request):
-#     form_cls = modelform_factory(Analysis, fields=['analysis_name', 'description',
-#         'specie', 'case_query', 'control_query', 'modifier_query', 'min_samples'])
-#     form = form_cls(request.POST or json.loads(request.body))
-#     if not form.is_valid():
-#         return api.json(form._errors, status=400)
-
-#     analysis = form.save(commit=False)
-#     analysis.created_by_id = analysis.modified_by_id = request.user.id
-#     analysis.save()
-#     analysis_task.delay(analysis.pk)
-#     return api.json({'created': analysis.pk})
-
-# @api.validate(form=AnalysisForm)
-# def analysis_create(request, analysis):
-#     analysis.created_by_id = analysis.modified_by_id = request.user.id
-#     analysis.save()
-#     analysis_task.delay(analysis.pk)
-#     return api.json({'created': analysis.pk})
-
-# @api.validate(model=Analysis, fields=['analysis_name', 'description',
-#     'specie', 'case_query', 'control_query', 'modifier_query', 'min_samples'])
-# def analysis_create(request, analysis):
-#     analysis.created_by_id = analysis.modified_by_id = request.user.id
-#     analysis.save()
-#     analysis_task.delay(analysis.pk)
-#     return api.json({'created': analysis.pk})
-
-# @api.validate(Tag)
-# def tag_create(request, tag):
-#     tag.save()
-#     return api.json({'created': tag.pk})
-
-# tag_create = api.make_create(Tag)
