@@ -74,7 +74,12 @@ urlpatterns = patterns('',  # noqa
 
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/', include(router.urls)),
+    url(r'^api/v2/', include('api.urls')),
     url(r'^docs', SwaggerSchemaView.as_view()),
 
     url(r'^stats/$', 'core.views.stats', name='statistics'),
 )
+
+
+# from djapi import make_page_not_found
+# handler404 = make_page_not_found('/api')

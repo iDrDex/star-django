@@ -1,0 +1,15 @@
+{% extends "base.j2" %}
+
+
+{% set heading = 'Test form' %}
+
+
+{% block content %}
+    <form class="form" role="form" method="post" action={{ action }}>
+        {% csrf_token %}
+        {{ form|bootstrap }}
+        <div class="form-group">
+            <input type="submit" class="btn btn-primary" value="Submit" />
+        </div>
+    </form>
+{% endblock %}
