@@ -51,7 +51,7 @@ def json_error(status, message):
 
 # Querysets
 # TODO: review this in Django 1.9+, there is no built-in QuerySet sublclasses
-@memoize
+@memoize  # noqa
 def _extend_queryset_class(base):
     class _QuerySet(base):
         @cached_property
@@ -66,7 +66,7 @@ def _extend_queryset_class(base):
 
         else:
             def _clone(self, klass=None, setup=False, **kwargs):
-                if klass:
+                if klass and not klass.__name__.startswith('API'):
                     klass = _extend_queryset_class(klass)
                 clone = base._clone(self, klass=klass, setup=setup, **kwargs)
                 clone._mappers = self._mappers
@@ -111,6 +111,7 @@ def _extend_queryset_class(base):
                 rename = lambda d: {f_to_name.get(k, k): v for k, v in d.items()}
                 return base.values(self, *chain(fields, f_to_name)).map(rename)
 
+        # TODO: .values_list_but() ?
         def values_but(self, *exclude):
             exclude = set(exclude)
             attnames = {f.name: f.attname for f in self.model._meta.fields}
@@ -127,7 +128,8 @@ def _extend_queryset_class(base):
             fields = [att for name, att in attnames.items() if not {name, att} & exclude]
             return self.values(*fields)
 
-        # TODO: .values_list_but() ?
+        def values_add(self, *fields, **expressions):
+            return self.values(*(self._fields + fields), **expressions)
 
     _QuerySet.__name__ = 'API' + base.__name__
     return _QuerySet
@@ -195,12 +197,11 @@ def _request_uri(request):
 @decorator
 def validate(call, form=None):
     # TODO: support json input, autodetect by content type
-    form_instance = form(call.request.POST)
-    if not form_instance.is_valid():
-        return json({'detail': 'Validation failed', 'errors': form_instance._errors}, status=400)
+    aform = form(call.request.POST)
+    if not aform.is_valid():
+        return json({'detail': 'Validation failed', 'errors': aform._errors}, status=400)
 
-    obj = form_instance.save(commit=False)
-    return call(obj)
+    return call(aform.save(commit=False) if hasattr(aform, 'save') else aform.cleaned_data)
 
 # Changed from method to property
 if django.VERSION >= (1, 10):

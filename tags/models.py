@@ -36,6 +36,9 @@ class Tag(models.Model):
     class Meta:
         db_table = 'tag'
 
+    def __str__(self):
+        return self.tag_name
+
     def get_stats(self):
         def annotate(qs):
             return list(qs.values_list('annotation').annotate(Count('id')).order_by('annotation'))

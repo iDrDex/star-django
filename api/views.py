@@ -4,8 +4,8 @@ from django.shortcuts import render
 import djapi as api
 
 from s3field.ops import frame_dumps
-from legacy.models import Series, Platform, PlatformProbe, Analysis
-from tags.models import Tag
+from legacy.models import Series, Sample, Platform, PlatformProbe, Analysis
+from tags.models import Tag, SeriesAnnotation, SampleAnnotation
 from tags.views import TagForm
 
 
@@ -18,6 +18,7 @@ tags_qs = api.queryset(Tag).filter(is_active=True) \
 def tags(request):
     return api.json(tags_qs)
 
+@api.auth_required
 @api.user_passes_test(lambda user: user.is_competent)
 @api.validate(TagForm)
 def tag_create(request):
@@ -99,3 +100,106 @@ def analysis_create(request, analysis):
     analysis.save()
     analysis_task.delay(analysis.pk)
     return api.json({'created': analysis.pk})
+
+
+annotations_qs = api.queryset(SeriesAnnotation).filter(is_active=True) \
+    .values_but('series_id', 'platform_id', 'series_tag', 'created_on', 'modified_on', 'is_active')\
+    .values_add(gse_name='series__gse_name', gpl_name='platform__gpl_name')
+
+def annotations(request):
+    return api.json(api.paginate(request, annotations_qs, per_page=PER_PAGE))
+
+def annotation_detail(request, pk):
+    return api.json(api.get_or_404(annotations_qs, pk=pk))
+
+def annotation_samples(request, pk):
+    if not annotations_qs.filter(pk=pk).exists():
+        return api.json_error(404, 'Annotation not found')
+    samples = api.queryset(SampleAnnotation).filter(series_annotation=pk) \
+        .values_list('sample__gsm_name', 'annotation')
+    return api.json(dict(samples))
+
+
+import json
+from funcy import walk_keys
+from django import forms
+from django.core.exceptions import ValidationError
+from tags.annotate_core import AnnotationError, save_annotation, save_validation
+
+class AnnotateForm(forms.Form):
+    tag = forms.ModelChoiceField(queryset=Tag.objects.filter(is_active=True),
+                                 to_field_name='tag_name')
+    series = forms.ModelChoiceField(queryset=Series.objects.all(), to_field_name='gse_name')
+    platform = forms.ModelChoiceField(queryset=Platform.objects.all(), to_field_name='gpl_name')
+    note = forms.CharField()
+    annotations = forms.CharField()
+
+    def clean_annotations(self):
+        try:
+            data = json.loads(self.cleaned_data['annotations'])
+        except ValueError as e:
+            raise ValidationError(unicode(e))
+
+        if not isinstance(data, dict) or \
+                not all(isinstance(k, basestring) and isinstance(v, basestring)
+                        for k, v in data.items()):
+            raise ValidationError("Annotations should be a dict of GSMs -> tag values")
+
+        return data
+
+    def clean(self):
+        data = super(AnnotateForm, self).clean()
+
+        # Check that platform and series match
+        if data.get('series') and data.get('platform') \
+                and data['platform'].gpl_name not in data['series'].platforms:
+            raise ValidationError({'series': "Series %s doesn't contain platform %s"
+                                   % (data['series'].gse_name, data['platform'].gpl_name)})
+
+        # Remap sample annotations gsm -> id and check that they correspond to series/platform
+        if data.get('annotations') and data.get('series') and data.get('platform'):
+            samples_qs = Sample.objects.filter(series=data['series'], platform=data['platform'])
+            gsm_to_id = dict(samples_qs.values_list('gsm_name', 'id'))
+            all_samples = set(gsm_to_id)
+            tagged_samples = set(data['annotations'])
+
+            if all_samples - tagged_samples:
+                self.add_error('annotations', "These samples are missing from annotations: %s"
+                               % ', '.join(sorted(all_samples - tagged_samples)))
+            if tagged_samples - all_samples:
+                self.add_error('annotations', "These samples doesn't belong to series/platform: %s"
+                               % ', '.join(sorted(tagged_samples - all_samples)))
+
+            if data.get('annotations'):
+                data['annotations'] = walk_keys(gsm_to_id, data['annotations'])
+
+        return data
+
+def annotate_form(request):
+    form = AnnotateForm()
+    return render(request, 'test_form.j2', {'form': form, 'action': reverse('annotations')})
+
+@api.auth_required
+@api.user_passes_test(lambda user: user.is_competent)
+@api.validate(AnnotateForm)
+def annotate(request, data):
+    canonical = SeriesAnnotation.objects.filter(
+        series=data['series'],
+        tag=data['tag'],
+        platform=data['platform']).first()
+
+    data['tag_id'] = data.pop('tag').id
+    data['series_id'] = data.pop('series').id
+    data['user_id'] = request.user.id
+    data['from_api'] = True
+
+    try:
+        if canonical:
+            save_validation(canonical.id, data)
+        else:
+            save_annotation(data)
+    except AnnotationError as err:
+        raise ValidationError(
+            {'non_field_errors': [unicode(err)]})
+
+    return HttpResponse('Created', status=201)

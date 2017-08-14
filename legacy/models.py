@@ -23,6 +23,9 @@ class Platform(models.Model):
     class Meta:
         db_table = 'platform'
 
+    def __str__(self):
+        return self.gpl_name
+
 
 class PlatformProbe(models.Model):
     # The next line is phony primary_key to stop Django from creating id field.
