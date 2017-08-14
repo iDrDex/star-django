@@ -311,7 +311,7 @@ class SeriesAnnotation(models.Model):
     regex = models.CharField(max_length=512, blank=True)
     created_on = models.DateTimeField(default=timezone.now)
     modified_on = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     annotations = models.IntegerField()
     authors = models.IntegerField()
