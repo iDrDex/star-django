@@ -221,14 +221,14 @@ def attempt_auth(request):
         return False
 
 @decorator
-def user_passes_test(call, test, message=None):
+def user_passes_test(call, test, message=None, status=403):
     attempt_auth(call.request)
     if test(call.request.user):
         return call()
     else:
-        return json_error(403, message or 'Permission required')
+        return json_error(status, message or 'Permission required')
 
-auth_required = user_passes_test(is_authenticated, 'Authorization required')
+auth_required = user_passes_test(is_authenticated, status=401, message='Authorization required')
 
 
 # Routing
