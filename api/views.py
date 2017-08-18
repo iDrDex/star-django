@@ -179,6 +179,15 @@ def annotate_form(request):
     form = AnnotateForm()
     return render(request, 'test_form.j2', {'form': form, 'action': reverse('annotations')})
 
+# TODO:
+#   - JSONField
+#   - baseless form
+#   - JSON form
+#   - djapi form view
+#
+# TODO (CommentsAwareEnter):
+#   - support lists
+
 @api.auth_required
 @api.user_passes_test(lambda user: user.is_competent)
 @api.validate(AnnotateForm)
