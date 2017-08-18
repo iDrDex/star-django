@@ -51,7 +51,7 @@ def save_validation(canonical_id, data):
     canonical = SeriesAnnotation.objects.select_for_update().get(id=canonical_id)
 
     if not data.get('on_demand') and canonical.raw_annotations.filter(created_by=user_id).exists():
-        raise AnnotationError('You had already validated this annotation')
+        raise AnnotationError('You had already annotated this series/platform/tag')
 
     raw_annotation = RawSeriesAnnotation.objects.create(
         canonical=canonical,
