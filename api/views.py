@@ -61,7 +61,7 @@ def platform_detail(request, gpl_name):
 
 def platform_probes(request, gpl_name):
     if not Platform.objects.filter(gpl_name=gpl_name).exists():
-        return api.json_error(404, 'Platform not found')
+        return api.json(404, detail='Platform not found')
 
     qs = PlatformProbe.objects.filter(platform__gpl_name=gpl_name)
     probes_df = qs.to_dataframe(
@@ -82,7 +82,6 @@ analysis_qs = api.queryset(Analysis).filter(is_active=True) \
 def analysis_list(request):
     return api.json(api.paginate(request, analysis_qs, per_page=PER_PAGE))
 
-
 def analysis_detail(request, pk):
     return api.json(api.get_or_404(analysis_qs, pk=pk))
 
@@ -99,7 +98,7 @@ def analysis_create(request, analysis):
     analysis.created_by_id = analysis.modified_by_id = request.user.id
     analysis.save()
     analysis_task.delay(analysis.pk)
-    return api.json({'created': analysis.pk})
+    return api.json(201, created=analysis.pk)
 
 
 annotations_qs = api.queryset(SeriesAnnotation).filter(is_active=True) \
@@ -114,7 +113,7 @@ def annotation_detail(request, pk):
 
 def annotation_samples(request, pk):
     if not annotations_qs.filter(pk=pk).exists():
-        return api.json_error(404, 'Annotation not found')
+        return api.json(404, detail='Annotation not found')
     samples = api.queryset(SampleAnnotation).filter(series_annotation=pk) \
         .values_list('sample__gsm_name', 'annotation')
     return api.json(dict(samples))
@@ -207,8 +206,7 @@ def annotate(request, data):
             save_validation(canonical.id, data)
         else:
             save_annotation(data)
-    except AnnotationError as err:
-        raise ValidationError(
-            {'non_field_errors': [unicode(err)]})
+    except AnnotationError as e:
+        return api.json(400, detail=unicode(e))
 
-    return HttpResponse('Created', status=201)
+    return HttpResponse(status=204)

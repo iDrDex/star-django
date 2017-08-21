@@ -33,7 +33,20 @@ class SmarterJSONEncoder(DjangoJSONEncoder):
         else:
             return super(SmarterJSONEncoder, self).default(o)
 
-def json(data, **kwargs):
+def json(*args, **kwargs):
+    if len(args) > 1 and kwargs:
+        raise TypeError("json() accepts data either via positional argument or keyword, not both")
+    if not 1 <= len(args) <= 2:
+        raise TypeError("json() takes from 1 to 2 positional arguments but %d were given"
+                        % len(args))
+    if kwargs:
+        status = args[0] if args else 200
+        data = kwargs
+    elif len(args) == 1:
+        status, data = 200, args[0]
+    else:
+        status, data = args
+
     # Allow response pass through, e.g. error
     if isinstance(data, HttpResponse):
         return data
@@ -42,12 +55,7 @@ def json(data, **kwargs):
         json_data = _json.dumps(data, cls=SmarterJSONEncoder, indent=4)
     else:
         json_data = _json.dumps(data, cls=SmarterJSONEncoder, separators=(',', ':'))
-    # Set Content Type: application/json by default
-    kwargs.setdefault('content_type', 'application/json')
-    return HttpResponse(json_data, **kwargs)
-
-def json_error(status, message):
-    return json({'detail': message}, status=status)
+    return HttpResponse(json_data, status=status, content_type='application/json')
 
 
 # Querysets
@@ -151,7 +159,7 @@ def get_or_404(qs, *args, **kwargs):
     try:
         return qs.get(*args, **kwargs)
     except qs.model.DoesNotExist as e:
-        return json_error(404, e.args[0])
+        return json(404, detail=e.args[0])
 
 
 @decorator
@@ -159,19 +167,19 @@ def catch(call, exception, status=500):
     try:
         return call()
     except exception as e:
-        return json_error(status, e.args[0])
+        return json(status, detail=e.args[0])
 
 def paginate(request, qs, per_page=None):
     offset = request.GET.get('offset', 0)
     limit = request.GET.get('limit', per_page)
     # TODO: better error message
     if limit is None:
-        return json_error(400, 'limit parameter is required')
+        return json(400, detail='limit parameter is required')
     try:
         offset = int(offset)
         limit = int(limit)
     except ValueError:
-        return json_error(400, 'Bad value for offset or limit parameter')
+        return json(400, detail='Bad value for offset or limit parameter')
 
     count = qs.count()
     page = qs[offset:offset + limit]
@@ -227,7 +235,7 @@ def user_passes_test(call, test, message=None, status=403):
     if test(call.request.user):
         return call()
     else:
-        return json_error(status, message or 'Permission required')
+        return json(status, detail=message or 'Permission required')
 
 auth_required = user_passes_test(is_authenticated, status=401, message='Authorization required')
 
@@ -255,7 +263,7 @@ def make_page_not_found(uri_prefix):
             message = exception.args[0]
         except (AttributeError, IndexError):
             message = 'Not found'
-        return json_error(404, message)
+        return json(404, detail=message)
     return page_not_found
 
 page_not_found = make_page_not_found('')
