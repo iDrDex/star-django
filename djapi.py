@@ -16,8 +16,9 @@ from funcy import decorator, is_iter, chain, select_values
 from funcy import cached_property, rcompose, memoize, iffy, isa, partial, walk_values, flip
 
 import django
+from django import forms
 from django.conf import settings
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import QuerySet, F
 from django.http import HttpResponse, HttpResponseNotAllowed
@@ -201,7 +202,14 @@ def _request_uri(request):
         scheme=request.scheme, host=request.get_host(), path=request.path)
 
 
-# View helpers
+# Forms
+
+class JSONField(forms.Field):
+    def to_python(self, value):
+        try:
+            return _json.loads(value)
+        except ValueError as e:
+            raise ValidationError(unicode(e))
 
 @decorator
 def validate(call, form=None):

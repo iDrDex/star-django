@@ -131,14 +131,10 @@ class AnnotateForm(forms.Form):
     series = forms.ModelChoiceField(queryset=Series.objects.all(), to_field_name='gse_name')
     platform = forms.ModelChoiceField(queryset=Platform.objects.all(), to_field_name='gpl_name')
     note = forms.CharField()
-    annotations = forms.CharField()
+    annotations = api.JSONField()
 
     def clean_annotations(self):
-        try:
-            data = json.loads(self.cleaned_data['annotations'])
-        except ValueError as e:
-            raise ValidationError(unicode(e))
-
+        data = self.cleaned_data['annotations']
         if not isinstance(data, dict) or \
                 not all(isinstance(k, basestring) and isinstance(v, basestring)
                         for k, v in data.items()):
@@ -179,7 +175,6 @@ def annotate_form(request):
     return render(request, 'test_form.j2', {'form': form, 'action': reverse('annotations')})
 
 # TODO:
-#   - JSONField
 #   - baseless form
 #   - JSON form
 #   - djapi form view
