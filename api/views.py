@@ -119,7 +119,6 @@ def annotation_samples(request, pk):
     return api.json(dict(samples))
 
 
-import json
 from funcy import walk_keys
 from django import forms
 from django.core.exceptions import ValidationError
@@ -128,8 +127,10 @@ from tags.annotate_core import AnnotationError, save_annotation, save_validation
 class AnnotateForm(forms.Form):
     tag = forms.ModelChoiceField(queryset=Tag.objects.filter(is_active=True),
                                  to_field_name='tag_name')
-    series = forms.ModelChoiceField(queryset=Series.objects.all(), to_field_name='gse_name')
-    platform = forms.ModelChoiceField(queryset=Platform.objects.all(), to_field_name='gpl_name')
+    series = forms.ModelChoiceField(queryset=Series.objects.all(), to_field_name='gse_name',
+                                    widget=forms.TextInput)
+    platform = forms.ModelChoiceField(queryset=Platform.objects.all(), to_field_name='gpl_name',
+                                      widget=forms.TextInput)
     note = forms.CharField()
     annotations = api.JSONField()
 
@@ -202,6 +203,6 @@ def annotate(request, data):
         else:
             save_annotation(data)
     except AnnotationError as e:
-        return api.json(400, detail=unicode(e))
+        return api.json(409, detail=unicode(e))
 
     return HttpResponse(status=204)
