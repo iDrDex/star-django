@@ -1,6 +1,7 @@
 """
 Principles:
 - library not framework (helpers + decorators)
+- avoid abstractions, especially IOC
 - reuse django (i.e. validation)
     - when impossible to reuse, mimic it
 - do not hide intentions
