@@ -48,6 +48,9 @@ def json(*args, **kwargs):
     else:
         status, data = args
 
+    if not isinstance(status, int):
+        raise TypeError("HTTP status should be int not %s" % status)
+
     # Allow response pass through, e.g. error
     if isinstance(data, HttpResponse):
         return data
@@ -216,7 +219,7 @@ def validate(call, form=None):
     # TODO: support json input, autodetect by content type
     aform = form(call.request.POST)
     if not aform.is_valid():
-        return json({'detail': 'Validation failed', 'errors': aform._errors}, status=400)
+        return json(400, detail='Validation failed', errors=aform._errors)
 
     return call(aform.save(commit=False) if hasattr(aform, 'save') else aform.cleaned_data)
 
