@@ -6,12 +6,38 @@
 </style>
 </head>
 <body>
-    <form class="form" role="form" method="post" action="{{ action }}">
+    <form class="form" method="post" action="{{ action }}">
         {% csrf_token %}
         <table>
         {{ form }}
         <tr><td></td><td><input type="submit" value="Submit"></td></tr>
         </table>
     </form>
+
+    <form id="json_one" class="form" method="post" action="{{ action }}" enctype="text/plain">
+        <textarea cols="70" rows="10" name="json"></textarea>
+        <br><input type="submit" value="Submit">
+    </form>
+
+<script type="text/javascript">
+var form = document.forms['json_one'];
+form.onsubmit = function (e) {
+    // stop the regular form submission
+    e.preventDefault();
+
+    // construct an HTTP request
+    var xhr = new XMLHttpRequest();
+    xhr.open(form.method, form.action, true);
+    xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+    xhr.send(form.json.value);
+
+    xhr.onloadend = function () {
+        // Rewrite this page to show results
+        document.open()
+        document.write(this.response);
+        document.close()
+    };
+};
+</script>
 </body>
 </html>

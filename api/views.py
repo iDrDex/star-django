@@ -162,10 +162,6 @@ class AnnotateForm(forms.Form):
 
         return data
 
-# TODO:
-#   - JSON form
-#
-
 @api.auth_required
 @api.user_passes_test(lambda user: user.is_competent)
 @api.validate(AnnotateForm)

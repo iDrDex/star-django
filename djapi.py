@@ -11,6 +11,7 @@ DWIM, practicality
 """
 
 import six
+import cgi
 import json as _json
 from funcy import decorator, is_iter, chain, select_values
 from funcy import cached_property, rcompose, memoize, iffy, isa, partial, walk_values, flip
@@ -210,6 +211,8 @@ def _request_uri(request):
 
 class JSONField(forms.Field):
     def to_python(self, value):
+        if value is None or isinstance(value, (dict, list)):
+            return value
         try:
             return _json.loads(value)
         except ValueError as e:
@@ -222,10 +225,24 @@ def show_form(form, action=None, view=None):
         action = reverse_lazy(view)
     return lambda request: render(request, 'test_form.j2', {'form': form(), 'action': action})
 
+
 @decorator
 def validate(call, form=None):
-    # TODO: support json input, autodetect by content type
-    aform = form(call.request.POST)
+    # request.content_type is new in Django 1.10
+    if hasattr(call.request, 'content_type'):
+        content_type = call.request.content_type
+    else:
+        content_type, _ = cgi.parse_header(call.request.META.get('CONTENT_TYPE', ''))
+    # Parse JSON or fallback to urlencoded
+    if content_type == 'application/json':
+        try:
+            data = _json.loads(call.request.body)
+        except ValueError:
+            return json(400, detail="Failed parsing JSON")
+    else:
+        data = call.request.POST
+
+    aform = form(data)
     if not aform.is_valid():
         return json(400, detail='Validation failed', errors=aform._errors)
 
