@@ -176,7 +176,6 @@ def annotate_form(request):
     return render(request, 'test_form.j2', {'form': form, 'action': reverse('annotations')})
 
 # TODO:
-#   - baseless form
 #   - JSON form
 #   - djapi form view
 #
