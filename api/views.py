@@ -1,6 +1,4 @@
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-from django.shortcuts import render
 import djapi as api
 
 from s3field.ops import frame_dumps
@@ -85,13 +83,6 @@ def analysis_list(request):
 def analysis_detail(request, pk):
     return api.json(api.get_or_404(analysis_qs, pk=pk))
 
-# TODO: a helper for this?
-#       autouse when DEBUG=True?
-#       integrate with get_post() to autoprovide url?
-def analysis_form(request):
-    form = AnalysisForm()
-    return render(request, 'test_form.j2', {'form': form, 'action': reverse('analysis')})
-
 @api.auth_required
 @api.validate(AnalysisForm)
 def analysis_create(request, analysis):
@@ -171,16 +162,9 @@ class AnnotateForm(forms.Form):
 
         return data
 
-def annotate_form(request):
-    form = AnnotateForm()
-    return render(request, 'test_form.j2', {'form': form, 'action': reverse('annotations')})
-
 # TODO:
 #   - JSON form
-#   - djapi form view
 #
-# TODO (CommentsAwareEnter):
-#   - support lists
 
 @api.auth_required
 @api.user_passes_test(lambda user: user.is_competent)

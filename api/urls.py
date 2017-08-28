@@ -18,11 +18,11 @@ urlpatterns = [
     url(r'^tags/(\d+)/$', views.tag_detail),
 
     url(r'^analysis/$', api.get_post(views.analysis_list, views.analysis_create), name='analysis'),
-    url(r'^analysis/form/$', views.analysis_form),
+    url(r'^analysis/form/$', api.show_form(form=views.AnalysisForm, view='analysis')),
     url(r'^analysis/(\d+)/$', views.analysis_detail),
 
     url(r'^annotations/$', api.get_post(views.annotations, views.annotate), name='annotations'),
-    url(r'^annotations/form/$', views.annotate_form),
+    url(r'^annotations/form/$', api.show_form(form=views.AnnotateForm, view='annotations')),
     url(r'^annotations/(\d+)/$', views.annotation_detail),
     url(r'^annotations/(\d+)/samples/$', views.annotation_samples),
 ]

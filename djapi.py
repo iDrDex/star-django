@@ -20,10 +20,11 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import FieldError, ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core.urlresolvers import reverse_lazy
 from django.db.models import QuerySet, F
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.views import defaults
-from django.shortcuts import _get_queryset
+from django.shortcuts import _get_queryset, render
 from django.utils.module_loading import import_string
 
 
@@ -214,6 +215,13 @@ class JSONField(forms.Field):
         except ValueError as e:
             raise ValidationError(unicode(e))
 
+
+def show_form(form, action=None, view=None):
+    assert (action is None) != (view is None), "Specify action or view, but not both"
+    if action is None:
+        action = reverse_lazy(view)
+    return lambda request: render(request, 'test_form.j2', {'form': form(), 'action': action})
+
 @decorator
 def validate(call, form=None):
     # TODO: support json input, autodetect by content type
@@ -222,6 +230,9 @@ def validate(call, form=None):
         return json(400, detail='Validation failed', errors=aform._errors)
 
     return call(aform.save(commit=False) if hasattr(aform, 'save') else aform.cleaned_data)
+
+
+# Auth
 
 # Changed from method to property
 if django.VERSION >= (1, 10):
