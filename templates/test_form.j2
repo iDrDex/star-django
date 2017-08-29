@@ -4,6 +4,11 @@
     .form {margin: 2em 10%;}
     .form th {text-align: left}
 </style>
+<script type="text/javascript">
+window.onpopstate = function (e) {
+    if (e.state.html) document.body.innerHTML = e.state.html;
+}
+</script>
 </head>
 <body>
     <form class="form" method="post" action="{{ action }}">
@@ -33,12 +38,13 @@ form.onsubmit = function (e) {
     xhr.send(form.json.value);
 
     xhr.onloadend = function () {
-        // Rewrite this page to show results
-        document.open()
-        document.write(this.response);
-        document.close()
-    };
-};
+        window.history.replaceState({html: document.body.innerHTML}, document.title)
+        window.history.pushState({}, this.status, form.action)
+        // Rewrite this page to show response
+        document.title = this.status + ' ' + this.statusText;
+        document.body.innerHTML = this.response;
+    }
+}
 </script>
 </body>
 </html>
