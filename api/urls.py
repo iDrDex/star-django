@@ -2,7 +2,6 @@ from django.conf.urls import url
 
 import djapi as api
 from . import views
-from django.views.decorators.csrf import csrf_exempt
 
 
 urlpatterns = [
@@ -22,7 +21,7 @@ urlpatterns = [
     url(r'^analysis/form/$', api.show_form(form=views.AnalysisForm, view='analysis')),
     url(r'^analysis/(\d+)/$', views.analysis_detail),
 
-    url(r'^annotations/$', csrf_exempt(api.get_post(views.annotations, views.annotate)),
+    url(r'^annotations/$', api.get_post(views.annotations, views.annotate),
         name='annotations'),
     url(r'^annotations/form/$', api.show_form(form=views.AnnotateForm, view='annotations')),
     url(r'^annotations/(\d+)/$', views.annotation_detail),
