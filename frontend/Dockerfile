@@ -1,4 +1,4 @@
-FROM node:7-alpine
+FROM node:8-alpine
 RUN yarn global add webpack
 RUN yarn global add webpack-dev-server
 RUN mkdir -p /app/user/

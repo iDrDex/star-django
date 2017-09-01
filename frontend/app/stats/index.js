@@ -93,7 +93,7 @@ function showAll(bindto, data) {
         .html(_.identity)
         .on('mouseover', (id) => chart.focus(id))
         .on('mouseout', () => chart.revert())
-        .on('click', (id) => chart.toggle(id));
+        .on('click', (id) => _.keys(data[0][1]).length > 1 ? chart.toggle(id): false);
 
     return chart;
 }
@@ -104,7 +104,7 @@ function graphicHtml(table) {
 
 function showGeneralStats(data) {
     const general = [
-        'platforms', 'platforms_probes', 'series_tag_history',
+        'platforms', 'platforms_probes', // 'series_tag_history', the graphics values are strange, so hide it
     ];
     const generalElem = document.getElementById('general_container');
 
@@ -112,13 +112,21 @@ function showGeneralStats(data) {
     <h3>Tags and Users</h3>
     <div id="users_and_tags"></div>
     <div id="users_and_tags_legenda"></div>
+    <h3>Associated PubMed publications</h3>
+    <div id="pmid"></div>
+    <div id="pmid_legenda"></div>
     ${_.join(_.map(general, graphicHtml), '')}
     `;
 
-    const chart = showAll(
+    const user_and_tags_chart = showAll(
         '#users_and_tags',
         _.map(data, ([date, value]) =>
               [date, _.pick(value, ['users', 'tags'])]));
+
+    const pmids_chart = showAll(
+        '#pmid',
+        _.map(data, ([date, value]) =>
+              [date, _.pick(value, ['PMID'])]));
 
     const charts = _.map(general, (table) =>
         showByKeys(
@@ -126,7 +134,8 @@ function showGeneralStats(data) {
             _.map(data, ([date, value]) => [date, value[table]]),
             { showTotal: !_.isEqual(table, 'series_tag_history') })
     );
-    return _.concat([chart], charts);
+    return _.concat([user_and_tags_chart, pmids_chart],
+                    charts);
 }
 
 function showSamplesStats(data, idToUsername) {
