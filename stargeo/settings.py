@@ -286,4 +286,6 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10
 }
 
+DJAPI_AUTH = ['djapi.auth.use_contribauth', 'djapi.authtoken.use_token']
+
 BIOPORTAL_API_KEY = os.environ.get('BIOPORTAL_API_KEY')
