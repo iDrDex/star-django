@@ -7,7 +7,7 @@ from tags.models import Tag, SeriesAnnotation, SampleAnnotation
 from tags.views import TagForm
 
 
-PER_PAGE = 10
+PER_PAGE = 100
 
 
 tags_qs = api.queryset(Tag).filter(is_active=True) \
