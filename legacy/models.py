@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from funcy import distinct, keep, re_all
+from funcy import distinct, keep, re_all, without
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -129,6 +129,11 @@ class Analysis(models.Model):
         else:
             return u'%s: case=%s control=%s' \
                 % (self.analysis_name, self.case_query, self.control_query)
+
+    def results_df(self):
+        qs = MetaAnalysis.objects.filter(analysis=self)
+        fieldnames = without([f.name for f in MetaAnalysis._meta.fields], 'id', 'analysis')
+        return qs.to_dataframe(fieldnames, index='mygene_sym')
 
 
 class MetaAnalysis(models.Model):

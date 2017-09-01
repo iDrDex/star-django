@@ -1,6 +1,6 @@
 import os
 import re
-from funcy import silent, without
+from funcy import silent
 from handy.decorators import render_to
 from handy.ajax import ajax
 from datatableview.views import DatatableView
@@ -86,9 +86,7 @@ def forest(request, analysis_id, mygene_sym):
 
 def export(request, analysis_id):
     analysis = get_object_or_404(Analysis, pk=analysis_id)
-    qs = MetaAnalysis.objects.filter(analysis=analysis)
-    fieldnames = without([f.name for f in MetaAnalysis._meta.fields], 'id', 'analysis')
-    csv = qs.to_dataframe(fieldnames, index='mygene_sym').to_csv()
+    csv = analysis.results_df().to_csv()
 
     response = HttpResponse(csv, content_type='text/plain')
     filename = re.sub(r'\W+', '-', analysis.analysis_name)

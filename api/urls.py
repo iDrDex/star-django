@@ -20,6 +20,7 @@ urlpatterns = [
     url(r'^analysis/$', api.get_post(views.analysis_list, views.analysis_create), name='analysis'),
     url(r'^analysis/form/$', api.show_form(form=views.AnalysisForm, view='analysis')),
     url(r'^analysis/(\d+)/$', views.analysis_detail),
+    url(r'^analysis/(\d+)/results/$', views.analysis_results),
 
     url(r'^annotations/$', api.get_post(views.annotations, views.annotate),
         name='annotations'),

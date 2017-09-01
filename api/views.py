@@ -83,6 +83,14 @@ def analysis_list(request):
 def analysis_detail(request, pk):
     return api.json(api.get_or_404(analysis_qs, pk=pk))
 
+def analysis_results(request, pk):
+    analysis = Analysis.objects.filter(is_active=True, pk=pk).first()
+    if not analysis:
+        return api.json(404, detail='Analysis not found')
+    if not analysis.success:
+        return api.json(404, detail='Analysis failed or not finished yet')
+    return HttpResponse(frame_dumps(analysis.results_df()), content_type='application/json')
+
 @api.auth_required
 @api.validate(AnalysisForm)
 def analysis_create(request, analysis):
