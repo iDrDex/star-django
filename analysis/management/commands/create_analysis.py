@@ -18,6 +18,11 @@ class Command(BaseCommand):
             help='Analysis description'
         ),
         make_option(
+            '--specie',
+            action='store', type='string', dest='specie', default='',
+            help='Specie'
+        ),
+        make_option(
             '--case',
             action='store', type='string', dest='case_query',
             help='Case query (required)'
@@ -38,6 +43,6 @@ class Command(BaseCommand):
         if not args:
             raise CommandError('Specify analysis name')
         analysis_name = args[0]
-        fields = ['description', 'case_query', 'control_query', 'modifier_query']
+        fields = ['description', 'specie', 'case_query', 'control_query', 'modifier_query']
         analysis = Analysis.objects.create(analysis_name=analysis_name, **project(options, fields))
         analysis_task(analysis.pk)
