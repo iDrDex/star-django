@@ -179,10 +179,10 @@ def pull_db(dump='backup'):
             return
 
     print('Dropping %(NAME)s...' % local_db)
-    local('psql -Upostgres -c "drop database if exists %(NAME)s"' % local_db)
-
-    # Check if database is deleted
     with quiet():
+        local('psql -Upostgres -c "drop database if exists %(NAME)s"' % local_db)
+
+        # Check if database is deleted
         if local('psql -Upostgres -d %(NAME)s -c ""' % local_db, capture=True).succeeded:
             print(red('Database not dropped.\n'
                       'Disconnect all the clients and retry with "fab pull_db:local"'))
