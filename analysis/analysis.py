@@ -71,6 +71,9 @@ def perform_analysis(analysis, debug=False):
     with log_durations(logger.debug, 'Load/fold for %s' % analysis.analysis_name):
         gses = (load_gse(df, gse_name) for gse_name in sorted(df.gse_name.unique()))
         fold_changes = pd.concat(imap(get_fold_change_analysis, gses))
+        if fold_changes.empty:
+            logger.error("FAIL Got empty fold changes")
+            return
         debug and fold_changes.to_csv("%s.fc.csv" % debug)
 
     logger.info('Saving fold changes to S3')
@@ -228,7 +231,7 @@ def get_matrix_filename(gse_name, gpl_name):
 
             return mirror_filename
 
-    logger.error('Failed loading matrix for serie %s, platform %s', (gse_name, gpl_name))
+    logger.error('Failed loading matrix for serie %s, platform %s', gse_name, gpl_name)
 
 
 @log_durations(logger.debug)
