@@ -130,7 +130,7 @@ class AnnotateForm(forms.Form):
                                     widget=forms.TextInput)
     platform = forms.ModelChoiceField(queryset=Platform.objects.all(), to_field_name='gpl_name',
                                       widget=forms.TextInput)
-    note = forms.CharField()
+    note = forms.CharField(required=False)
     annotations = api.JSONField()
 
     def clean_annotations(self):
