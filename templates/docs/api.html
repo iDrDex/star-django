@@ -1,0 +1,1415 @@
+
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Stargeo-API">Stargeo API<a class="anchor-link" href="#Stargeo-API">&#182;</a></h1><p>Stargeo provides API to access our data, make annotations, run analyses and more. It will be presented here in the form of copy-pastable examples. Continue reading or jump to <a href="#Series-and-their-samples">series and samples</a>, <a href="#Platforms">platforms</a> and <a href="#Platform-probes">probes</a>, <a href="#Tags">tags</a>, <a href="#Analyses">analyses</a> or <a href="#Annotations">annotations</a>.</p>
+<p>We will start with importing <code>requests</code> and <code>pandas</code>.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Series-and-their-samples">Series and their samples<a class="anchor-link" href="#Series-and-their-samples">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch first 10 series, defaults to 100</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/series/?limit=10&#39;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">r</span><span class="o">.</span><span class="n">ok</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+<span class="n">data</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[9]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(33785, 10)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[13]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{u&#39;attrs&#39;: &#39;...&#39;,
+ u&#39;gse_name&#39;: u&#39;GSE1&#39;,
+ u&#39;platforms&#39;: [u&#39;GPL7&#39;],
+ u&#39;specie&#39;: u&#39;human&#39;}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch next 10 series</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;next&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>You can also fetch single serie data and its samples by gse name.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch GSE1 serie data</span>
+<span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/series/GSE1/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[16]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>u&#39;{&#34;platforms&#34;:[&#34;GPL7&#34;],&#34;attrs&#34;:{&#34;status&#34;:&#34;Public on Jan 22 2001&#34;,&#34;contact_address&#34;:&#34; &#34;,&#34;relation&#34;:&#34;BioProject: http://www.ncbi.nlm.nih.gov/bioproject/PRJNA84463&#34;,&#34;sample_id&#34;:&#34;GSM11 GSM12 GSM13 GSM14 GSM15 GSM16 GSM17 GSM18 GSM19 GSM20 GSM21 GSM22 GSM23 GSM24 GSM25 GSM26 GSM27 GSM28 GSM29 GSM30 GSM31 GSM32 GSM33 GSM34 GSM35 GSM36 GSM37 GSM38 GSM39 GSM40 GSM41 GSM42 GSM43 GSM44 GSM45 GSM46 GSM47 GSM48 &#34;,&#34;contact_name&#34;:&#34;Michael,,Bittner&#34;,&#34;contact_country&#34;:&#34;USA&#34;,&#34;title&#34;:&#34;NHGRI_Melanoma_class&#34;,&#34;contact_institute&#34;:&#34;NHGRI, NIH&#34;,&#34;sample_taxid&#34;:&#34;9606&#34;,&#34;pubmed_id&#34;:&#34;10952317&#34;,&#34;type&#34;:&#34;Expression profiling by array&#34;,&#34;submission_date&#34;:&#34;Jan 22 2001&#34;,&#34;contact_state&#34;:&#34;MD&#34;,&#34;contact_zip_postal_code&#34;:&#34;20892&#34;,&#34;geo_accession&#34;:&#34;GSE1&#34;,&#34;contact_email&#34;:&#34;mbittner@nhgri.nih.gov&#34;,&#34;last_update_date&#34;:&#34;Jul 18 2016&#34;,&#34;contact_web_link&#34;:&#34;http://www.nhgri.nih.gov/Intramural_research/People/bittnerm.html&#34;,&#34;contact_city&#34;:&#34;Bethesda&#34;,&#34;contact_phone&#34;:&#34;301-496-7980&#34;,&#34;summary&#34;:&#34;This series represents a group of cutaneous malignant melanomas and unrelated controls which were clustered based on correlation coefficients calculated through a comparison of gene expression|\\n|profiles.|\\n|Keywords: other&#34;,&#34;platform_id&#34;:&#34;GPL7&#34;,&#34;contact_department&#34;:&#34;Cancer Genetics Branch&#34;,&#34;contact_fax&#34;:&#34;301-402-3241&#34;,&#34;platform_taxid&#34;:&#34;9606&#34;},&#34;specie&#34;:&#34;human&#34;,&#34;gse_name&#34;:&#34;GSE1&#34;}&#39;</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch GSE1 samples</span>
+<span class="n">samples_json</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/series/GSE1/samples/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="c1"># or </span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/series/GSE1/samples/&#39;</span><span class="p">)</span>
+<span class="n">samples</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[19]:</div>
+
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>attrs</th>
+      <th>gpl_name</th>
+      <th>gse_name</th>
+      <th>gsm_name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>{u'submission_date': u'Jan 08 2001', u'contact...</td>
+      <td>GPL7</td>
+      <td>GSE1</td>
+      <td>GSM20</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>{u'submission_date': u'Jan 08 2001', u'contact...</td>
+      <td>GPL7</td>
+      <td>GSE1</td>
+      <td>GSM15</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>{u'submission_date': u'Jan 08 2001', u'contact...</td>
+      <td>GPL7</td>
+      <td>GSE1</td>
+      <td>GSM12</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>{u'submission_date': u'Jan 08 2001', u'contact...</td>
+      <td>GPL7</td>
+      <td>GSE1</td>
+      <td>GSM18</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>{u'submission_date': u'Jan 08 2001', u'contact...</td>
+      <td>GPL7</td>
+      <td>GSE1</td>
+      <td>GSM19</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Platforms">Platforms<a class="anchor-link" href="#Platforms">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[24]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch first 100 platforms, fetching the rest same way as with series above </span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/platforms/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="n">platforms</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">]</span>
+<span class="n">platforms</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[24]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[{u&#39;gpl_name&#39;: u&#39;GPL7&#39;,
+  u&#39;probes_matched&#39;: 6334,
+  u&#39;probes_total&#39;: 8192,
+  u&#39;specie&#39;: u&#39;human&#39;},
+ {u&#39;gpl_name&#39;: u&#39;GPL96&#39;,
+  u&#39;probes_matched&#39;: 20883,
+  u&#39;probes_total&#39;: 22283,
+  u&#39;specie&#39;: u&#39;human&#39;}]</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[26]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch single platform by gpl name</span>
+<span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/platforms/GPL7/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[26]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{u&#39;gpl_name&#39;: u&#39;GPL7&#39;,
+ u&#39;probes_matched&#39;: 6334,
+ u&#39;probes_total&#39;: 8192,
+ u&#39;specie&#39;: u&#39;human&#39;}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Platform-probes">Platform probes<a class="anchor-link" href="#Platform-probes">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[30]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">probes</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/platforms/GPL7/probes/&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s1">&#39;split&#39;</span><span class="p">)</span>
+<span class="nb">len</span><span class="p">(</span><span class="n">probes</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[30]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>6334</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[31]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">probes</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[31]:</div>
+
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>probe</th>
+      <th>mygene_sym</th>
+      <th>mygene_entrez</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>5988</td>
+      <td>ANKRD55</td>
+      <td>79722</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>5989</td>
+      <td>DOLPP1</td>
+      <td>57171</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>5980</td>
+      <td>SNCA</td>
+      <td>6622</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>5981</td>
+      <td>VWA8</td>
+      <td>23078</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5986</td>
+      <td>SCN8A</td>
+      <td>6334</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Tags">Tags<a class="anchor-link" href="#Tags">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch all samples</span>
+<span class="n">tags</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/tags/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="c1"># or</span>
+<span class="n">tags</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/tags/&#39;</span><span class="p">)</span>
+<span class="n">tags</span><span class="p">[</span><span class="n">tags</span><span class="o">.</span><span class="n">concept_name</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[7]:</div>
+
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>concept_full_id</th>
+      <th>concept_name</th>
+      <th>description</th>
+      <th>id</th>
+      <th>ontology_id</th>
+      <th>tag_name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>27</th>
+      <td>http://purl.obolibrary.org/obo/DOID_12206</td>
+      <td>dengue hemorrhagic fever</td>
+      <td>Dengue hemorrhagic fever (DOID:12206)</td>
+      <td>7</td>
+      <td>DOID</td>
+      <td>DHF</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>http://purl.obolibrary.org/obo/DOID_9119</td>
+      <td>acute myeloid leukemia</td>
+      <td>acute myeloid leukemia (DOID:9119)</td>
+      <td>117</td>
+      <td>DOID</td>
+      <td>AML_Tissue</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>http://purl.obolibrary.org/obo/DOID_9206</td>
+      <td>Barrett's esophagus</td>
+      <td>Barrett's esophagus (DOID:9206)</td>
+      <td>77</td>
+      <td>DOID</td>
+      <td>BE_Tissue</td>
+    </tr>
+    <tr>
+      <th>30</th>
+      <td>http://purl.obolibrary.org/obo/DOID_10608</td>
+      <td>celiac disease</td>
+      <td>celiac disease (DOID:10608) control</td>
+      <td>180</td>
+      <td>DOID</td>
+      <td>celiac_control</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>http://purl.obolibrary.org/obo/DOID_12140</td>
+      <td>Chagas disease</td>
+      <td>Control for Chagas</td>
+      <td>89</td>
+      <td>DOID</td>
+      <td>Chagas_control</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Fetch single tag info:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch tag with id 7 data</span>
+<span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/tags/7/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[8]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{u&#39;concept_full_id&#39;: u&#39;http://purl.obolibrary.org/obo/DOID_12206&#39;,
+ u&#39;concept_name&#39;: u&#39;dengue hemorrhagic fever&#39;,
+ u&#39;description&#39;: u&#39;Dengue hemorrhagic fever (DOID:12206)&#39;,
+ u&#39;id&#39;: 7,
+ u&#39;ontology_id&#39;: u&#39;DOID&#39;,
+ u&#39;tag_name&#39;: u&#39;DHF&#39;}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Analyses">Analyses<a class="anchor-link" href="#Analyses">&#182;</a></h2><p>Stargeo API provides a way to list and load existing analyses and load their results as well as source data and fold changes. Additionally an authorized user can perform new analyses.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/analysis/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[14]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(136, 100)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">analysis</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="c1"># or</span>
+<span class="n">analysis</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/analysis/243/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="n">analysis</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[15]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{u&#39;analysis_name&#39;: u&#39;hypertension&#39;,
+ u&#39;case_query&#39;: u&#34;PHT == &#39;PHT&#39; or hypertension == &#39;hypertension&#39;&#34;,
+ u&#39;control_query&#39;: u&#34;PHT_Control == &#39;PHT_Control&#39; or hypertension_control == &#39;hypertension_control&#39;&#34;,
+ u&#39;description&#39;: u&#39;hypertension (DOID:10763)&#39;,
+ u&#39;df&#39;: u&#39;http://analysis-df.stargeo.io.s3.amazonaws.com/243-hypertension&#39;,
+ u&#39;fold_changes&#39;: u&#39;http://fold-changes.stargeo.io.s3.amazonaws.com/243-hypertension&#39;,
+ u&#39;id&#39;: 243,
+ u&#39;min_samples&#39;: 3,
+ u&#39;modifier_query&#39;: u&#39;&#39;,
+ u&#39;platform_count&#39;: 6,
+ u&#39;sample_count&#39;: 309,
+ u&#39;series_count&#39;: 7,
+ u&#39;specie&#39;: u&#39;&#39;,
+ u&#39;success&#39;: True}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Source and fold changes dataframes are accessible via links in corresponding analysis fields.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch source dataframe</span>
+<span class="n">analysis_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">analysis</span><span class="p">[</span><span class="s1">&#39;df&#39;</span><span class="p">],</span> <span class="n">orient</span><span class="o">=</span><span class="s1">&#39;split&#39;</span><span class="p">)</span>
+<span class="n">analysis_df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[17]:</div>
+
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>series_id</th>
+      <th>platform_id</th>
+      <th>sample_id</th>
+      <th>gsm_name</th>
+      <th>gse_name</th>
+      <th>gpl_name</th>
+      <th>pht</th>
+      <th>hypertension_control</th>
+      <th>hypertension</th>
+      <th>pht_control</th>
+      <th>sample_class</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>202</td>
+      <td>4</td>
+      <td>8089</td>
+      <td>GSM271847</td>
+      <td>GSE10767</td>
+      <td>GPL570</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>pht_control</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>202</td>
+      <td>4</td>
+      <td>8090</td>
+      <td>GSM271848</td>
+      <td>GSE10767</td>
+      <td>GPL570</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>pht_control</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>202</td>
+      <td>4</td>
+      <td>8091</td>
+      <td>GSM271849</td>
+      <td>GSE10767</td>
+      <td>GPL570</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>pht_control</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>202</td>
+      <td>4</td>
+      <td>8092</td>
+      <td>GSM271865</td>
+      <td>GSE10767</td>
+      <td>GPL570</td>
+      <td>pht</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>202</td>
+      <td>4</td>
+      <td>8093</td>
+      <td>GSM271866</td>
+      <td>GSE10767</td>
+      <td>GPL570</td>
+      <td>pht</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[35]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># Fetch fold changes. WARNING: this could be big</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">analysis</span><span class="p">[</span><span class="s1">&#39;fold_changes&#39;</span><span class="p">])</span>
+
+<span class="c1"># It is also compressed with zlib</span>
+<span class="kn">import</span> <span class="nn">zlib</span>
+<span class="n">fold_changes</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">zlib</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">),</span> <span class="n">orient</span><span class="o">=</span><span class="s1">&#39;split&#39;</span><span class="p">)</span>
+<span class="n">fold_changes</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[35]:</div>
+
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>probe</th>
+      <th>dataMu</th>
+      <th>dataSigma</th>
+      <th>dataCount</th>
+      <th>caseDataMu</th>
+      <th>caseDataSigma</th>
+      <th>caseDataCount</th>
+      <th>controlDataMu</th>
+      <th>controlDataSigma</th>
+      <th>controlDataCount</th>
+      <th>...</th>
+      <th>log2foldChange</th>
+      <th>effect_size</th>
+      <th>ttest</th>
+      <th>p</th>
+      <th>direction</th>
+      <th>subset</th>
+      <th>gpl</th>
+      <th>gse</th>
+      <th>mygene_entrez</th>
+      <th>mygene_sym</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1007_s_at</td>
+      <td>7.121507</td>
+      <td>0.542821</td>
+      <td>7</td>
+      <td>7.463592</td>
+      <td>0.464840</td>
+      <td>4</td>
+      <td>6.665394</td>
+      <td>0.117251</td>
+      <td>3</td>
+      <td>...</td>
+      <td>0.798197</td>
+      <td>1.470462</td>
+      <td>2.842841</td>
+      <td>0.036126</td>
+      <td>up</td>
+      <td>NA</td>
+      <td>GPL570</td>
+      <td>GSE10767</td>
+      <td>780</td>
+      <td>DDR1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1053_at</td>
+      <td>9.099162</td>
+      <td>0.378195</td>
+      <td>7</td>
+      <td>9.161432</td>
+      <td>0.426845</td>
+      <td>4</td>
+      <td>9.016136</td>
+      <td>0.371085</td>
+      <td>3</td>
+      <td>...</td>
+      <td>0.145296</td>
+      <td>0.384184</td>
+      <td>0.469187</td>
+      <td>0.658683</td>
+      <td>up</td>
+      <td>NA</td>
+      <td>GPL570</td>
+      <td>GSE10767</td>
+      <td>5982</td>
+      <td>RFC2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>117_at</td>
+      <td>4.888623</td>
+      <td>0.503787</td>
+      <td>7</td>
+      <td>4.862397</td>
+      <td>0.707167</td>
+      <td>4</td>
+      <td>4.923591</td>
+      <td>0.089813</td>
+      <td>3</td>
+      <td>...</td>
+      <td>-0.061194</td>
+      <td>-0.121468</td>
+      <td>-0.145489</td>
+      <td>0.890008</td>
+      <td>down</td>
+      <td>NA</td>
+      <td>GPL570</td>
+      <td>GSE10767</td>
+      <td>3310</td>
+      <td>HSPA6</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>121_at</td>
+      <td>7.083546</td>
+      <td>0.281271</td>
+      <td>7</td>
+      <td>7.243619</td>
+      <td>0.269283</td>
+      <td>4</td>
+      <td>6.870115</td>
+      <td>0.094835</td>
+      <td>3</td>
+      <td>...</td>
+      <td>0.373504</td>
+      <td>1.327916</td>
+      <td>2.253205</td>
+      <td>0.073979</td>
+      <td>up</td>
+      <td>NA</td>
+      <td>GPL570</td>
+      <td>GSE10767</td>
+      <td>7849</td>
+      <td>PAX8</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>1255_g_at</td>
+      <td>2.841085</td>
+      <td>0.956595</td>
+      <td>7</td>
+      <td>2.736909</td>
+      <td>0.767581</td>
+      <td>4</td>
+      <td>2.979985</td>
+      <td>1.345662</td>
+      <td>3</td>
+      <td>...</td>
+      <td>-0.243075</td>
+      <td>-0.254105</td>
+      <td>-0.306554</td>
+      <td>0.771538</td>
+      <td>down</td>
+      <td>NA</td>
+      <td>GPL570</td>
+      <td>GSE10767</td>
+      <td>2978</td>
+      <td>GUCA1A</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 21 columns</p>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[36]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/analysis/243/results/&#39;</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s1">&#39;split&#39;</span><span class="p">)</span>
+<span class="n">results</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[36]:</div>
+
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mygene_entrez</th>
+      <th>direction</th>
+      <th>k</th>
+      <th>casedatacount</th>
+      <th>controldatacount</th>
+      <th>random_pval</th>
+      <th>random_te</th>
+      <th>random_se</th>
+      <th>random_lower</th>
+      <th>random_upper</th>
+      <th>...</th>
+      <th>tau2_se</th>
+      <th>c</th>
+      <th>h</th>
+      <th>h_lower</th>
+      <th>h_upper</th>
+      <th>i2</th>
+      <th>i2_lower</th>
+      <th>i2_upper</th>
+      <th>q</th>
+      <th>q_df</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>BLM</th>
+      <td>641</td>
+      <td>up</td>
+      <td>7</td>
+      <td>203</td>
+      <td>106</td>
+      <td>0.004175</td>
+      <td>0.009608</td>
+      <td>0.003354</td>
+      <td>0.003034</td>
+      <td>0.016181</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>18535.273509</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>5.801143</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <th>A1BG</th>
+      <td>1</td>
+      <td>up</td>
+      <td>5</td>
+      <td>127</td>
+      <td>78</td>
+      <td>0.745816</td>
+      <td>0.007206</td>
+      <td>0.022229</td>
+      <td>-0.036361</td>
+      <td>0.050773</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>5559.082818</td>
+      <td>1.588522</td>
+      <td>1.000000</td>
+      <td>2.595664</td>
+      <td>0.603710</td>
+      <td>0.000000</td>
+      <td>0.851576</td>
+      <td>10.093607</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>A1BG-AS1</th>
+      <td>503538</td>
+      <td>up</td>
+      <td>2</td>
+      <td>30</td>
+      <td>16</td>
+      <td>0.092131</td>
+      <td>0.031295</td>
+      <td>0.018581</td>
+      <td>-0.005123</td>
+      <td>0.067713</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>2.505217</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>0.562633</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>A1CF</th>
+      <td>29974</td>
+      <td>up</td>
+      <td>5</td>
+      <td>172</td>
+      <td>88</td>
+      <td>0.104480</td>
+      <td>0.002854</td>
+      <td>0.001758</td>
+      <td>-0.000591</td>
+      <td>0.006299</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>31493.161994</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>1.374130</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>A2M</th>
+      <td>2</td>
+      <td>down</td>
+      <td>7</td>
+      <td>203</td>
+      <td>106</td>
+      <td>0.689928</td>
+      <td>-0.003276</td>
+      <td>0.008211</td>
+      <td>-0.019368</td>
+      <td>0.012817</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>101435.271415</td>
+      <td>1.986816</td>
+      <td>1.362318</td>
+      <td>2.897590</td>
+      <td>0.746671</td>
+      <td>0.461181</td>
+      <td>0.880896</td>
+      <td>23.684635</td>
+      <td>6</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 34 columns</p>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>To create and start an analysis you need to provide an auth token. You can get see yours in the example below once you are logged in.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[52]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># This is your auth token, don&#39;t share it with anybody</span>
+<span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="p">:</span> <span class="s1">&#39;Token your-token-here&#39;</span><span class="p">}</span>
+<span class="c1"># Create new analysis</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/analysis/&#39;</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+    <span class="s1">&#39;analysis_name&#39;</span><span class="p">:</span> <span class="s1">&#39;Young Severe Dengue&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Dengue cases in patients under 9&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;specie&#39;</span><span class="p">:</span> <span class="s1">&#39;human&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;case_query&#39;</span><span class="p">:</span> <span class="s2">&quot;DHF==&#39;DHF&#39; or DSS==&#39;DSS&#39;&quot;</span><span class="p">,</span>
+    <span class="s1">&#39;control_query&#39;</span><span class="p">:</span> <span class="s2">&quot;DF==&#39;DF&#39;&quot;</span><span class="p">,</span>
+    <span class="s1">&#39;modifier_query&#39;</span><span class="p">:</span> <span class="s2">&quot;Age &lt; 9&quot;</span><span class="p">,</span>
+<span class="p">})</span>
+<span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[52]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{u&#39;created&#39;: 385}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Annotations">Annotations<a class="anchor-link" href="#Annotations">&#182;</a></h2><p>Allows listing, fetching and adding annotations. Note that at each point in time you see best available annotations, along with their reliability characteristics. Pay attention at <code>best_cohens_kappa</code> attribute, we consider annotation validated when it equals 1, meaning there are two annotation authors that blindly did it the same way.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[37]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">annotations</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/annotations/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="n">annotations</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">annotations</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[37]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(16791, 100)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[45]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">annotations</span><span class="p">[</span><span class="s1">&#39;results&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[45]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{u&#39;annotations&#39;: 2,
+ u&#39;authors&#39;: 2,
+ u&#39;best_cohens_kappa&#39;: 1.0,
+ u&#39;captive&#39;: False,
+ u&#39;column&#39;: u&#39;sample_source_name_ch1&#39;,
+ u&#39;fleiss_kappa&#39;: 1.0,
+ u&#39;gpl_name&#39;: u&#39;GPL7&#39;,
+ u&#39;gse_name&#39;: u&#39;GSE1&#39;,
+ u&#39;id&#39;: 1607,
+ u&#39;regex&#39;: u&#39;melanoma&#39;,
+ u&#39;samples&#39;: 38,
+ u&#39;tag_id&#39;: 123}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[49]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;http://stargeo.org/api/v2/annotations/1607/samples/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>{&#34;GSM48&#34;:&#34;melanoma&#34;,&#34;GSM46&#34;:&#34;melanoma&#34;,&#34;GSM47&#34;:&#34;melanoma&#34;,&#34;GSM44&#34;:&#34;melanoma&#34;,&#34;GSM45&#34;:&#34;melanoma&#34;,&#34;GSM42&#34;:&#34;melanoma&#34;,&#34;GSM43&#34;:&#34;melanoma&#34;,&#34;GSM40&#34;:&#34;&#34;,&#34;GSM41&#34;:&#34;melanoma&#34;,&#34;GSM11&#34;:&#34;melanoma&#34;,&#34;GSM13&#34;:&#34;melanoma&#34;,&#34;GSM12&#34;:&#34;&#34;,&#34;GSM15&#34;:&#34;melanoma&#34;,&#34;GSM14&#34;:&#34;melanoma&#34;,&#34;GSM39&#34;:&#34;melanoma&#34;,&#34;GSM38&#34;:&#34;melanoma&#34;,&#34;GSM37&#34;:&#34;melanoma&#34;,&#34;GSM36&#34;:&#34;melanoma&#34;,&#34;GSM35&#34;:&#34;melanoma&#34;,&#34;GSM34&#34;:&#34;melanoma&#34;,&#34;GSM33&#34;:&#34;melanoma&#34;,&#34;GSM32&#34;:&#34;melanoma&#34;,&#34;GSM31&#34;:&#34;melanoma&#34;,&#34;GSM30&#34;:&#34;melanoma&#34;,&#34;GSM17&#34;:&#34;melanoma&#34;,&#34;GSM16&#34;:&#34;melanoma&#34;,&#34;GSM19&#34;:&#34;&#34;,&#34;GSM18&#34;:&#34;&#34;,&#34;GSM28&#34;:&#34;melanoma&#34;,&#34;GSM29&#34;:&#34;melanoma&#34;,&#34;GSM20&#34;:&#34;&#34;,&#34;GSM21&#34;:&#34;&#34;,&#34;GSM22&#34;:&#34;&#34;,&#34;GSM23&#34;:&#34;melanoma&#34;,&#34;GSM24&#34;:&#34;melanoma&#34;,&#34;GSM25&#34;:&#34;melanoma&#34;,&#34;GSM26&#34;:&#34;melanoma&#34;,&#34;GSM27&#34;:&#34;melanoma&#34;}
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>To post annotations you need to authorize as a competent user. To authorize you need to send <code>Authorization</code> token same as when creating analysis.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[61]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># This is your auth token, don&#39;t share it with anybody</span>
+<span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Authorization&#39;</span><span class="p">:</span> <span class="s1">&#39;Token your-token-here&#39;</span><span class="p">}</span>
+<span class="c1"># Create new analysis</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;http://localhost:5000/api/v2/annotations/&#39;</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+    <span class="s1">&#39;tag&#39;</span><span class="p">:</span> <span class="s1">&#39;melanoma&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;series&#39;</span><span class="p">:</span> <span class="s1">&#39;GSE1&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;platform&#39;</span><span class="p">:</span> <span class="s1">&#39;GPL7&#39;</span><span class="p">,</span>
+    <span class="c1"># Need to provide full set of samples</span>
+    <span class="s1">&#39;annotations&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;GSM11&#39;</span><span class="p">:</span> <span class="s1">&#39;melanoma&#39;</span><span class="p">,</span> <span class="s1">&#39;GSM12&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
+    <span class="c1"># Optional text note</span>
+    <span class="s1">&#39;note&#39;</span><span class="p">:</span> <span class="s1">&#39;...&#39;</span><span class="p">,</span>  
+<span class="p">})</span>
+<span class="k">assert</span> <span class="n">r</span><span class="o">.</span><span class="n">ok</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+ 
+

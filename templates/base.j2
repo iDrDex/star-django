@@ -152,10 +152,13 @@
                 <a href="/competence/"> <span class="nav-label">Competence Test</span> </a>
             </li>
             {% endif %}
-            <li>
-              <a href="/docs/"> <span clss="nav-label">API Docs</span></a>
+            <li{% if request.path.startswith('/api_docs/') %} class="active"{% endif %}>
+              <a href="#"> <span clss="nav-label">API</span><span class="fa arrow"></span></a>
+                <ul class="nav nav-second-level collapse{% if request.path.startswith('/api_docs/') %} in{% endif %}" aria-expanded="true">
+                    <li{% if request.path.startswith('/api_docs/') %} class="active"{% endif %}><a href="/api_docs/">Docs</a></li>
+                    <li><a href="/api_docs/v1/">API v1 (deprecated)</a></li>
+                </ul>
             </li>
-            {# HACK: hardcode my and Dexters ids #}
             {% if request.user.is_superuser %}
             <li{% if request.path == '/users/' %} class="active"{% endif %}>
                 <a href="/users/"> <span class="nav-label">User statistics</span> </a>

@@ -8,7 +8,7 @@ __all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
            'shell', 'ssh', 'config',
            'restart', 'manage', 'install_requirements', 'install_crontab', 'migrate',
            'pull_db', 'backup_db', 'install',
-           'conf_nginx', 'offline', 'online')
+           'conf_nginx', 'offline', 'online', 'docs')
 
 
 django.project('stargeo')
@@ -296,3 +296,7 @@ def offline():
 
 def online():
     run('rm offline')
+
+
+def docs():
+    local('jupyter nbconvert stuff/api.ipynb --template basic --output-dir templates/docs')

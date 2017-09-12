@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.shortcuts import render
 import djapi as api
 
 from s3field.ops import frame_dumps
@@ -8,6 +9,11 @@ from tags.views import TagForm
 
 
 PER_PAGE = 100
+
+
+def docs(request):
+    token = request.user.auth_token.key if request.user.is_authenticated() else None
+    return render(request, 'docs/api.j2', {'auth_token': token})
 
 
 tags_qs = api.queryset(Tag).filter(is_active=True) \

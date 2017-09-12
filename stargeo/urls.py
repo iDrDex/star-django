@@ -75,7 +75,8 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/', include(router.urls)),
     url(r'^api/v2/', include('api.urls')),
-    url(r'^docs', SwaggerSchemaView.as_view()),
+    url(r'^api_docs/$', 'api.views.docs'),
+    url(r'^api_docs/v1/$', SwaggerSchemaView.as_view()),
 
     url(r'^stats/$', 'core.views.stats', name='statistics'),
 ]
