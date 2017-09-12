@@ -1,4 +1,4 @@
-from funcy import *
+from funcy import *  # noqa
 from datetime import datetime, timedelta
 from django.core.management import BaseCommand
 from core.models import HistoricalCounter
