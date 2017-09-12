@@ -47,7 +47,7 @@
     <link rel="stylesheet" href="{{ static('homer/fonts/pe-icon-7-stroke/css/pe-icon-7-stroke.css') }}" />
     <link rel="stylesheet" href="{{ static('homer/fonts/pe-icon-7-stroke/css/helper.css') }}" />
     <link rel="stylesheet" href="{{ static('homer/styles/style.css') }}">
-    <link rel="stylesheet" href="{{ static('site.css') }}?2">
+    <link rel="stylesheet" href="{{ static('site.css') }}?3">
 
     <!-- My scripts -->
     <script src="{{ static('homer/vendor/jquery/dist/jquery.min.js') }}"></script>
@@ -110,16 +110,10 @@
                 </span>
 
                 {% if request.user.is_authenticated() %}
-                <p style="margin-top: 1em">
-                    <a href="{{ url('my_snapshots') }}">
-                        <small class="text-mited">Snapshots</small>
-                    </a>
-                    <a href="{{ url('redeem') }}">
-                        <small class="text-mited">Redeem</small>
-                    </a>
-                    <a href="{{ url('auth_logout') }}">
-                        <small class="text-mited">Logout</small>
-                    </a>
+                <p style="margin-top: 1em;">
+                    <a href="{{ url('my_snapshots') }}"><small class="text-mited">Snapshots</small></a>
+                    <a href="{{ url('redeem') }}"><small class="text-mited">Redeem</small></a>
+                    <a href="{{ url('auth_logout') }}"><small class="text-mited">Logout</small></a>
                 </p>
                 {% endif %}
             </div>

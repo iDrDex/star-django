@@ -1,6 +1,7 @@
-.table a {
+.table a, p a {
     text-decoration: underline;
 }
+a.btn, a.label {text-decoration: none !important}
 
 .close-tab {
     cursor: pointer;
