@@ -1,5 +1,6 @@
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.views.generic import RedirectView
 from registration.backends.hmac.views import RegistrationView
 
 from core.forms import PasswordResetForm, MyRegistrationForm, MyAuthenticationForm
@@ -77,6 +78,8 @@ urlpatterns = [
     url(r'^api/v2/', include('api.urls')),
     url(r'^api_docs/$', 'api.views.docs'),
     url(r'^api_docs/v1/$', SwaggerSchemaView.as_view()),
+    url(r'^docs/$', RedirectView.as_view(url='/api_docs/', permanent=True)),
+
 
     url(r'^stats/$', 'core.views.stats', name='statistics'),
 ]
