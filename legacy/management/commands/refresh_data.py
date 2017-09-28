@@ -88,6 +88,14 @@ class Command(BaseCommand):
         queue.join()
 
 
+REQUIRED_SERIES_FIELDS = {
+    'series_geo_accession',
+    'series_platform_taxid',
+    'series_sample_taxid',
+    'series_last_update_date',
+    'series_platform_id',
+}
+
 def load_data(header):
     print colored('Found %d data lines' % len(header), 'cyan')
     line_groups = group_by(r'^!([^_]+)_', header)
@@ -95,6 +103,12 @@ def load_data(header):
     # Load series
     series_df = get_df_from_lines(line_groups['Series'], 'Series')
     assert len(series_df.index) == 1
+    missing = REQUIRED_SERIES_FIELDS - set(series_df.columns)
+    if missing:
+        cprint('Skip incomplete header: %s column%s missing'
+               % (', '.join(sorted(missing)), 's' if len(missing) > 1 else ''), 'red')
+        return
+
     gse_name = series_df['series_geo_accession'][0]
 
     # Skip multispcecies
