@@ -270,13 +270,11 @@ class DataRefreshThread(threading.Thread):
                         time.sleep(60)
                 except Exception as e:
                     self.queue.queue = []
+                    import traceback; traceback.print_exc()  # flake8: noqa
                     if command_options['ipdb']:
-                        import traceback; traceback.print_exc()  # flake8: noqa
-                        import ipdb; ipdb.set_trace()            # flake8: noqa
-                        import os
-                        os._exit(1)
-                    else:
-                        raise
+                        import ipdb; ipdb.set_trace()        # flake8: noqa
+                    import os
+                    os._exit(1)
             finally:
                 self.queue.task_done()
 
