@@ -31,6 +31,9 @@ SOCKET_TIMEOUT = 20
 CACHE_TIMEOUT = 2 * 24 * 60 * 60
 
 
+command_options = {}
+
+
 class Command(BaseCommand):
     help = 'Updates series, series attributes, platforms, samples and samples attributes \n' \
            'from series matrices files hosted on GEO ftp.'
@@ -46,9 +49,16 @@ class Command(BaseCommand):
             action='store', dest='cond',
             help='Update series satisfying condition'
         ),
+        make_option(
+            '--ipdb',
+            action='store_true', dest='ipdb', default=False,
+            help='Stop in ipdb on error'
+        ),
     )
 
     def handle(self, **options):
+        command_options.update(options)
+
         def gse_file(name):
             truncated = re.sub(r'\d{1,3}$', 'nnn', name)
             return '%s%s/%s/matrix/' % (SERIES_MATRIX_URL.path, truncated, name)
@@ -260,10 +270,13 @@ class DataRefreshThread(threading.Thread):
                         time.sleep(60)
                 except Exception as e:
                     self.queue.queue = []
-                    import traceback; traceback.print_exc()  # flake8: noqa
-                    import ipdb; ipdb.set_trace()            # flake8: noqa
-                    import os
-                    os._exit(1)
+                    if command_options['ipdb']:
+                        import traceback; traceback.print_exc()  # flake8: noqa
+                        import ipdb; ipdb.set_trace()            # flake8: noqa
+                        import os
+                        os._exit(1)
+                    else:
+                        raise
             finally:
                 self.queue.task_done()
 
