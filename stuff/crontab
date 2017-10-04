@@ -13,3 +13,5 @@ MAILTO={EMAIL}
 15 */8   * * 2-6 cd /home/ubuntu/app && ../venv/bin/python manage.py update_ontologies
 # Database backups
 20 0   * * *   cd /home/ubuntu/app && ../venv/bin/fab backup_db >/dev/null
+# Renew certificates
+0 20 1,15 * *  sudo certbot renew -q
