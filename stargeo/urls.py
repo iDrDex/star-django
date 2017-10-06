@@ -82,6 +82,8 @@ urlpatterns = [
 
 
     url(r'^stats/$', 'core.views.stats', name='statistics'),
+
+    url(r'^oauth2callback/', 'oauth2access.callback', name='oauth2callback')
 ]
 
 
