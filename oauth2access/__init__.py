@@ -1,2 +1,2 @@
-from .views import (session, require, callback,  # noqa
-                    OAuth2AccessError, AuthenticatedUserRequired, NoTokenFound)
+from .session import session, OAuth2AccessError, AuthenticatedUserRequired, NoTokenFound  # noqa
+from .views import require, callback  # noqa
