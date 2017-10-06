@@ -44,6 +44,7 @@ class Session(OAuth2Session):
 
     def authorization_url(self, state=None, **kwargs):
         """A version of authorization_url that uses config."""
+        kwargs = dict(self.conf.get('auth_kwargs', {}), **kwargs)
         return super(Session, self).authorization_url(self.conf['auth_url'], state=state, **kwargs)
 
     def fetch_token(self, **kwargs):
