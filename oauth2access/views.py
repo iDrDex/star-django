@@ -1,5 +1,6 @@
 from functools import wraps
 
+from django.conf import settings
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 try:
     from django.urls import reverse
@@ -17,9 +18,7 @@ def require(service):
             try:
                 oauth = session(service, request.user)
             except NoTokenFound:
-                # TODO: make https
-                redirect_uri = request.build_absolute_uri(reverse('oauth2callback'))
-                oauth = Session(service, redirect_uri=redirect_uri)
+                oauth = Session(service, redirect_uri=get_callback_uri(request))
                 authorization_url, state = oauth.authorization_url()
                 request.session['oauth2access'] = [service, state, request.build_absolute_uri()]
                 return HttpResponseRedirect(authorization_url)
@@ -40,9 +39,17 @@ def callback(request):
     except (KeyError, ValueError):
         return HttpResponseForbidden("Failing callback: possible CSRF attack.")
 
-    redirect_uri = request.build_absolute_uri(reverse('oauth2callback'))
-    oauth = Session(service, redirect_uri=redirect_uri)
+    oauth = Session(service, redirect_uri=get_callback_uri(request))
     token = oauth.fetch_token(code=code)
     save_token(service, request.user, token)
     request.session.pop('oauth2access', None)  # Clear session
     return HttpResponseRedirect(next_url)
+
+
+def get_callback_uri(request):
+    path = reverse('oauth2callback')
+    # Allow http in DEBUG mode
+    if settings.DEBUG:
+        return request.build_absolute_uri(path)
+    else:
+        return 'https://%s%s' % (request.get_host(), path)
