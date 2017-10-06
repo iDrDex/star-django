@@ -10,7 +10,7 @@ except ImportError:
 from .session import Session, session, save_token, NoTokenFound
 
 
-def require(service):
+def require(service, authorize=True):
     def decorator(func):
 
         @wraps(func)
@@ -18,6 +18,9 @@ def require(service):
             try:
                 oauth = session(service, request.user)
             except NoTokenFound:
+                if not authorize:
+                    return HttpResponseForbidden("No token to access %s" % service)
+
                 oauth = Session(service, redirect_uri=get_callback_uri(request))
                 authorization_url, state = oauth.authorization_url()
                 request.session['oauth2access'] = [service, state, request.build_absolute_uri()]
