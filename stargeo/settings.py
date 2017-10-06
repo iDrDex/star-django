@@ -289,3 +289,15 @@ REST_FRAMEWORK = {
 DJAPI_AUTH = ['djapi.authtoken.use_token', 'djapi.auth.use_contribauth']
 
 BIOPORTAL_API_KEY = os.environ.get('BIOPORTAL_API_KEY')
+
+ZENODO_CLIENT_ID, ZENODO_CLIENT_SECRET = os.environ.get('ZENODO_CREDENTIALS', ':').split(':')
+OAUTH2ACCESS = {
+    'zenodo': {
+        'client_id': ZENODO_CLIENT_ID,
+        'client_secret': ZENODO_CLIENT_SECRET,
+        'scope': ['deposit:write', 'deposit:actions'],
+        'auth_url': 'https://zenodo.org/oauth/authorize',
+        'token_url': 'https://zenodo.org/oauth/token',
+        'auto_refresh_url': 'https://zenodo.org/oauth/token',
+    }
+}
