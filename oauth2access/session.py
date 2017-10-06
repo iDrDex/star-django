@@ -34,9 +34,10 @@ class Session(OAuth2Session):
         except (AttributeError, KeyError):
             raise ImproperlyConfigured("No settings.OAUTH2ACCESS entry for %s" % service)
         self._fill_kwargs(kwargs, ['client_id', 'scope', 'auto_refresh_url', 'auto_refresh_kwargs'])
+        kwargs.setdefault('auto_refresh_url', self.conf['token_url'])
 
         # Set up auto refresh
-        if kwargs['auto_refresh_url'] and user and is_authenticated(user):
+        if user and is_authenticated(user):
             kwargs['token_updater'] = lambda token: save_token(service, user, token)
 
         super(Session, self).__init__(**kwargs)

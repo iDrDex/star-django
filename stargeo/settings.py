@@ -298,6 +298,5 @@ OAUTH2ACCESS = {
         'scope': ['deposit:write', 'deposit:actions'],
         'auth_url': 'https://zenodo.org/oauth/authorize',
         'token_url': 'https://zenodo.org/oauth/token',
-        'auto_refresh_url': 'https://zenodo.org/oauth/token',
     }
 }
