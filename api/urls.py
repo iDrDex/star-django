@@ -13,7 +13,7 @@ urlpatterns = [
     url(r'^platforms/(\w+)/$', views.platform_detail),
     url(r'^platforms/(\w+)/probes/$', views.platform_probes),
 
-    url(r'^tags/$', api.get_post(views.tags, views.tag_create)),
+    url(r'^tags/$', api.route(get=views.tags, post=views.tag_create)),
     # url(r'^tags/form/$', views.tag_create),
     url(r'^tags/(\d+)/$', views.tag_detail),
 
@@ -22,8 +22,7 @@ urlpatterns = [
     url(r'^analysis/(\d+)/$', views.analysis_detail),
     url(r'^analysis/(\d+)/results/$', views.analysis_results),
 
-    url(r'^annotations/$', api.get_post(views.annotations, views.annotate),
-        name='annotations'),
+    url(r'^annotations/$', api.get_post(views.annotations, views.annotate), name='annotations'),
     url(r'^annotations/form/$', api.show_form(form=views.AnnotateForm, view='annotations')),
     url(r'^annotations/(\d+)/$', views.annotation_detail),
     url(r'^annotations/(\d+)/samples/$', views.annotation_samples),
