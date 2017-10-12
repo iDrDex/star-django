@@ -143,7 +143,7 @@ COLUMNS = {
 def get_analysis_df(analysis):
     # Fetch all relevant data
     queries = [analysis.case_query, analysis.control_query, analysis.modifier_query]
-    tokens = set(cat(re_all('[a-zA-Z]\w*', query) for query in queries))
+    tokens = set(cat(re_all(r'[a-zA-Z]\w*', query) for query in queries))
 
     tags = Tag.objects.filter(tag_name__iregex='^(%s)$' % '|'.join(map(re.escape, tokens)))
     qs = SampleAnnotation.objects.filter(series_annotation__tag__in=tags)
