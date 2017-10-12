@@ -17,7 +17,7 @@ else:
 class OAuth2AccessError(Exception):
     pass
 
-class AuthenticatedUserRequired(OAuth2AccessError):
+class NoUserFound(OAuth2AccessError):
     pass
 
 class NoTokenFound(OAuth2AccessError):
@@ -65,7 +65,7 @@ class Session(OAuth2Session):
 
 def session(service, user):
     if user is None or not is_authenticated(user):
-        raise AuthenticatedUserRequired("User required to get access")
+        raise NoUserFound("User required to get access")
 
     try:
         service_token = ServiceToken.objects.get(service=service, user=user)

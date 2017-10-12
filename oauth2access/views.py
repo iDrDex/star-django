@@ -1,13 +1,13 @@
 from functools import wraps
 
 from django.conf import settings
-from django.http import HttpResponseForbidden, HttpResponseRedirect
+from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
 try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
 
-from .session import Session, session, save_token, NoTokenFound
+from .session import Session, session, save_token, NoTokenFound, NoUserFound
 
 
 def require(service, authorize=True):
@@ -17,9 +17,11 @@ def require(service, authorize=True):
         def wrapper(request, *args, **kwargs):
             try:
                 oauth = session(service, request.user)
-            except NoTokenFound:
+            except NoUserFound as e:
+                return HttpResponse(str(e), status=401)
+            except NoTokenFound as e:
                 if not authorize:
-                    return HttpResponseForbidden("No token to access %s" % service)
+                    return HttpResponseForbidden(str(e))
 
                 oauth = Session(service, redirect_uri=get_callback_uri(request))
                 authorization_url, state = oauth.authorization_url()
