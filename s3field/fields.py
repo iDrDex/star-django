@@ -1,6 +1,8 @@
 import json
 import math
+import gzip
 import zlib
+from cStringIO import StringIO
 
 from funcy import cached_property, func_partial
 import pandas as pd
@@ -42,10 +44,8 @@ class Resource(dict):
         return blob
     raw = cached_property(_raw)
 
-    # def open(self):
-    #     key = ops.download_as_string.key(self['bucket'], self['key'])
-    #     filename = file_cache._key_to_filename(key)
-    #     return open(filename)
+    def open(self):
+        return StringIO(self.raw)
 
 
 class S3BaseField(models.TextField):
@@ -146,9 +146,6 @@ def _upload_FIELD(self, desc, field=None, lazy=False):  # noqa
     else:
         getattr(self, field.attname).append(resource)
 
-
-from cStringIO import StringIO
-import gzip
 
 def gzip_compress(data):
     out = StringIO()
