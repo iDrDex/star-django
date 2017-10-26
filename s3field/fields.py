@@ -157,5 +157,5 @@ def gzip_compress(data):
     return out.getvalue()
 
 def gzip_decompress(data):
-    with gzip.GzipFile(StringIO(data)) as f:
+    with gzip.GzipFile(fileobj=StringIO(data)) as f:
         return f.read()
