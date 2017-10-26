@@ -363,6 +363,8 @@ class Snapshot(models.Model):
     frozen_on = models.DateTimeField(blank=True, null=True)
     files = S3MultiField(compress='gzip')
 
+    zenodo = JSONField(null=True)
+
     class Meta:
         db_table = 'snapshot'
 
