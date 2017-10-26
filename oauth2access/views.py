@@ -28,6 +28,7 @@ def require(service, authorize=True):
                 request.session['oauth2access'] = [service, state, request.build_absolute_uri()]
                 return HttpResponseRedirect(authorization_url)
 
+            setattr(request, service, oauth)
             return func(request, *args, **kwargs)
 
         return wrapper
