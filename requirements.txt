@@ -35,3 +35,4 @@ rpy2==2.5.6
 django-registration==2.0.4
 biopython==1.68
 mygene==3.0.0
+requests-oauthlib==0.8.0
