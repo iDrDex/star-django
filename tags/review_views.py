@@ -303,7 +303,6 @@ import djapi as api
 @oauth2access.require('zenodo', authorize=False)
 def upload_to_zenodo(request, snap_id):
     snap = get_object_or_404(Snapshot, pk=snap_id)
-    # oauth = oauth2access.session('zenodo', request.user)
 
     # Minimum length for title and description on zenodo is 3
     if len(snap.title) < 3:
