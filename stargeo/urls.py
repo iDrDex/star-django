@@ -52,6 +52,7 @@ urlpatterns = [
     url(r'^snapshots/(\d+)/$', 'tags.review_views.snapshot_detail', name='snapshot_detail'),
     url(r'^snapshots/(\d+)\.(\w+)', 'tags.review_views.snapshot_file', name='snapshot_file'),
     url(r'^snapshots/(\d+)/to_zenodo/$', 'tags.review_views.upload_to_zenodo', name='to_zenodo'),
+    url(r'^auth_zenodo/$', 'tags.review_views.authorize_zenodo', name='auth_zenodo'),
     url(r'^my/snapshots/$', 'tags.review_views.my_snapshots', name='my_snapshots'),
 
     # Analysis

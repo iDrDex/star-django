@@ -10,7 +10,34 @@ except ImportError:
 from .session import Session, session, save_token, NoTokenFound, NoUserFound
 
 
-def require(service, authorize=True):
+def authorize(service):
+    def decorator(func):
+
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            oauth = None
+            oauth_error = request.GET.get('error')
+
+            try:
+                if not oauth_error:
+                    oauth = session(service, request.user)
+            except NoUserFound:
+                oauth_error = 'no_user'
+            except NoTokenFound:
+                oauth = Session(service, redirect_uri=get_callback_uri(request))
+                authorization_url, state = oauth.authorization_url()
+                request.session['oauth2access'] = [service, state, request.build_absolute_uri()]
+                return HttpResponseRedirect(authorization_url)
+
+            setattr(request, service, oauth)
+            setattr(request, service + '_error', oauth_error)
+            return func(request, *args, **kwargs)
+
+        return wrapper
+    return decorator
+
+
+def require(service):
     def decorator(func):
 
         @wraps(func)
@@ -20,13 +47,7 @@ def require(service, authorize=True):
             except NoUserFound as e:
                 return HttpResponse(str(e), status=401)
             except NoTokenFound as e:
-                if not authorize:
-                    return HttpResponseForbidden(str(e))
-
-                oauth = Session(service, redirect_uri=get_callback_uri(request))
-                authorization_url, state = oauth.authorization_url()
-                request.session['oauth2access'] = [service, state, request.build_absolute_uri()]
-                return HttpResponseRedirect(authorization_url)
+                return HttpResponseForbidden(str(e))
 
             setattr(request, service, oauth)
             return func(request, *args, **kwargs)
@@ -36,6 +57,14 @@ def require(service, authorize=True):
 
 
 def callback(request):
+    if request.GET.get('error') == 'access_denied':
+        try:
+            service, saved_state, next_url = request.session['oauth2access']
+        except (KeyError, ValueError):
+            return HttpResponseForbidden("Access denied")
+        url = next_url + ('&' if '?' in next_url else '?') + 'error=access_denied'
+        return HttpResponseRedirect(url)
+
     try:
         code = request.GET['code']
         state = request.GET['state']

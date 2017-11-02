@@ -300,7 +300,7 @@ import djapi as api
 
 
 @api.catch(requests.RequestException, status=502)
-@oauth2access.require('zenodo', authorize=False)
+@oauth2access.require('zenodo')
 def upload_to_zenodo(request, snap_id):
     snap = get_object_or_404(Snapshot, pk=snap_id)
 
@@ -347,3 +347,13 @@ def upload_to_zenodo(request, snap_id):
     snap.save()
 
     return api.json(deposit)
+
+
+@oauth2access.authorize('zenodo')
+def authorize_zenodo(request):
+    if request.zenodo:
+        messages.success(request,
+                         "Successfully authorized on zenodo, you can now upload your snapshot")
+    else:
+        messages.error(request, "Failed to get Zenodo access")
+    return redirect(request.GET.get('next') or my_snapshots)

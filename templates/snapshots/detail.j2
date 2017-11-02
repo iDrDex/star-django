@@ -30,6 +30,7 @@
 <script type="text/javascript">
 var uploadURL = "{{ url('to_zenodo', snapshot.pk) }}";
 var loginURL = "{{ url('login') + '?next=' + request.path|urlencode }}";
+var authZenodoURL = "{{ url('auth_zenodo') + '?next=' + request.path|urlencode }}";
 $(function (){
     $('#to-zenodo').click(function () {
         $(this).hide();
@@ -39,7 +40,9 @@ $(function (){
         }).fail(function (e) {
             if (e.status === 401) {
                 window.location.href = loginURL;
-            } else if (e.status === 500 ) {
+            } else if (e.status === 403) {
+                window.location.href = authZenodoURL;
+            } else if (e.status === 500) {
                 $('#to-zenodo-loader').text('Something bad happened, we will fix that.')
             } else {
                 $('#to-zenodo-loader').text('ERROR: ' + e.responseJSON.detail)
