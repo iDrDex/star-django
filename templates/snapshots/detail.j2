@@ -17,8 +17,37 @@
                 {{ delim() }}<a href="{{ url('snapshot_file', snapshot.pk, f.format) }}">{{ f.format or f.name }}</a> ({{ f.human_size }})
             {%- endfor %}
         </td></tr>
+        <tr><th>Zenodo</th><td id="zenodo-cell">
+            {% if snapshot.zenodo.files %}
+                <a target="_blank" href="{{ snapshot.zenodo.links.html }}">{{ snapshot.zenodo.files|count }} files</a>
+            {% else %}
+                <a id="to-zenodo" class="btn btn-success btn-xs">Upload</a>
+                <span id="to-zenodo-loader" style="display: none">Uploading...</span>
+            {% endif %}
+        </td></tr>
     </table>
 </div></div>
+<script type="text/javascript">
+var uploadURL = "{{ url('to_zenodo', snapshot.pk) }}";
+var loginURL = "{{ url('login') + '?next=' + request.path|urlencode }}";
+$(function (){
+    $('#to-zenodo').click(function () {
+        $(this).hide();
+        $('#to-zenodo-loader').show();
+        $.ajax(uploadURL).done(function (data) {
+            $('#zenodo-cell').html('<a href="{}">2 files</a>'.replace('{}', data.links.html));
+        }).fail(function (e) {
+            if (e.status === 401) {
+                window.location.href = loginURL;
+            } else if (e.status === 500 ) {
+                $('#to-zenodo-loader').text('Something bad happened, we will fix that.')
+            } else {
+                $('#to-zenodo-loader').text('ERROR: ' + e.responseJSON.detail)
+            }
+        })
+    })
+})
+</script>
 
 {% if form %}
 <div class="hpanel"><div class="panel-body">

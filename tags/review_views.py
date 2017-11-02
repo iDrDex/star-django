@@ -291,3 +291,60 @@ def snapshot_file(request, snap_id, format):
 @paginate('snapshots', 10)
 def my_snapshots(request):
     return {'snapshots': Snapshot.objects.filter(author=request.user).order_by('-frozen_on')}
+
+
+import re
+import requests
+import oauth2access
+import djapi as api
+
+
+@api.catch(requests.RequestException, status=502)
+@oauth2access.require('zenodo', authorize=False)
+def upload_to_zenodo(request, snap_id):
+    snap = get_object_or_404(Snapshot, pk=snap_id)
+    # oauth = oauth2access.session('zenodo', request.user)
+
+    # Minimum length for title and description on zenodo is 3
+    if len(snap.title) < 3:
+        return api.json(400, detail='Need title of length 3 or more')
+    description = snap.description if len(snap.description) >= 3 else 'no description'
+
+    # Create deposition
+    meta = {
+        'title': snap.title,
+        'description': description,
+        'upload_type': 'dataset',
+        'creators': [{'name': '%s, %s' % (request.user.last_name, request.user.first_name)}],
+    }
+    res = request.zenodo.post('https://zenodo.org/api/deposit/depositions', json={'metadata': meta})
+    res.raise_for_status()
+    snap.zenodo = deposit = res.json()
+    snap.save()
+
+    # Upload files
+    for file in snap.files:
+        name = re.sub(r'\W+', '-', snap.title).strip('-').lower() or 'file'
+        filename = '%s.%s' % (name, file['format'])
+        data = {'filename': filename}
+        files = {'file': file.open()}
+        res = request.zenodo.post(deposit['links']['files'], data=data, files=files)
+        res.raise_for_status()
+
+        # Rename file, see Zenodo bug https://github.com/zenodo/zenodo/issues/940
+        file_desc = res.json()
+        if file_desc['filename'] != filename:
+            res = request.zenodo.put(file_desc['links']['self'], json={'filename': filename})
+            res.raise_for_status()
+
+    # Publish
+    res = request.zenodo.post(deposit['links']['publish'])
+    res.raise_for_status()
+
+    # Update info
+    res = request.zenodo.get(deposit['links']['self'])
+    res.raise_for_status()
+    snap.zenodo = deposit = res.json()
+    snap.save()
+
+    return api.json(deposit)
