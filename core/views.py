@@ -55,7 +55,7 @@ class ReactivateForm(forms.Form):
         return email
 
 def format_username(u):
-    text = '{first_name} {last_name}'.format(**u)
+    text = u'{first_name} {last_name}'.format(**u)
     return text if text != ' ' else u['pk']
 
 @render_to(template='stats/stats.j2')
