@@ -1,25 +1,22 @@
 dj-database-url==0.3.0
-Django==1.8.18
-django-jinja==1.4.1
+Django==1.11.8
+django-jinja==2.4.1
 django-jinja-bootstrap-form==4.0.3
 djangorestframework==3.5.3
 django-rest-swagger==2.1.1
-django-transaction-hooks==0.2
-django-filter==1.0.1 # Needs updating with Django
+django-filter==1.1.0 # Needs updating with Django
 fabric>=1.13.2
 funcy>=1.7.5,<2.0
-django-model-utils>=1.4,<2.4 # The version of django-model-utils should be mannual limited by 2.4
-                             # or there will be an issue with django pandas https://github.com/chrisdev/django-pandas/issues/61
-handy==0.5.6
+handy==0.6
 honcho==0.6.4
-Jinja2==2.7.3
+Jinja2==2.10
 psycopg2==2.6
-redis==2.10.3
+redis==2.10.6
 celery==3.1.17
 tqdm==4.11.2
-requests==2.7.0
+requests==2.18.4
 ftptool==0.7.1
-django-cacheops==3.1.1
+django-cacheops==4.0.3
 gzip-reader==0.1
 pandas==0.18.1
 termcolor==1.1.0
@@ -27,9 +24,10 @@ numpy==1.11.1
 numexpr==2.6.2
 scipy==0.16.0
 statsmodels==0.8.0
-django_pandas==0.3.0
+django_pandas==0.4.5
 easydict==1.6
-django-datatable-view==0.8.3
+# TODO: switch to proper release once it's out
+django-datatable-view-compat==0.8.2
 boto==2.38.0
 rpy2==2.5.6
 django-registration==2.0.4

@@ -4,8 +4,6 @@ from django.core.exceptions import ImproperlyConfigured
 
 from requests_oauthlib import OAuth2Session
 
-from .models import ServiceToken
-
 
 # Changed from method to property
 if django.VERSION >= (1, 10):
@@ -64,6 +62,8 @@ class Session(OAuth2Session):
 
 
 def session(service, user):
+    from .models import ServiceToken
+
     if user is None or not is_authenticated(user):
         raise NoUserFound("User required to get access")
 
@@ -76,5 +76,7 @@ def session(service, user):
 
 
 def save_token(service, user, token):
+    from .models import ServiceToken
+
     ServiceToken.objects.update_or_create(service=service, user=user,
                                           defaults={'token': token})

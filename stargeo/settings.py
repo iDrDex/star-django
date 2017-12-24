@@ -61,7 +61,7 @@ MIGRATION_MODULES = {
     'auth': 'stargeo.auth_migrations'
 }
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -69,6 +69,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
+if DEBUG:
+    MIDDLEWARE = ('debug_toolbar.middleware.DebugToolbarMiddleware',) + MIDDLEWARE
 
 ROOT_URLCONF = 'stargeo.urls'
 LOGIN_REDIRECT_URL = '/'
@@ -89,7 +91,6 @@ import os
 DATABASES = {
     'default': dj_database_url.config(),
 }
-DATABASES['default']['ENGINE'] = 'transaction_hooks.backends.postgresql_psycopg2'
 
 
 REDIS = {
@@ -138,12 +139,12 @@ DEBUG_TOOLBAR_CONFIG = {
 
 _TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.auth.context_processors.auth",
-    "django.core.context_processors.debug",
-    "django.core.context_processors.i18n",
-    "django.core.context_processors.media",
-    "django.core.context_processors.static",
-    "django.core.context_processors.tz",
-    "django.core.context_processors.request",
+    "django.template.context_processors.debug",
+    "django.template.context_processors.i18n",
+    "django.template.context_processors.media",
+    "django.template.context_processors.static",
+    "django.template.context_processors.tz",
+    "django.template.context_processors.request",
     "django.contrib.messages.context_processors.messages"
 )
 
