@@ -122,7 +122,7 @@ class SampleAnnotationViewSet(viewsets.ViewSet):
                 save_annotation(data)
         except AnnotationError as err:
             raise ValidationError(
-                {'non_field_errors': [unicode(err)]})
+                {'non_field_errors': [str(err)]})
 
         return Response(status=201)
 

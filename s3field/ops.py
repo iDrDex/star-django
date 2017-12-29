@@ -1,11 +1,11 @@
 import re
-from thread import start_new_thread
+from _thread import start_new_thread
 
 import boto
 import pandas as pd
 
 from django.conf import settings
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 from cacheops import file_cache
 
 
@@ -66,12 +66,12 @@ def clean_key_name(key_name):
     """
     Clean the key_name to the form suitable to be used as an Amazon S3 key
     """
-    key_name = force_unicode(key_name, errors='ignore')
+    key_name = force_text(key_name, errors='ignore')
     # Remove backslashes and space
     key_name = re.sub(r'[ \\_]+', '_', key_name)
     # Remove double dots and slashes
     key_name = re.sub(r'([./])\1+', r'\1', key_name)
-    return key_name[:MAX_KEY_LEN].strip(u'._/')
+    return key_name[:MAX_KEY_LEN].strip('._/')
 
 
 def frame_dumps(df):

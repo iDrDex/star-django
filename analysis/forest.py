@@ -70,7 +70,7 @@ def r2py(obj):
     elif isinstance(obj, robjects.ListVector):
         return {k: r2py(v) for k, v in obj.items()}
     elif isinstance(obj, robjects.Vector):
-        return r2py(obj[0]) if len(obj) == 1 else map(r2py, obj)
+        return r2py(obj[0]) if len(obj) == 1 else list(map(r2py, obj))
     elif isinstance(obj, robjects.SignatureTranslatedFunction):
         return '<function>'
     else:

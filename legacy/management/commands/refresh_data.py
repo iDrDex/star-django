@@ -1,13 +1,13 @@
 import re
 import posixpath
-import urlparse
+import urllib.parse
 import json
 import socket
 import ftplib
 import threading
 import time
-from Queue import PriorityQueue
-from cStringIO import StringIO
+from queue import PriorityQueue
+from io import StringIO
 
 from funcy import re_finder, re_iter, group_by, log_errors, cached_property, cut_prefix, memoize
 from cacheops import file_cache
@@ -24,7 +24,7 @@ from legacy.models import Series, Platform, Sample, SPECIES
 # TODO: verbosity levels
 
 DEFAULT_NUMBER_OF_THREADS = 20
-SERIES_MATRIX_URL = urlparse.urlparse('ftp://ftp.ncbi.nih.gov/geo/series/')
+SERIES_MATRIX_URL = urllib.parse.urlparse('ftp://ftp.ncbi.nih.gov/geo/series/')
 SOCKET_TIMEOUT = 20
 CACHE_TIMEOUT = 2 * 24 * 60 * 60
 CACHEOPS_DEBUG = True  # Makes function cache keys not depend on line no
@@ -57,7 +57,7 @@ class Command(BaseCommand):
                 cond['attrs'] = json.loads(cond['attrs'])
 
             gse_names = Series.objects.filter(**cond).values_list('gse_name', flat=True)
-            print colored('Going to update %d series...' % len(gse_names), attrs=['bold'])
+            print(colored('Going to update %d series...' % len(gse_names), attrs=['bold']))
             queue.put_dirs(gse_file(name) for name in gse_names)
         else:
             queue.put_dirs([SERIES_MATRIX_URL.path])
@@ -84,7 +84,7 @@ REQUIRED_SERIES_FIELDS = {
 }
 
 def load_data(header):
-    print colored('Found %d data lines' % len(header), 'cyan')
+    print(colored('Found %d data lines' % len(header), 'cyan'))
     line_groups = group_by(r'^!([^_]+)_', header)
 
     # Load series
@@ -113,10 +113,10 @@ def load_data(header):
         old_last_update = None
     new_last_update = series_df['series_last_update_date'][0]
     if new_last_update == old_last_update:
-        print colored('%s not changed since %s' % (gse_name, old_last_update), 'yellow')
+        print(colored('%s not changed since %s' % (gse_name, old_last_update), 'yellow'))
         return
     else:
-        print colored('%s updated %s -> %s' % (gse_name, old_last_update, new_last_update), 'green')
+        print(colored('%s updated %s -> %s' % (gse_name, old_last_update, new_last_update), 'green'))
 
     # Load samples
     samples_df = get_df_from_lines(line_groups['Sample'], 'Sample')
@@ -139,7 +139,7 @@ def insert_or_update_data(series_df, samples_df):
     gpls = samples_df['sample_platform_id'].unique()
     assert len(gpls) == 1
     gpl_name = gpls[0]
-    print "  %s" % gpl_name
+    print("  %s" % gpl_name)
     platform, _ = Platform.objects.get_or_create(
         gpl_name=gpl_name, defaults={'specie': SPECIES[attrs['platform_taxid']]})
 
@@ -154,19 +154,19 @@ def insert_or_update_data(series_df, samples_df):
             # Use lame boolean-like 'T' cause sharing db with web2py
             Sample.objects.filter(series=series, platform=platform, gsm_name__in=dead_samples) \
                           .update(deleted='T')
-            print colored('  marked %d samples as deleted' % len(dead_samples), 'red')
+            print(colored('  marked %d samples as deleted' % len(dead_samples), 'red'))
 
     # Create/update samples and their attributes
     for gsm_name in samples_df.index:
         attrs = {cut_prefix(name, 'sample_'): value.strip()
-                 for name, value in samples_df.ix[gsm_name].to_dict().items()}
+                 for name, value in list(samples_df.ix[gsm_name].to_dict().items())}
         Sample.objects.update_or_create(
             gsm_name=gsm_name, series=series, platform=platform, deleted=None,
             defaults={'attrs': attrs})
 
     action = 'inserted' if created else 'updated'
-    print colored('  %s %s, %d samples' % (action, gse_name, len(samples_df)),
-                  'green', attrs=['bold'])
+    print(colored('  %s %s, %d samples' % (action, gse_name, len(samples_df)),
+                  'green', attrs=['bold']))
 
 
 def uni_cat(fields, fieldSep="|\n|"):
@@ -285,7 +285,7 @@ class DataRefreshThread(threading.Thread):
         def listdir(d):
             return self.conn.listdir(d)
 
-        print dirname
+        print(dirname)
         try:
             dirs, files = listdir(dirname)
         except ftplib.all_errors:
@@ -299,13 +299,13 @@ class DataRefreshThread(threading.Thread):
 
     @log_errors(lambda msg: cprint(msg, 'red'), stack=False)
     def do_file(self, filename):
-        print filename
+        print(filename)
         header = peek_matrix(SERIES_MATRIX_URL.netloc, filename)
         if header:
-            print "  %s is interesting" % filename
+            print("  %s is interesting" % filename)
             self.queue.put_header(header)
         else:
-            print "  %s is a miss" % filename
+            print("  %s is a miss" % filename)
 
     def do_header(self, header):
         load_data(header)

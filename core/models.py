@@ -55,7 +55,7 @@ class StatisticCacheManager(models.Manager):
             'users': users,
         }
 
-        for slug, value in statistic_schema.iteritems():
+        for slug, value in statistic_schema.items():
             statistic = StatisticCache.objects.get_or_create(
                 slug=slug)[0]
             statistic.count = value

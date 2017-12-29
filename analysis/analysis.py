@@ -1,11 +1,11 @@
 import os
 import re
 import gzip
-import urllib2
+import urllib.request, urllib.error
 import shutil
 
 from easydict import EasyDict
-from funcy import log_durations, imap, memoize, cat, re_all
+from funcy import log_durations, memoize, cat, re_all
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
@@ -70,7 +70,7 @@ def perform_analysis(analysis, debug=False):
     logger.info('Loading data and calculating fold changes for %s', analysis.analysis_name)
     with log_durations(logger.debug, 'Load/fold for %s' % analysis.analysis_name):
         gses = (load_gse(df, gse_name) for gse_name in sorted(df.gse_name.unique()))
-        fold_changes = pd.concat(imap(get_fold_change_analysis, gses))
+        fold_changes = pd.concat(map(get_fold_change_analysis, gses))
         if fold_changes.empty:
             logger.error("FAIL Got empty fold changes")
             return
@@ -216,8 +216,8 @@ def get_matrix_filename(gse_name, gpl_name):
     for filename in filenames:
         logger.info('Loading URL %s...' % (SERIES_MATRIX_URL + filename))
         try:
-            res = urllib2.urlopen(SERIES_MATRIX_URL + filename)
-        except urllib2.URLError:
+            res = urllib.request.urlopen(SERIES_MATRIX_URL + filename)
+        except urllib.error.URLError:
             pass
         else:
             mirror_filename = os.path.join(SERIES_MATRIX_MIRROR, filename)

@@ -1,4 +1,4 @@
-from funcy import group_by, cached_property, partial, walk_keys, map, first, where
+from funcy import group_by, cached_property, partial, walk_keys, lmap, first, where
 from datatableview.views import DatatableView
 from datatableview.utils import DatatableOptions
 from handy.decorators import render_to, paginate
@@ -29,8 +29,8 @@ class AnnotationsSearchOptions(DatatableOptions):
         filters = group_by(r'^(GSE|GPL|[Tt]ag=|valid|novalid)', options['search'].split())
         options['search'] = ' '.join(filters.pop(None, []))
 
-        filters = walk_keys(unicode.lower, filters)
-        filters['tag'] = map(r'^[Tt]ag=(.*)', filters.pop('tag=', []))
+        filters = walk_keys(str.lower, filters)
+        filters['tag'] = lmap(r'^[Tt]ag=(.*)', filters.pop('tag=', []))
         options['filters'] = filters
 
         return options
@@ -128,9 +128,9 @@ class SampleAnnotations(DatatableView):
     @staticmethod
     def get_source_title(src):
         if src.created_by:
-            return u'%s %s' % (src.created_by.first_name, src.created_by.last_name)
+            return '%s %s' % (src.created_by.first_name, src.created_by.last_name)
         else:
-            return u'?'
+            return '?'
 
     def get_extra(self, src, instance, *args, **kwargs):
         if not hasattr(self, 'extra_data'):
@@ -170,7 +170,7 @@ def ignore(request, series_annotation_id):
 
 # Snapshots
 
-import urllib
+import urllib.request, urllib.parse, urllib.error  # noqa
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -183,7 +183,7 @@ from tags.models import Snapshot
 def snapshot(request):
     action = request.POST.get('action')
     search = request.POST.get('search')
-    next_url = '%s?%s' % (request.POST.get('next'), urllib.urlencode({'search': search}))
+    next_url = '%s?%s' % (request.POST.get('next'), urllib.parse.urlencode({'search': search}))
 
     if action not in {'make', 'add', 'remove', 'delete', 'freeze'}:
         return HttpResponseForbidden('Unknown action %s' % action)

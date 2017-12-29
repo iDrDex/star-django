@@ -47,7 +47,6 @@ class ReactivateForm(forms.Form):
         try:
             user = User._default_manager.get(email__iexact=email)
         except User.DoesNotExist:
-            print 'dne'
             raise ValidationError('There is no registered user with this email.')
         if user.is_active:
             raise ValidationError('User with this email is already active. Just log in.')
@@ -55,7 +54,7 @@ class ReactivateForm(forms.Form):
         return email
 
 def format_username(u):
-    text = u'{first_name} {last_name}'.format(**u)
+    text = '{first_name} {last_name}'.format(**u)
     return text if text != ' ' else u['pk']
 
 @render_to(template='stats/stats.j2')

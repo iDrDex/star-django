@@ -15,7 +15,7 @@ import six
 import cgi
 import json as _json
 from funcy import decorator, chain, select_values
-from funcy import cached_property, rcompose, memoize, iffy, isa, partial, walk_values, flip
+from funcy import cached_property, rcompose, memoize, iffy, isa, partial, walk_values, flip, lmap
 
 import django
 from django import forms
@@ -61,7 +61,7 @@ def _extend_queryset_class(base):
                 it = self._iterable_class(self)
             else:
                 it = self.iterator()
-            self._result_cache = map(rcompose(*self._mappers), it)
+            self._result_cache = lmap(rcompose(*self._mappers), it)
 
             # Fill in the rest
             base._fetch_all(self)
@@ -177,7 +177,7 @@ class JSONField(forms.Field):
         try:
             return _json.loads(value)
         except ValueError as e:
-            raise ValidationError(unicode(e))
+            raise ValidationError(str(e))
 
 
 def show_form(form, action=None, view=None):

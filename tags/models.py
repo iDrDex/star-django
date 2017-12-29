@@ -2,7 +2,7 @@ import re
 from collections import OrderedDict
 from decimal import Decimal
 import json
-from funcy import icat, walk_keys
+from funcy import cat, walk_keys
 
 from django.db import models
 from django.db.models import Count
@@ -395,7 +395,7 @@ class Snapshot(models.Model):
             return False, "This search is not in"
 
         self.metadata['searches'].pop(search)
-        self.metadata['ids'] = list(set(icat(s['ids'] for s in self.metadata['searches'].values())))
+        self.metadata['ids'] = list(set(cat(s['ids'] for s in self.metadata['searches'].values())))
         return True, ""
 
     def freeze(self):
@@ -437,7 +437,7 @@ class Snapshot(models.Model):
 
 
 import csv
-from cStringIO import StringIO
+from io import StringIO
 from contextlib import closing
 
 def csv_dumps(data):

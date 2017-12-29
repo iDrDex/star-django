@@ -1,9 +1,9 @@
-from funcy import *  # noqa
+from funcy import group_values, walk_values, flatten
 from datetime import datetime, timedelta
 from django.core.management import BaseCommand
 from core.models import HistoricalCounter
 from legacy.models import Series
-from initialize_historical_counters import ceil_date, MONTHS, CURRENT_DATE, START_DATE, get_value
+from .initialize_historical_counters import ceil_date, MONTHS, CURRENT_DATE, START_DATE, get_value
 
 
 def convert_date(attr):

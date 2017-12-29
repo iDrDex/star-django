@@ -1,4 +1,4 @@
-from funcy import (zipdict, isums, walk_values, count_by, group_values,
+from funcy import (zipdict, sums, walk_values, count_by, group_values,
                    first, join_with, merge, walk_keys, silent)
 from collections import defaultdict
 from tqdm import tqdm
@@ -32,7 +32,7 @@ CURRENT_DATE = ceil_date(datetime.now())
 
 def accumulate(data):
     dates, counts = zip(*sorted(data.items()))
-    return zipdict(dates, isums(counts))
+    return zipdict(dates, sums(counts))
 
 def get_value(keys, index):
     def _getter(item):

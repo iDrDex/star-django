@@ -52,10 +52,10 @@ class SampleAnnotationValidator(serializers.Serializer):
     annotations = serializers.JSONField()
 
     def validate_annotations(self, annotations):
-        if not all(isinstance(v, (unicode, str)) for v in annotations.values()):
+        if not all(isinstance(v, str) for v in list(annotations.values())):
             raise serializers.ValidationError("Annotations should be a dict of GSMs -> tag values")
 
-        if not all(isinstance(v, (unicode, str, int)) for v in annotations.keys()):
+        if not all(isinstance(v, (str, int)) for v in list(annotations.keys())):
                 raise serializers.ValidationError(
                     "Annotations should be a dict of GSMs -> tag values")
 

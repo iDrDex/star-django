@@ -2,7 +2,7 @@ import json
 import math
 import gzip
 import zlib
-from cStringIO import StringIO
+from io import StringIO
 
 from funcy import cached_property, func_partial
 import pandas as pd
@@ -79,7 +79,7 @@ class S3Field(S3BaseField):
         if isinstance(value, Resource):
             return value
 
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             return Resource(json.loads(value))
 
         raise ValidationError('Wrong resource description')
@@ -112,13 +112,13 @@ class S3MultiField(S3BaseField):
         if isinstance(value, list):
             return value
 
-        if isinstance(value, basestring):
-            return map(Resource, json.loads(value))
+        if isinstance(value, str):
+            return list(map(Resource, json.loads(value)))
 
         raise ValidationError('Wrong resource description')
 
     def from_db_value(self, value, expression, connection, context):
-        return map(Resource, json.loads(value))
+        return list(map(Resource, json.loads(value)))
 
     def get_prep_value(self, value):
         return json.dumps(value)

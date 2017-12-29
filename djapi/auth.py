@@ -53,7 +53,7 @@ def user_passes_test(test, message='Permission required', status=403):
         try:
             attempt_auth(call.request)
         except PermissionDenied as e:
-            return json(status, detail=unicode(e))
+            return json(status, detail=str(e))
         # Check test
         if test(call.request.user):
             return call()

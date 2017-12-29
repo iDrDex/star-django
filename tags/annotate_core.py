@@ -2,7 +2,7 @@ from collections import defaultdict
 import math
 from operator import attrgetter
 
-from funcy import group_by, project, first, cat, distinct, chain
+from funcy import group_by, project, first, lcat, ldistinct, chain
 from django.db import transaction
 import numpy as np
 from statsmodels.stats.inter_rater import fleiss_kappa, cohens_kappa
@@ -22,7 +22,7 @@ def save_annotation(data):
 
     sample_to_platform = dict(Sample.objects.filter(id__in=annotations)
                                     .values_list('id', 'platform_id'))
-    groups = group_by(lambda (id, _): sample_to_platform[id], annotations.items())
+    groups = group_by(lambda pair: sample_to_platform[pair[0]], annotations.items())
 
     for platform_id, annotations in groups.items():
         canonical = SeriesAnnotation.objects.create(
@@ -201,7 +201,7 @@ def reschedule_validation(canonical):
 def _cohens_kappa(annos1, annos2):
     assert set(s.sample_id for s in annos1) == set(s.sample_id for s in annos2)
 
-    categories = distinct(sv.annotation for sv in chain(annos1, annos2))
+    categories = ldistinct(sv.annotation for sv in chain(annos1, annos2))
     category_index = {c: i for i, c in enumerate(categories)}
 
     table = np.zeros((len(categories), len(categories)))
@@ -214,8 +214,8 @@ def _cohens_kappa(annos1, annos2):
 
 
 def _fleiss_kappa(sample_sets):
-    all_samples_annos = cat(sample_sets)
-    categories = distinct(sv.annotation for sv in all_samples_annos)
+    all_samples_annos = lcat(sample_sets)
+    categories = ldistinct(sv.annotation for sv in all_samples_annos)
     category_index = {c: i for i, c in enumerate(categories)}
 
     stats = defaultdict(lambda: [0] * len(categories))

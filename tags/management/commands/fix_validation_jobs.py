@@ -14,11 +14,11 @@ class Command(BaseCommand):
 
         missing = need_jobs - has_jobs
         if missing:
-            print('> Going to create %d validation jobs...' % len(missing))
+            print(('> Going to create %d validation jobs...' % len(missing)))
             for pk in tqdm(missing):
                 ValidationJob.objects.create(annotation_id=pk)
 
         extra = has_jobs - need_jobs
         if extra:
-            print('> Going to delete %d validation jobs...' % len(extra))
+            print(('> Going to delete %d validation jobs...' % len(extra)))
             ValidationJob.objects.filter(annotation__in=extra).delete()

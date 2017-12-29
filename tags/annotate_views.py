@@ -2,7 +2,7 @@ import json
 import random
 from datetime import timedelta
 
-from funcy import project, takewhile, without, distinct, merge, icat
+from funcy import project, takewhile, lwithout, distinct, merge, cat
 from handy.decorators import render_to
 
 from django.core.urlresolvers import reverse
@@ -47,7 +47,7 @@ def annotate(request):
                 return redirect(reverse(annotate) + '?series_id={0}'.format(data['series_id']))
 
         except AnnotationError as err:
-            messages.error(request, unicode(err))
+            messages.error(request, str(err))
             return redirect(request.get_full_path())
 
     series_id = request.GET.get('series_id')
@@ -116,7 +116,7 @@ def validate(request):
                 'Validation task timed out. Someone else could have done it.')
             return redirect(request.get_full_path())
         except AnnotationError as err:
-            messages.error(request, unicode(err))
+            messages.error(request, str(err))
             return redirect(request.get_full_path())
 
     try:
@@ -185,7 +185,7 @@ def on_demand_validate(request):
             return redirect(on_demand_result, raw_annotation.id)
 
         except AnnotationError as err:
-            messages.error(request, unicode(err))
+            messages.error(request, str(err))
             return redirect(request.get_full_path())
     else:
         # Do not use session unless we have referer
@@ -258,7 +258,7 @@ def competence(request):
         try:
             save_validation(canonical_id, data)
         except AnnotationError as err:
-            messages.error(request, unicode(err))
+            messages.error(request, str(err))
         return redirect(competence)
 
     # Check how many tries and progress = number of successful tries in a row
@@ -367,7 +367,7 @@ def remove_constant_fields(rows):
 def fetch_annotation_data(series_id, platform_id=None, blind=['id']):
     samples = fetch_samples(series_id, platform_id)
     samples = remove_constant_fields(samples)
-    columns = without(get_samples_columns(samples), *blind)
+    columns = lwithout(get_samples_columns(samples), *blind)
     return samples, columns
 
 
@@ -376,16 +376,16 @@ def fetch_samples(series_id, platform_id=None):
     if platform_id is not None:
         qs = qs.filter(platform=platform_id)
 
-    return [merge(d, d['attrs']) for d in qs.values()]
+    return [merge(d, d['attrs']) for d in list(qs.values())]
 
 
 def get_samples_columns(samples):
     preferred = ['id', 'description', 'characteristics_ch1', 'characteristics_ch2']
     exclude = ['attrs', 'supplementary_file', 'geo_accession']
 
-    columns = distinct(icat(s.keys() for s in samples))
-    return lift(preferred, without(columns, *exclude))
+    columns = distinct(cat(s.keys() for s in samples))
+    return lift(preferred, lwithout(columns, *exclude))
 
 
 def lift(preferred, seq):
-    return [col for col in preferred if col in seq] + without(seq, *preferred)
+    return [col for col in preferred if col in seq] + lwithout(seq, *preferred)

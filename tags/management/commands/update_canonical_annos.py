@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
         def info(type, value, tb):
             traceback.print_exception(type, value, tb)
-            print
+            print()
             ipdb.pm()
         sys.excepthook = info
 

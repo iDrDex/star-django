@@ -142,7 +142,7 @@ class AnnotateForm(forms.Form):
     def clean_annotations(self):
         data = self.cleaned_data['annotations']
         if not isinstance(data, dict) or \
-                not all(isinstance(k, basestring) and isinstance(v, basestring)
+                not all(isinstance(k, str) and isinstance(v, str)
                         for k, v in data.items()):
             raise ValidationError("Annotations should be a dict of GSMs -> tag values")
 
@@ -196,6 +196,6 @@ def annotate(request, data):
         else:
             save_annotation(data)
     except AnnotationError as e:
-        return api.json(409, detail=unicode(e))
+        return api.json(409, detail=str(e))
 
     return HttpResponse(status=204)

@@ -1,5 +1,4 @@
-from __future__ import unicode_literals
-from funcy import distinct, keep, re_all, without
+from funcy import ldistinct, keep, re_all, lwithout
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -57,7 +56,7 @@ class Series(models.Model):
 
     def save(self, **kwargs):
         # Only set specie when it's non-controversial
-        taxid = distinct(keep(self.attrs.get, ['platform_taxid', 'sample_taxid']))
+        taxid = ldistinct(keep(self.attrs.get, ['platform_taxid', 'sample_taxid']))
         if len(taxid) == 1:
             self.specie = SPECIES.get(taxid[0])
         else:
@@ -124,15 +123,15 @@ class Analysis(models.Model):
 
     def __unicode__(self):
         if self.modifier_query:
-            return u'%s: case=%s control=%s modifier=%s' \
+            return '%s: case=%s control=%s modifier=%s' \
                 % (self.analysis_name, self.case_query, self.control_query, self.modifier_query)
         else:
-            return u'%s: case=%s control=%s' \
+            return '%s: case=%s control=%s' \
                 % (self.analysis_name, self.case_query, self.control_query)
 
     def results_df(self):
         qs = MetaAnalysis.objects.filter(analysis=self)
-        fieldnames = without([f.name for f in MetaAnalysis._meta.fields], 'id', 'analysis')
+        fieldnames = lwithout([f.name for f in MetaAnalysis._meta.fields], 'id', 'analysis')
         return qs.to_dataframe(fieldnames, index='mygene_sym')
 
 

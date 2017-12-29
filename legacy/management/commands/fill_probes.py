@@ -9,7 +9,7 @@ import threading
 import gzip
 import time
 from itertools import compress
-from cStringIO import StringIO
+from io import StringIO
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
@@ -18,7 +18,9 @@ from django.utils import timezone
 from django.conf import settings
 from django.db.models import Q
 
-from funcy import *  # noqa
+from funcy import re_find, re_test, re_iter, group_values, walk_values, \
+    decorator, contextmanager, cached_property, retry, suppress, log_errors, print_durations, \
+    take, cat, lcat, keep, lkeep, remove, lremove, lpluck, ldistinct, chunks
 from cacheops import file_cache
 from termcolor import cprint
 from ftptool import FTPHost
@@ -60,7 +62,7 @@ class Command(BaseCommand):
 
             def info(type, value, tb):
                 traceback.print_exception(type, value, tb)
-                print
+                print()
                 ipdb.pm()
             sys.excepthook = info
 
@@ -97,10 +99,10 @@ def fill_probes(platform_id):
     annot_file = '/pub/geo/DATA/annotation/platforms/%s.annot.gz' % gpl_name
     family_file = '/pub/geo/DATA/SOFT/by_platform/%s/%s_family.soft.gz' % (gpl_name, gpl_name)
     files = [annot_file, family_file]
-    tables = map(peek_platform, files)
+    tables = list(map(peek_platform, files))
     # Skip empty
     files = list(compress(files, tables))
-    tables = keep(tables)
+    tables = lkeep(tables)
 
     # TODO: check other supplementary files formats
     supplementary_dir = '/pub/geo/DATA/supplementary/platforms/%s/' % gpl_name
@@ -110,7 +112,7 @@ def fill_probes(platform_id):
     files.extend(supplementary_files)
     tables.extend(decompress(download('%s%s' % (supplementary_dir, f)))
                   for f in supplementary_files)
-    platform.stats['files'] = keep(files)
+    platform.stats['files'] = lkeep(files)
 
     if not any(tables):
         cprint('No data for %s' % gpl_name, 'red')
@@ -147,7 +149,7 @@ def fill_probes(platform_id):
                 'found': len(new_matches),
             })
 
-            df = df.drop(pluck('probe', new_matches))
+            df = df.drop(lpluck('probe', new_matches))
             if df.empty:
                 break
 
@@ -229,7 +231,7 @@ TRASH_COLUMS = {
 
 def newcols(df):
     known_cols = set(cat(cols for _, cols in SCOPE_COLUMNS)) | TRASH_COLUMS
-    return remove(known_cols, df.columns)
+    return lremove(known_cols, df.columns)
 
 
 def mygene_fetch(platform, probes, scopes):
@@ -239,18 +241,18 @@ def mygene_fetch(platform, probes, scopes):
         scopes = "accession"
 
     def extract_queries(lines):
-        lines = iremove(r'^(IMAGE:\d+|--[\w>-]+)$', lines)
-        queries = icat(re_iter(r'[\w+.-]+', l) for l in lines)
-        queries = iremove(r'_at$|^\d+-\d+$', queries)  # No such thing
+        lines = remove(r'^(IMAGE:\d+|--[\w>-]+)$', lines)
+        queries = cat(re_iter(r'[\w+.-]+', l) for l in lines)
+        queries = remove(r'_at$|^\d+-\d+$', queries)  # No such thing
         # Clean unicode for mygene
         # http://stackoverflow.com/questions/15321138/removing-unicode-u2026-like-characters
         return [q.decode('unicode_escape').encode('ascii', 'ignore') for q in queries]
 
-    _by_probe = group_values(probes.iteritems())
+    _by_probe = group_values(probes.items())
     queries_by_probe = walk_values(extract_queries, _by_probe)
 
     # Collect all possible queries to make a single request to mygene
-    queries = set(icat(queries_by_probe.itervalues()))
+    queries = set(cat(queries_by_probe.values()))
 
     if not queries:
         return []
@@ -259,8 +261,8 @@ def mygene_fetch(platform, probes, scopes):
     # Form results into rows
     results = []
     dups = 0
-    for probe, queries in queries_by_probe.iteritems():
-        matches = distinct(keep(mygenes.get, queries))
+    for probe, queries in queries_by_probe.items():
+        matches = ldistinct(keep(mygenes.get, queries))
         # Skip dups
         if len(matches) > 1:
             dups += 1
@@ -274,7 +276,7 @@ def mygene_fetch(platform, probes, scopes):
     return results
 
 
-import cPickle as pickle
+import pickle
 import redis
 redis_client = redis.StrictRedis.from_url('redis://localhost/2')
 
@@ -291,7 +293,7 @@ for scopes, _ in SCOPE_COLUMNS:
         PREFIXES[scopes] = prefix
 
 def mget(keys):
-    return cat(redis_client.mget(chunk) for chunk in chunks(10000, keys))
+    return lcat(redis_client.mget(chunk) for chunk in chunks(10000, keys))
 
 
 @retry(50, errors=requests.HTTPError, timeout=60)
@@ -302,11 +304,11 @@ def _mygene_fetch(queries, scopes, specie):
     prefix = '%s-%s:' % (SPECIE_PREFIXES[specie], PREFIXES[scopes])
     keys = [prefix + q for q in queries]
     res = {k: pickle.loads(v) if v else ''
-           for k, v in izip(queries, mget(keys))
+           for k, v in zip(queries, mget(keys))
            if v is not None}
     if res:
         queries = set(queries) - set(res)
-        print('Got %d from cache, %d queries left' % (len(res), len(queries)))
+        print(('Got %d from cache, %d queries left' % (len(res), len(queries))))
 
     if queries:
         fields = ['entrezgene', 'symbol']
@@ -319,13 +321,13 @@ def _mygene_fetch(queries, scopes, specie):
         res.update(new)
         # Cache results and fails
         pipe = redis_client.pipeline(transaction=False)
-        for k, v in new.iteritems():
+        for k, v in new.items():
             pipe.setex(prefix + k, CACHE_TIMEOUT, pickle.dumps(v, -1))
         for k in queries - set(new):
             pipe.setex(prefix + k, CACHE_TIMEOUT, '')
         pipe.execute()
 
-    res = {k: v for k, v in res.iteritems() if v != ''}
+    res = {k: v for k, v in res.items() if v != ''}
     cprint('-> Got %d matches' % len(res), 'yellow')
     return res
 
@@ -358,14 +360,14 @@ def get_dna_probes(platform, probes):
                  -minScore=0
                  -minIdentity=0
                  {probes_fa} {probes_psl}""".format(**locals())
-        print "BLATTING RefSeq mRNAs..."
+        print("BLATTING RefSeq mRNAs...")
         with print_durations('blatting ' + platform.gpl_name):
             output = subprocess.check_call(cmd.split(), stdout=sys.stdout, stderr=sys.stderr)
             psl_written = True
 
     # Parse results
     try:
-        print "Parsing %s psl..." % platform.gpl_name
+        print("Parsing %s psl..." % platform.gpl_name)
         with print_durations('parsing ' + platform.gpl_name):
             parser = SearchIO.parse(probes_psl, "blat-psl")
             data = {}
@@ -393,7 +395,7 @@ def _ensure_blat():
     if not os.path.isfile(blat_file):
         cprint('Downloading blat...', 'blue')
         http_to_file(LINUX_BLAT, blat_file)
-        os.chmod(blat_file, 0755)
+        os.chmod(blat_file, 0o755)
     return blat_file
 
 
@@ -416,7 +418,7 @@ def http_to_file(url, filename):
 
 
 def read_table(table, filename):
-    print '  reading %s' % filename
+    print('  reading %s' % filename)
     _original_table = table
     # Strip leading comments
     if table[0] in '#^':
@@ -458,7 +460,7 @@ shared = Shared()
 @decorator
 def ftp_retry(call):
     tries = 50
-    for attempt in xrange(tries):
+    for attempt in range(tries):
         try:
             try:
                 return call()
@@ -496,7 +498,7 @@ def ignore_no_file(call, default=None):
 @log_errors(lambda msg: cprint(msg, 'red'), stack=False)
 @ignore_no_file(default=((), ()))
 def listdir(dirname):
-    print dirname
+    print(dirname)
     return shared.conn.listdir(dirname)
 
 
@@ -504,7 +506,7 @@ def listdir(dirname):
 @ftp_retry
 @log_errors(lambda msg: cprint(msg, 'red'), stack=False)
 def download(filename):
-    print filename
+    print(filename)
     return shared.conn.file_proxy(filename).download_to_str()
 
 
@@ -516,7 +518,7 @@ def peek_platform(filename):
     """
     Peek into gzipped platform file over ftp.
     """
-    print filename
+    print(filename)
     with open_ftp_file(filename) as f:
         fd = GzipReader(f)
         return extract_platform_table(fd)

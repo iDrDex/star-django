@@ -2,8 +2,9 @@ import re
 import pickle
 from operator import itemgetter
 from collections import defaultdict
+from functools import reduce
 
-from funcy import distinct, imapcat, join, keep, silent, split, map
+from funcy import ldistinct, mapcat, join, lkeep, silent, lsplit, lmap
 from handy.decorators import render_to
 from handy.shortcuts import paginate
 from handy.utils import get_or_none
@@ -33,12 +34,12 @@ def search(request):
     if not q:
         return {'series': None}
 
-    exclude_tags = keep(silent(int), request.GET.getlist('exclude_tags'))
+    exclude_tags = lkeep(silent(int), request.GET.getlist('exclude_tags'))
     series_tags, tag_series, tag_ids = series_tags_data()
 
     # Parse query
     q_string, q_tags = _parse_query(q)
-    q_tags, wrong_tags = split(lambda t: t.lower() in tag_ids, q_tags)
+    q_tags, wrong_tags = lsplit(lambda t: t.lower() in tag_ids, q_tags)
     if wrong_tags:
         message = 'Unknown tag%s %s.' % ('s' if len(wrong_tags) > 1 else '', ', '.join(wrong_tags))
         messages.warning(request, message)
@@ -51,7 +52,7 @@ def search(request):
         qs = qs.filter(specie=specie)
 
     if q_tags:
-        q_tag_ids = keep(tag_ids.get(t.lower()) for t in q_tags)
+        q_tag_ids = lkeep(tag_ids.get(t.lower()) for t in q_tags)
         include_series = reduce(set.intersection, (tag_series[t] for t in q_tag_ids))
         if include_series:
             qs = qs.filter(id__in=include_series)
@@ -62,7 +63,7 @@ def search(request):
             return {'series': []}
 
     series_ids = qs.values_list('id', flat=True).order_by()
-    tags = distinct(imapcat(series_tags, series_ids), key=itemgetter('id'))
+    tags = ldistinct(mapcat(series_tags, series_ids), key=itemgetter('id'))
 
     if exclude_tags:
         exclude_series = join(tag_series[t] for t in exclude_tags)
@@ -85,8 +86,8 @@ def search(request):
 
 
 def _parse_query(q):
-    tags, words = split(r'^tag:', q.split())
-    tags = map(r'^tag:(.*)', tags)
+    tags, words = lsplit(r'^tag:', q.split())
+    tags = lmap(r'^tag:(.*)', tags)
     return ' '.join(words), tags
 
 
