@@ -6,7 +6,7 @@ djangorestframework==3.5.3
 django-rest-swagger==2.1.1
 django-filter==1.1.0 # Needs updating with Django
 fabric>=1.13.2
-funcy>=1.7.5,<2.0
+funcy>=1.10,<2.0
 handy==0.6
 honcho==0.6.4
 Jinja2==2.10
