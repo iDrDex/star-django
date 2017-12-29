@@ -1,4 +1,4 @@
-dj-database-url==0.3.0
+dj-database-url==0.4.2
 Django==1.11.8
 django-jinja==2.4.1
 django-jinja-bootstrap-form==4.0.3
@@ -10,7 +10,7 @@ funcy>=1.7.5,<2.0
 handy==0.6
 honcho==0.6.4
 Jinja2==2.10
-psycopg2==2.6
+psycopg2==2.7.3.2
 redis==2.10.6
 celery==3.1.17
 tqdm==4.11.2
@@ -25,7 +25,7 @@ numexpr==2.6.2
 scipy==0.16.0
 statsmodels==0.8.0
 django_pandas==0.4.5
-easydict==1.6
+easydict==1.7
 # TODO: switch to proper release once it's out
 django-datatable-view-compat==0.8.2
 boto==2.38.0
