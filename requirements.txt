@@ -1,3 +1,5 @@
+coreapi==2.3.3
+coreschema==0.0.4
 dj-database-url==0.4.2
 Django==1.11.8
 django-jinja==2.4.1
