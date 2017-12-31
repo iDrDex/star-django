@@ -20,7 +20,6 @@ from django.db.models import Q
 
 from funcy import *  # noqa
 from cacheops import file_cache
-from cacheops.utils import debug_cache_key
 from termcolor import cprint
 from ftptool import FTPHost
 from gzip_reader import GzipReader
@@ -33,6 +32,7 @@ from legacy.models import Platform, PlatformProbe
 
 SOCKET_TIMEOUT = 20
 CACHE_TIMEOUT = 4 * 24 * 60 * 60
+CACHEOPS_DEBUG = True  # Makes function cache keys not depend on line no
 
 GEO_HOST = 'ftp.ncbi.nih.gov'
 LINUX_BLAT = 'http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/blat/blat'
@@ -491,7 +491,7 @@ def ignore_no_file(call, default=None):
         raise
 
 
-@file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key)
+@file_cache.cached(timeout=CACHE_TIMEOUT)
 @ftp_retry
 @log_errors(lambda msg: cprint(msg, 'red'), stack=False)
 @ignore_no_file(default=((), ()))
@@ -500,7 +500,7 @@ def listdir(dirname):
     return shared.conn.listdir(dirname)
 
 
-@file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key)
+@file_cache.cached(timeout=CACHE_TIMEOUT)
 @ftp_retry
 @log_errors(lambda msg: cprint(msg, 'red'), stack=False)
 def download(filename):
@@ -508,7 +508,7 @@ def download(filename):
     return shared.conn.file_proxy(filename).download_to_str()
 
 
-@file_cache.cached(timeout=CACHE_TIMEOUT, key_func=debug_cache_key)
+@file_cache.cached(timeout=CACHE_TIMEOUT)
 @ftp_retry
 @log_errors(lambda msg: cprint(msg, 'red'), stack=False)
 @ignore_no_file()
