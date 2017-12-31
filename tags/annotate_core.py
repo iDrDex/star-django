@@ -165,7 +165,7 @@ def update_canonical(canonical_pk):
         or first(a for a in raw_annos if a.best_kappa == best_cohens_kappa and a.best_kappa > 0) \
         or first(raw_annos)
     if source and not is_samples_concordant(canonical, source):
-        canonical.sample_annotations.delete()
+        canonical.sample_annotations.all().delete()
         canonical.fill_samples([(s.sample_id, s.annotation)
                                 for s in source.sample_annotations.all()])
 
