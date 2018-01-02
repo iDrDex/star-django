@@ -6,7 +6,6 @@ import socket
 import ftplib
 import threading
 import time
-from optparse import make_option
 from Queue import PriorityQueue
 from cStringIO import StringIO
 
@@ -37,24 +36,12 @@ command_options = {}
 class Command(BaseCommand):
     help = 'Updates series, series attributes, platforms, samples and samples attributes \n' \
            'from series matrices files hosted on GEO ftp.'
-    option_list = BaseCommand.option_list + (
-        make_option(
-            '-n',
-            action='store', type='int', dest='threads',
-            default=DEFAULT_NUMBER_OF_THREADS,
-            help='Number of threads'
-        ),
-        make_option(
-            '--cond',
-            action='store', dest='cond',
-            help='Update series satisfying condition'
-        ),
-        make_option(
-            '--ipdb',
-            action='store_true', dest='ipdb', default=False,
-            help='Stop in ipdb on error'
-        ),
-    )
+
+    def add_arguments(self, parser):
+        parser.add_argument('-n', '--threads', type=int, help='Number of threads',
+                            default=DEFAULT_NUMBER_OF_THREADS)
+        parser.add_argument('--cond', help='Update series satisfying condition')
+        parser.add_argument('--ipdb', action='store_true', help='Stop in ipdb on error')
 
     def handle(self, **options):
         command_options.update(options)
