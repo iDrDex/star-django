@@ -1,7 +1,5 @@
-from optparse import make_option
-
 from funcy import project
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 from legacy.models import Analysis
 from analysis.tasks import analysis_task
@@ -11,38 +9,21 @@ class Command(BaseCommand):
     args = 'analysis_name'
     help = 'Make new analysis'
 
-    option_list = BaseCommand.option_list + (
-        make_option(
-            '--desc',
-            action='store', type='string', dest='description', default='',
-            help='Analysis description'
-        ),
-        make_option(
-            '--specie',
-            action='store', type='string', dest='specie', default='',
-            help='Specie'
-        ),
-        make_option(
-            '--case',
-            action='store', type='string', dest='case_query',
-            help='Case query (required)'
-        ),
-        make_option(
-            '--control',
-            action='store', type='string', dest='control_query',
-            help='Control query (required)'
-        ),
-        make_option(
-            '--modifier',
-            action='store', type='string', dest='modifier_query', default='',
-            help='Modifier query'
-        ),
-    )
+    def add_arguments(self, parser):
+        parser.add_argument('analysis_name', help='Analysis name')
+        parser.add_argument('--desc', dest='description', default='', help='Analysis description')
+        parser.add_argument('--specie', default='', help='Specie')
+
+        # Conditions
+        parser.add_argument('--case', dest='case_query', default='', required=True,
+                            help='Case query')
+        parser.add_argument('--control', dest='control_query', default='', required=True,
+                            help='Control query')
+        parser.add_argument('--modifier', dest='modifier_query', default='',
+                            help='Modifier query')
 
     def handle(self, *args, **options):
-        if not args:
-            raise CommandError('Specify analysis name')
-        analysis_name = args[0]
-        fields = ['description', 'specie', 'case_query', 'control_query', 'modifier_query']
-        analysis = Analysis.objects.create(analysis_name=analysis_name, **project(options, fields))
+        fields = ['analysis_name', 'description', 'specie',
+                  'case_query', 'control_query', 'modifier_query']
+        analysis = Analysis.objects.create(**project(options, fields))
         analysis_task(analysis.pk)
