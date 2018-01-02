@@ -165,7 +165,7 @@ def fill_probes(platform_id):
             platform.verdict = 'ok'
             platform.save()
 
-            platform.probes.delete()
+            platform.probes.all().delete()
             PlatformProbe.objects.bulk_create([
                 PlatformProbe(platform=platform, **probe_info)
                 for probe_info in mygene_probes
