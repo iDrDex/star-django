@@ -255,6 +255,11 @@ LOGGING = {
         },
         'requests': {
             'handlers': ['file'],
+            'levelname': 'ERROR',
+            'propagate': True,
+        },
+        'urllib3': {
+            'handlers': ['file'],
             'level': 'ERROR',
             'propagate': True,
         },

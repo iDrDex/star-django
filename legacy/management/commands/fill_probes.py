@@ -9,7 +9,7 @@ import threading
 import gzip
 import time
 from itertools import compress
-from io import StringIO
+import io
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
@@ -24,7 +24,6 @@ from funcy import re_find, re_test, re_iter, group_values, walk_values, \
 from cacheops import file_cache
 from termcolor import cprint
 from ftptool import FTPHost
-from gzip_reader import GzipReader
 import pandas as pd
 import mygene
 import requests
@@ -244,6 +243,7 @@ def mygene_fetch(platform, probes, scopes):
         lines = remove(r'^(IMAGE:\d+|--[\w>-]+)$', lines)
         queries = cat(re_iter(r'[\w+.-]+', l) for l in lines)
         queries = remove(r'_at$|^\d+-\d+$', queries)  # No such thing
+        return queries
         # Clean unicode for mygene
         # http://stackoverflow.com/questions/15321138/removing-unicode-u2026-like-characters
         return [q.decode('unicode_escape').encode('ascii', 'ignore') for q in queries]
@@ -429,7 +429,7 @@ def read_table(table, filename):
 
     # Try reading table
     try:
-        df = pd.read_table(StringIO(table), index_col=0, dtype=str, engine='c')
+        df = pd.read_table(io.StringIO(table), index_col=0, dtype=str, engine='c')
     except Exception as e:
         cprint('Failed to parse %s: %s' % (filename, e), 'red')
         dump_error('read_table', {filename: _original_table})
@@ -480,7 +480,7 @@ def ftp_retry(call):
 
 
 def error_persistent(e):
-    return 'No such file or directory' in e.message
+    return 'No such file or directory' in str(e)
 
 
 @decorator
@@ -488,7 +488,7 @@ def ignore_no_file(call, default=None):
     try:
         return call()
     except ftplib.Error as e:
-        if 'No such file or directory' in e.message:
+        if 'No such file or directory' in str(e):
             return default
         raise
 
@@ -518,10 +518,36 @@ def peek_platform(filename):
     """
     Peek into gzipped platform file over ftp.
     """
-    print(filename)
-    with open_ftp_file(filename) as f:
-        fd = GzipReader(f)
-        return extract_platform_table(fd)
+    with tqdmio(desc=filename) as pbar:
+        with open_ftp_file(filename) as f:
+            fd = gzip.open(pbar.wrap(f), mode='rt', encoding='utf-8')
+            return extract_platform_table(fd)
+
+
+from tqdm import tqdm
+
+
+class tqdmio(tqdm):  # noqa
+    def __init__(self, *args, **kwargs):
+        kwargs.update({'unit': 'B', 'unit_scale': True, 'unit_divisor': 1024})
+        return super().__init__(*args, **kwargs)
+
+    def wrap(self, fd):
+        return IOCounter(fd, self.update)
+
+
+class IOCounter:
+    def __init__(self, fd, update):
+        self._fd = fd
+        self._update = update
+
+    def read(self, size=-1):
+        data = self._fd.read(size)
+        self._update(len(data))
+        return data
+
+    def __getattr__(self, attr):
+        return getattr(self._fd, attr)
 
 
 @contextmanager
@@ -554,7 +580,7 @@ def extract_platform_table(fd):
 ###
 
 def decompress(content):
-    return gzip.GzipFile(fileobj=StringIO(content)).read()
+    return gzip.open(io.BytesIO(content), mode='rt', encoding='utf-8').read()
 
 
 def dump_error(name, files):

@@ -313,7 +313,7 @@ class DataRefreshThread(threading.Thread):
 
 # Low level utilities
 
-from gzip_reader import GzipReader
+import gzip
 
 @file_cache.cached(timeout=CACHE_TIMEOUT)
 def peek_matrix(host, filename):
@@ -326,7 +326,7 @@ def peek_matrix(host, filename):
 
     ftp_conn.voidcmd('TYPE I')
     bin_conn = ftp_conn.transfercmd("RETR %s" % filename)
-    fd = GzipReader(bin_conn.makefile('rb'))
+    fd = gzip.open(bin_conn.makefile('rb'), mode='rt', encoding='utf-8')
 
     try:
         lines = []
@@ -344,4 +344,4 @@ def peek_matrix(host, filename):
 
 
 def error_persistent(e):
-    return isinstance(e, ftplib.error_temp) and 'No such file or directory' in e.message
+    return isinstance(e, ftplib.error_temp) and 'No such file or directory' in str(e)
