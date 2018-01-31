@@ -333,6 +333,11 @@ def _mygene_fetch(queries, scopes, specie):
 
 
 def get_dna_probes(platform, probes):
+    # Suppress a warning caused by SearchIO import
+    from Bio import BiopythonExperimentalWarning
+    import warnings
+    warnings.simplefilter('ignore', BiopythonExperimentalWarning)
+
     from Bio import SearchIO
 
     cprint('> Going to blat %d sequences' % len(probes), 'cyan')
