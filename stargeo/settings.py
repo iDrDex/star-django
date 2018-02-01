@@ -265,6 +265,11 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
+        'parso': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        }
     },
 }
 
