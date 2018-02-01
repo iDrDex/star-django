@@ -191,8 +191,10 @@ CACHEOPS = {
 }
 
 
+CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
 CELERY_TASK_TIME_LIMIT = 60 * 60 * 12
 CELERY_SEND_TASK_ERROR_EMAILS = True
+
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = os.environ.get('FROM_EMAIL', 'no-reply@stargeo.org')
