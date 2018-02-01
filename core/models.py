@@ -68,7 +68,7 @@ class StatisticCache(models.Model):
 
     objects = StatisticCacheManager()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.slug
 
 
@@ -76,5 +76,5 @@ class HistoricalCounter(models.Model):
     created_on = models.DateTimeField()
     counters = JSONField()
 
-    def __unicode__(self):
+    def __str__(self):
         return 'Counters for {0}'.format(self.created_on)

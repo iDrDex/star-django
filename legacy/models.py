@@ -121,7 +121,7 @@ class Analysis(models.Model):
     class Meta:
         db_table = 'analysis'
 
-    def __unicode__(self):
+    def __str__(self):
         if self.modifier_query:
             return '%s: case=%s control=%s modifier=%s' \
                 % (self.analysis_name, self.case_query, self.control_query, self.modifier_query)
