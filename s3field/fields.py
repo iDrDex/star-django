@@ -2,7 +2,7 @@ import json
 import math
 import gzip
 import zlib
-from io import StringIO
+from io import BytesIO
 
 from funcy import cached_property, func_partial
 import pandas as pd
@@ -45,7 +45,7 @@ class Resource(dict):
     raw = cached_property(_raw)
 
     def open(self):
-        return StringIO(self.raw)
+        return BytesIO(self.raw)
 
 
 class S3BaseField(models.TextField):
@@ -148,11 +148,11 @@ def _upload_FIELD(self, desc, field=None, lazy=False):  # noqa
 
 
 def gzip_compress(data):
-    out = StringIO()
+    out = BytesIO()
     with gzip.GzipFile(fileobj=out, mode="w") as f:
         f.write(data)
     return out.getvalue()
 
 def gzip_decompress(data):
-    with gzip.GzipFile(fileobj=StringIO(data)) as f:
+    with gzip.GzipFile(fileobj=BytesIO(data)) as f:
         return f.read()
