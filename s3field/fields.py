@@ -127,6 +127,9 @@ class S3MultiField(S3BaseField):
 def _upload_FIELD(self, desc, field=None, lazy=False):  # noqa
     if isinstance(desc, pd.DataFrame):
         desc = {'data': ops.frame_dumps(desc)}
+    if isinstance(desc['data'], str):
+        desc['data'] = desc['data'].encode()
+
     if field.compress in {True, 'zlib'}:
         desc['data'] = zlib.compress(desc['data'])
     elif field.compress == 'gzip':
