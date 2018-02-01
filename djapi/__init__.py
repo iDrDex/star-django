@@ -132,7 +132,7 @@ def catch(call, exception, status=500):
     try:
         return call()
     except exception as e:
-        return json(status, detail=e.args[0])
+        return json(status, detail=str(e.args[0]))
 
 def paginate(request, qs, per_page=None):
     offset = request.GET.get('offset', 0)
