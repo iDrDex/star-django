@@ -109,6 +109,7 @@ def log(request, analysis_id):
     offset = silent(int)(request.GET.get('offset')) or 0
 
     log_lines = redis_client.lrange('analysis:%s:log' % analysis_id, offset, -1)
+    log_lines = [l.decode() for l in log_lines]
     if request.is_ajax():
         return JsonResponse(log_lines, safe=False)
     else:
