@@ -26,8 +26,7 @@ SERIES_MATRIX_MIRROR = os.environ['SERIES_MATRIX_MIRROR']
 @log_durations(logger.debug)
 def perform_analysis(analysis, debug=False):
     logger.info('Started %s analysis', analysis.analysis_name)
-    with log_durations(logger.debug, 'Loading dataframe for %s' % analysis.analysis_name):
-        df = get_analysis_df(analysis)
+    df = get_analysis_df(analysis)
     debug and df.to_csv("%s.analysis_df.csv" % analysis.analysis_name)
 
     logger.info('Matching sources: %d' % df.groupby(['series_id', 'platform_id']).ngroups)
@@ -163,7 +162,7 @@ def get_analysis_df(analysis):
     df = df.groupby(['sample_id', 'series_id', 'platform_id', 'gsm_name', 'gse_name', 'gpl_name'],
                     as_index=False).first().fillna('')
 
-    df = df.convert_objects(convert_numeric=True)
+    df = df.apply(pd.to_numeric, errors='ignore')
 
     # Apply case/control/modifier
     if analysis.modifier_query:
@@ -175,9 +174,9 @@ def get_analysis_df(analysis):
     overlap_df = df.ix[set(case_df.index).intersection(set(control_df.index))]
 
     df['sample_class'] = None
-    df['sample_class'].ix[case_df.index] = 1
-    df['sample_class'].ix[control_df.index] = 0
-    df['sample_class'].ix[overlap_df.index] = -1
+    df.loc[case_df.index, 'sample_class'] = 1
+    df.loc[control_df.index, 'sample_class'] = 0
+    df.loc[overlap_df.index, 'sample_class'] = -1
 
     return df.dropna(subset=["sample_class"])
 
@@ -188,7 +187,7 @@ def load_gse(df, gse_name):
     gpl2data = {}
     gpl2probes = {}
 
-    samples = df[df.gse_name == gse_name]
+    samples = df[df.gse_name == gse_name].copy()
     for gpl_name in samples.gpl_name.unique():
         gpl2data[gpl_name] = get_data(gse_name, gpl_name)
         gpl2probes[gpl_name] = get_probes(gpl_name)
@@ -293,7 +292,7 @@ def getFullMetaAnalysis(fcResults, debug=False):
     debug and fcResults.to_csv("%s.fc.csv" % debug)
     all = []
     # i = 0
-    allGeneEstimates = fcResults.sort('p') \
+    allGeneEstimates = fcResults.sort_values('p') \
         .drop_duplicates(['gse', 'gpl', 'mygene_sym', 'mygene_entrez', 'subset']) \
         .dropna()
     debug and allGeneEstimates.to_csv("%s.geneestimates.csv" % debug)
@@ -336,8 +335,7 @@ class GseAnalyzer:
         if 'subset' not in samples.columns:
             samples['subset'] = "NA"
 
-        groups = samples.ix[samples.sample_class >= 0] \
-            .groupby(['subset', 'gpl_name'])
+        groups = samples[samples.sample_class >= 0].groupby(['subset', 'gpl_name'])
 
         allResults = pd.DataFrame()
 
@@ -357,8 +355,7 @@ class GseAnalyzer:
             sample_class = df.ix[data.columns].sample_class
 
             debug = debug and debug + ".%s_%s_%s" % (self.gse.name, gpl, subset)
-            table = getFoldChangeAnalysis(data, sample_class,
-                                          debug=debug)
+            table = getFoldChangeAnalysis(data, sample_class, debug=debug)
             debug and table.to_csv("%s.table.csv" % debug)
 
             if not table.empty:
