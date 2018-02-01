@@ -196,7 +196,7 @@ def load_gse(df, gse_name):
 
 
 def get_matrix_nondata_lines(inStream):
-    p = re.compile(r'^"ID_REF"')
+    p = re.compile(br'^"ID_REF"')
     for i, line in enumerate(inStream):
         if p.search(line):
             return i
