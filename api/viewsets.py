@@ -6,7 +6,7 @@ from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from funcy import walk_keys
 
-from pandas.computation.ops import UndefinedVariableError
+from pandas.core.computation.ops import UndefinedVariableError
 from rest_framework import viewsets, exceptions
 from rest_framework.decorators import list_route
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly

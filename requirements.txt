@@ -18,16 +18,17 @@ celery==3.1.17
 tqdm==4.19.5
 requests==2.18.4
 ftptool==0.7.1
-django-cacheops==4.0.3
-pandas==0.18.1
+django-cacheops==4.0.5
+pandas==0.22
 termcolor==1.1.0
-numpy==1.11.1
-numexpr==2.6.2
+numpy==1.14.0
+numexpr==2.6.2  # There is an issue with newer version
 scipy==0.16.0
 statsmodels==0.8.0
 django_pandas==0.4.5
 easydict==1.7
 # TODO: switch to proper release once it's out
+# NOTE: look at alternative - django-datatables-view
 django-datatable-view-compat==0.8.2
 boto==2.38.0
 rpy2==2.9.1

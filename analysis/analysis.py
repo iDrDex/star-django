@@ -148,7 +148,7 @@ def get_analysis_df(analysis):
     qs = SampleAnnotation.objects.filter(series_annotation__tag__in=tags)
     if analysis.specie:
         qs = qs.filter(series_annotation__series__specie=analysis.specie)
-    df = qs.to_dataframe(COLUMNS.keys()).rename(columns=COLUMNS)
+    df = qs.to_dataframe(list(COLUMNS.keys())).rename(columns=COLUMNS)
 
     # Make tag columns
     df.tag_name = df.tag_name.str.lower()
