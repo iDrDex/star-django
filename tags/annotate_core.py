@@ -204,6 +204,9 @@ def _cohens_kappa(annos1, annos2):
     assert set(s.sample_id for s in annos1) == set(s.sample_id for s in annos2)
 
     categories = ldistinct(sv.annotation for sv in chain(annos1, annos2))
+    # If there is only one label then it can't be measured
+    if len(categories) == 1:
+        return float('nan')
     category_index = {c: i for i, c in enumerate(categories)}
 
     table = np.zeros((len(categories), len(categories)))
@@ -216,8 +219,15 @@ def _cohens_kappa(annos1, annos2):
 
 
 def _fleiss_kappa(sample_sets):
+    # If there is only one set then it can't be measured
+    if len(sample_sets) == 1:
+        return float('nan')
+
     all_samples_annos = lcat(sample_sets)
     categories = ldistinct(sv.annotation for sv in all_samples_annos)
+    # If there is only one label then it can't be measured
+    if len(categories) == 1:
+        return float('nan')
     category_index = {c: i for i, c in enumerate(categories)}
 
     stats = defaultdict(lambda: [0] * len(categories))
