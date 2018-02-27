@@ -59,7 +59,7 @@ def redeem(request):
 
     stats, _ = UserStats.objects.get_or_create(pk=request.user.id)
     return {
-        'active': redis_client.get('redeem.samples:%d' % request.user.id),
+        'active': redis_client.get('redeem:%d' % request.user.id),
         'stats': stats,
         'last_payment': last_payment
     }
