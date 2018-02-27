@@ -158,11 +158,13 @@ def update_canonical(canonical_pk):
     # Disable if no raw sources
     canonical.is_active = bool(raw_annos)
 
-    best_cohens_kappa = max(a.best_kappa for a in raw_annos) if raw_annos else None
+    kappas = [a.best_kappa for a in raw_annos if a.best_kappa]
+    best_cohens_kappa = max(kappas) if kappas else None
 
     # Update canonical sample annotations
     source = first(a for a in raw_annos if a.agrees_with_id) \
-        or first(a for a in raw_annos if a.best_kappa == best_cohens_kappa and a.best_kappa > 0) \
+        or first(a for a in raw_annos if a.best_kappa == best_cohens_kappa
+            and a.best_kappa is not None and a.best_kappa > 0) \
         or first(raw_annos)
     if source and not is_samples_concordant(canonical, source):
         canonical.sample_annotations.all().delete()
@@ -222,4 +224,4 @@ def _fleiss_kappa(sample_sets):
     for sv in all_samples_annos:
         stats[sv.sample_id][category_index[sv.annotation]] += 1
 
-    return fleiss_kappa(stats.values())
+    return fleiss_kappa(list(stats.values()))

@@ -12,7 +12,7 @@ from .conf import redis_client
 def dashboard(request):
     return {
         'stats': dict(StatisticCache.objects.values_list('slug', 'count')),
-        'graph': redis_client.get('core.graph'),
+        'graph': redis_client.get('core.graph').decode(),
     }
 
 
