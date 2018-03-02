@@ -7,7 +7,7 @@ from fabric.colors import green, red
 __all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
            'shell', 'ssh', 'config',
            'restart', 'manage', 'install_requirements', 'install_crontab', 'migrate',
-           'pull_db', 'backup_db', 'install',
+           'pull_db', 'backup_db', 'install', 'install_web',
            'conf_nginx', 'offline', 'online', 'docs')
 
 
@@ -252,19 +252,7 @@ def install():
     with activate():
         run('./manage.py migrate')
 
-    print(green('Setting up Django server...'))
-    sudo('apt install --yes uwsgi-emperor uwsgi-plugin-python')
-    run('touch uwsgi-reload')
-    files.upload_template('stuff/uwsgi-web.ini', '/etc/uwsgi-emperor/vassals/stargeo.ini',
-        use_sudo=True, backup=False)
-    sudo('service uwsgi-emperor reload')
-
-    print(green('Configure nginx...'))
-    sudo('apt install --yes nginx')
-    sudo('rm /etc/nginx/sites-enabled/default', quiet=True)
-    files.upload_template('stuff/nginx.conf', '/etc/nginx/sites-enabled/stargeo.conf',
-        use_sudo=True, backup=False)
-    sudo('service nginx reload')
+    execute(install_web)
 
     print(green('Configure celery...'))
     sudo('apt install --yes supervisor')
@@ -277,6 +265,21 @@ def install():
     manage('update_ontologies')
 
     execute(deploy)
+
+
+def install_web():
+    print(green('Setting up Django server...'))
+    # sudo('apt install --yes supervisor')
+    files.upload_template('stuff/app-supervisor.conf', '/etc/supervisor/conf.d/stargeo.conf',
+        use_sudo=True, backup=False)
+    sudo('sudo supervisorctl reread')
+
+    print(green('Configure nginx...'))
+    # sudo('apt install --yes nginx')
+    sudo('rm /etc/nginx/sites-enabled/default', quiet=True)
+    files.upload_template('stuff/nginx.conf', '/etc/nginx/sites-enabled/stargeo.conf',
+        use_sudo=True, backup=False)
+    sudo('service nginx reload')
 
 
 def install_node():
