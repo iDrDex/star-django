@@ -14,3 +14,4 @@ frontend/dist
 frontend/npm-debug.log
 .ropeproject
 *bundle.js
+public
