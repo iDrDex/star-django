@@ -23,8 +23,12 @@ def restart():
     print(green('Restarting celery...'))
     sudo('supervisorctl restart celery')
 
-    print(green('Reloading uWSGI...'))
-    run('touch uwsgi-reload')
+    restart_app()
+
+
+def restart_app():
+    print(green('Gracefully reloading stargeo gunicorn...'))
+    run('kill -HUP `cat /tmp/stargeo-gunicorn.pid`')
 
 
 def collect_static():
@@ -111,8 +115,7 @@ def deploy_fast():
     run('git pull')
 
     # Not restarting celery, make `fab restart` if you do want that
-    print(green('Reloading uWSGI...'))
-    run('touch uwsgi-reload')
+    restart_app()
 
 
 def rsync():
@@ -139,8 +142,7 @@ def dirty_fast():
     execute(rsync)
 
     # Not restarting celery, make `fab restart` if you do want that
-    print(green('Reloading uWSGI...'))
-    run('touch uwsgi-reload')
+    restart_app()
 
 
 import os.path
