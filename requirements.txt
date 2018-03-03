@@ -24,7 +24,7 @@ pandas==0.22
 termcolor==1.1.0
 numpy==1.14.0
 numexpr==2.6.2  # There is an issue with newer version
-scipy==0.16.0
+scipy==0.19.0
 statsmodels==0.8.0
 django_pandas==0.4.5
 easydict==1.7
