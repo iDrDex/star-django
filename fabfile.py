@@ -269,17 +269,19 @@ def install():
 
 def install_web():
     print(green('Setting up Django server...'))
-    # sudo('apt install --yes supervisor')
+    sudo('apt install --yes supervisor')
     files.upload_template('stuff/app-supervisor.conf', '/etc/supervisor/conf.d/stargeo.conf',
         use_sudo=True, backup=False)
     sudo('sudo supervisorctl reread')
 
     print(green('Configure nginx...'))
-    # sudo('apt install --yes nginx')
+    sudo('apt install --yes nginx')
     sudo('rm /etc/nginx/sites-enabled/default', quiet=True)
     files.upload_template('stuff/nginx.conf', '/etc/nginx/sites-enabled/stargeo.conf',
         use_sudo=True, backup=False)
     sudo('service nginx reload')
+
+    # TODO: certbot
 
 
 def install_node():
