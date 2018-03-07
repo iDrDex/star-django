@@ -525,7 +525,7 @@ def peek_platform(filename):
     """
     with tqdmio(desc=filename) as pbar:
         with open_ftp_file(filename) as f:
-            fd = gzip.open(pbar.wrap(f), mode='rt', encoding='utf-8')
+            fd = gzip.open(pbar.wrap(f), mode='rt', encoding='latin-1')
             return extract_platform_table(fd)
 
 
@@ -585,7 +585,7 @@ def extract_platform_table(fd):
 ###
 
 def decompress(content):
-    return gzip.open(io.BytesIO(content), mode='rt', encoding='utf-8').read()
+    return gzip.open(io.BytesIO(content), mode='rt', encoding='latin-1').read()
 
 
 def dump_error(name, files):
