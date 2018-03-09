@@ -523,7 +523,7 @@ def peek_platform(filename):
     """
     Peek into gzipped platform file over ftp.
     """
-    with tqdmio(desc=filename) as pbar:
+    with tqdmio(desc=filename, file=sys.stdout) as pbar:
         with open_ftp_file(filename) as f:
             fd = gzip.open(pbar.wrap(f), mode='rt', encoding='latin-1')
             return extract_platform_table(fd)
