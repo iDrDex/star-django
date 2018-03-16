@@ -296,6 +296,7 @@ def mget(keys):
     return lcat(redis_client.mget(chunk) for chunk in chunks(10000, keys))
 
 
+@log_errors(lambda msg: cprint(msg, 'red'), stack=False)
 @retry(50, errors=requests.HTTPError, timeout=60)
 def _mygene_fetch(queries, scopes, specie):
     cprint('> Going to query %d genes in %s...' % (len(queries), scopes), 'cyan')
