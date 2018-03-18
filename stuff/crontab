@@ -7,7 +7,7 @@ MAILTO={EMAIL}
 15 1   * * 0   cd /home/ubuntu/app && ../venv/bin/python manage.py refresh_data >> ../logs/refresh_data.log
 # Remove old files to clean cache and update to new refMrna dbs, then fill probes
 0  1   * * 1   cd /home/ubuntu/app && rm -rf _files
-15 1   * * 1   cd /home/ubuntu/app && ../venv/bin/python manage.py fill_probes --pain >> ../logs/fill_probes.log
+15 1   * * 1   cd /home/ubuntu/app && ../venv/bin/python manage.py fill_probes --plain >> ../logs/fill_probes.log
 15 1   * * 2-6 cd /home/ubuntu/app && ../venv/bin/python manage.py fill_probes --redo=100 --plain >> ../logs/fill_probes.log
 # Update ontologies from http://bioportal.bioontology.org/ API
 15 */8   * * 2-6 cd /home/ubuntu/app && ../venv/bin/python manage.py update_ontologies
