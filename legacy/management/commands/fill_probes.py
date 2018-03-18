@@ -52,7 +52,7 @@ class Command(BaseCommand):
         parser.add_argument('--id', type=int, help='Fill platform with this id')
         parser.add_argument('--recheck', action='store_true', help='Try to refill failed platforms')
         parser.add_argument('--redo', type=int, help='Refill the oldest REDO platforms')
-        # parser.add_argument('-n', '--threads', type=int)
+        parser.add_argument('--plain', action='store_true', help='No colors nor progress bars')
 
     def handle(self, **options):
         # Set up debugger
@@ -64,6 +64,25 @@ class Command(BaseCommand):
                 print()
                 ipdb.pm()
             sys.excepthook = info
+
+        if options['plain']:
+            global cprint, tqdmio
+
+            def cprint(message, *args, **kwargs):
+                print(message)
+
+            class tqdmio:
+                def __init__(self, desc=None, **kwargs):
+                    print(desc)
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, typ, exc, trace):
+                    pass
+
+                def wrap(self, f):
+                    return f
 
         if options['id']:
             fill_probes(options['id'])
