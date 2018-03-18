@@ -326,7 +326,7 @@ def peek_matrix(host, filename):
 
     ftp_conn.voidcmd('TYPE I')
     bin_conn = ftp_conn.transfercmd("RETR %s" % filename)
-    fd = gzip.open(bin_conn.makefile('rb'), mode='rt', encoding='utf-8')
+    fd = gzip.open(bin_conn.makefile('rb'), mode='rt', encoding='latin-1')
 
     try:
         lines = []
