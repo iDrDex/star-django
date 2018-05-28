@@ -20,8 +20,9 @@ from django.db.models import Q
 
 from funcy import re_find, re_test, re_iter, group_values, walk_values, \
     decorator, contextmanager, cached_property, retry, suppress, log_errors, print_durations, \
-    take, cat, lcat, keep, lkeep, remove, lremove, lpluck, ldistinct, chunks
+    take, cat, lcat, keep, lkeep, remove, lremove, lpluck, ldistinct, chunks, ignore
 from cacheops import file_cache
+from tqdm import tqdm
 from termcolor import cprint
 from ftptool import FTPHost
 import pandas as pd
@@ -66,23 +67,26 @@ class Command(BaseCommand):
             sys.excepthook = info
 
         if options['plain']:
-            global cprint, tqdmio
+            global cprint, tqdm, tqdmio
 
             def cprint(message, *args, **kwargs):
                 print(message)
 
+            def tqdm(it):
+                return it
+
             class tqdmio:
-                def __init__(self, desc=None, **kwargs):
+                def __init__(self, fd=None, desc=None, **kwargs):
                     print(desc)
+
+                def wrap(self, f):
+                    return f
 
                 def __enter__(self):
                     return self
 
                 def __exit__(self, typ, exc, trace):
                     pass
-
-                def wrap(self, f):
-                    return f
 
         if options['id']:
             fill_probes(options['id'])
@@ -315,9 +319,22 @@ def mget(keys):
     return lcat(redis_client.mget(chunk) for chunk in chunks(10000, keys))
 
 
-@log_errors(lambda msg: cprint(msg, 'red'), stack=False)
-@retry(50, errors=requests.HTTPError, timeout=60)
 def _mygene_fetch(queries, scopes, specie):
+    # To retry or ignore only one chunk on error
+    @ignore(requests.HTTPError, default=[])
+    @log_errors(lambda msg: cprint(msg, 'red'), stack=False)
+    @retry(10, errors=requests.HTTPError, timeout=lambda n: 5 * 1.4**n)
+    @log_errors(lambda msg: cprint(msg, 'yellow'), stack=False)
+    def querymany(qs):
+        try:
+            return mg.querymany(qs, scopes=scopes, fields=['entrezgene', 'symbol'],
+                                species=specie, email='suor.web@gmail.com', verbose=False)
+        except requests.HTTPError as e:
+            # Do not retry on Bad Request
+            if e.response.status_code == 400:
+                return []
+            raise
+
     cprint('> Going to query %d genes in %s...' % (len(queries), scopes), 'cyan')
     cprint('>     sample queries: %s' % ', '.join(take(8, queries)), 'cyan')
     # Read cache
@@ -331,10 +348,9 @@ def _mygene_fetch(queries, scopes, specie):
         print(('Got %d from cache, %d queries left' % (len(res), len(queries))))
 
     if queries:
-        fields = ['entrezgene', 'symbol']
         mg = mygene.MyGeneInfo()
-        data = mg.querymany(queries, scopes=scopes, fields=fields,
-                            species=specie, email='suor.web@gmail.com')
+        # Looks like sorting groups bad queries
+        data = cat(querymany(qs) for qs in chunks(500, tqdm(sorted(queries), leave=False)))
         new = {str(item['query']): (item['entrezgene'], item['symbol'])
                for item in data
                if not item.get('notfound') and 'entrezgene' in item and 'symbol' in item}
@@ -543,22 +559,33 @@ def peek_platform(filename):
     """
     Peek into gzipped platform file over ftp.
     """
-    with tqdmio(desc=filename, file=sys.stdout) as pbar:
-        with open_ftp_file(filename) as f:
-            fd = gzip.open(pbar.wrap(f), mode='rt', encoding='latin-1')
-            return extract_platform_table(fd)
+    with tqdmio(desc=filename, file=sys.stdout) as pbar, open_ftp_file(filename) as f:
+        fd = gzip.open(pbar.wrap(f), mode='rt', encoding='latin-1')
+        return extract_platform_table(fd)
 
 
-from tqdm import tqdm
 
 
-class tqdmio(tqdm):  # noqa
-    def __init__(self, *args, **kwargs):
-        kwargs.update({'unit': 'B', 'unit_scale': True, 'unit_divisor': 1024})
-        return super().__init__(*args, **kwargs)
+class tqdmio(tqdm):
+    def __init__(self, fd=None, close=False, **kwargs):
+        if close and fd is None:
+            raise ValueError("Can only use close=True when passing file handle")
+
+        self._fd = fd
+        self._close = close
+        kwargs = dict({'unit': 'B', 'unit_scale': True, 'unit_divisor': 1024}, **kwargs)
+        super().__init__(**kwargs)
 
     def wrap(self, fd):
         return IOCounter(fd, self.update)
+
+    def __enter__(self):
+        return self.wrap(self._fd) if self._fd else self
+
+    def __exit__(self, *exc):
+        if self._close:
+            self._fd.close()
+        return super().__exit__(*exc)
 
 
 class IOCounter:
