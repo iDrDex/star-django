@@ -72,7 +72,7 @@ class Command(BaseCommand):
             def cprint(message, *args, **kwargs):
                 print(message)
 
-            def tqdm(it):
+            def tqdm(it, *kwargs):
                 return it
 
             class tqdmio:
