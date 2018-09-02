@@ -75,7 +75,7 @@ class Command(BaseCommand):
             def tqdm(it, **kwargs):
                 return it
 
-            class tqdmio:
+            class tqdmio:  # noqa
                 def __init__(self, fd=None, desc=None, **kwargs):
                     print(desc)
 
@@ -566,7 +566,7 @@ def peek_platform(filename):
 
 
 
-class tqdmio(tqdm):
+class tqdmio(tqdm):  # noqa
     def __init__(self, fd=None, close=False, **kwargs):
         if close and fd is None:
             raise ValueError("Can only use close=True when passing file handle")
