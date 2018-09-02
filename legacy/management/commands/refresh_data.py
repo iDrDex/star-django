@@ -119,7 +119,11 @@ def load_data(header):
         print(colored('%s updated %s -> %s' % (gse_name, old_last_update, new_last_update), 'green'))
 
     # Load samples
-    samples_df = get_df_from_lines(line_groups['Sample'], 'Sample')
+    try:
+        samples_df = get_df_from_lines(line_groups['Sample'], 'Sample')
+    except pd.errors.ParserError as e:
+        cprint('Failed to parse sample lines: %s' % e, 'red')
+        return
     samples_df['gsm_name'] = samples_df.sample_geo_accession
     samples_df = samples_df.set_index('gsm_name')
 
