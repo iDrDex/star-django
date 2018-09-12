@@ -7,7 +7,8 @@ from fabric.colors import green, red
 __all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
            'shell', 'ssh', 'config',
            'restart', 'manage', 'install_requirements', 'install_crontab', 'migrate',
-           'pull_db', 'backup_db', 'install', 'install_web',
+           'pull_db', 'backup_db',
+           'install', 'install_python', 'install_r', 'install_web', 'install_node',
            'conf_nginx', 'offline', 'online', 'docs')
 
 
@@ -16,7 +17,6 @@ env.cwd = '/home/ubuntu/app'
 env.use_ssh_config = True
 env.hosts = ['stargeo']
 activate = lambda: prefix('source ~/venv/bin/activate')
-node = lambda: prefix('source ~/.nvm/nvm.sh')
 
 
 def restart():
@@ -36,7 +36,7 @@ def collect_static():
 
 
 def build_frontend():
-    with cd('frontend'), node():
+    with cd('frontend'):
         run('npm install')
         run('npm run build')
         run('cp -r dist ../public')
@@ -227,19 +227,62 @@ def install():
 
     print(green('Installing packages...'))
     sudo('apt update')
-    sudo('apt install --yes python2.7 python-pip virtualenv')
-    sudo('apt install --yes --no-install-recommends r-base-core r-base-dev')
     sudo('apt install --yes redis-server')
+
+    execute(install_python)
+    execute(install_r)
 
     print(green('Configuring .env...'))
     if not files.exists('.env'):
         from django.utils.crypto import get_random_string
         files.upload_template('stuff/.env.prod', '.env', {'SECRET_KEY': get_random_string(32)},
             use_jinja=True, keep_trailing_newline=True)
+    return
 
     # Set up hosts
     files.append('/etc/hosts', ['127.0.0.1 db', '127.0.0.1 redis'], use_sudo=True, shell=True)
 
+    execute(install_postgres)
+    execute(install_web)
+
+    print(green('Configure celery...'))
+    sudo('apt install --yes supervisor')
+    files.upload_template('stuff/celery.conf', '/etc/supervisor/conf.d/celery.conf',
+        use_sudo=True, backup=False)
+    sudo('service supervisor reload')
+
+    execute(deploy)
+
+    # fill stats and ontologies
+    # FIXME: won't work before keys are set in .env
+    manage('update_statistic_cache')
+    manage('update_ontologies')
+
+
+def install_python():
+    print(green('Installing Python 3.6...'))
+    sudo('add-apt-repository --yes ppa:deadsnakes/ppa')
+    sudo('apt-get update')
+    sudo('apt-get install --yes python3.6 python3.6-dev python3.6-venv')
+
+    print(green('Creating venv...'))
+    run('curl https://bootstrap.pypa.io/get-pip.py | sudo python3.6')
+    run('python3.6 -m venv /home/ubuntu/venv')
+
+
+def install_r():
+    print(green('Installing R...'))
+    sudo('apt-key adv --keyserver keyserver.ubuntu.com'
+         ' --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9')
+    sudo('add-apt-repository'
+         " 'deb [arch=amd64,i386] https://cran.rstudio.com/bin/linux/ubuntu xenial/'")
+    sudo('apt-get update')
+    sudo('apt install --yes --no-install-recommends r-base-core r-base-dev')
+
+    run('''echo 'install.packages("meta")' | sudo R --save''')
+
+
+def install_postgres():
     print(green('Setting up PostgreSQL...'))
     sudo('apt install --yes postgresql-9.5 libpq-dev')
     files.sed('/etc/postgresql/9.5/main/pg_hba.conf',
@@ -254,20 +297,6 @@ def install():
     with activate():
         run('./manage.py migrate')
 
-    execute(install_web)
-
-    print(green('Configure celery...'))
-    sudo('apt install --yes supervisor')
-    files.upload_template('stuff/celery.conf', '/etc/supervisor/conf.d/celery.conf',
-        use_sudo=True, backup=False)
-    sudo('service supervisor reload')
-
-    # fill stats and ontologies
-    manage('update_statistic_cache')
-    manage('update_ontologies')
-
-    execute(deploy)
-
 
 def install_web():
     print(green('Setting up Django server...'))
@@ -279,9 +308,7 @@ def install_web():
     print(green('Configure nginx...'))
     sudo('apt install --yes nginx')
     sudo('rm /etc/nginx/sites-enabled/default', quiet=True)
-    files.upload_template('stuff/nginx.conf', '/etc/nginx/sites-enabled/stargeo.conf',
-        use_sudo=True, backup=False)
-    sudo('service nginx reload')
+    execute(conf_nginx)
 
     # TODO: certbot
 
@@ -294,7 +321,8 @@ def install_node():
 
 
 def conf_nginx():
-    sudo('cp stuff/nginx.conf /etc/nginx/sites-enabled/stargeo.conf')
+    files.upload_template('stuff/nginx.conf', '/etc/nginx/sites-enabled/stargeo.conf',
+        use_sudo=True, backup=False)
     sudo('service nginx reload')
 
 

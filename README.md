@@ -50,7 +50,7 @@
 
     ```bash
     fab install
-    fab config
+    fab config  # Fill in all the keys here
     fab restart
     ```
 
@@ -64,11 +64,6 @@
     fab manage:createsuperuser
     ```
 
-7. Prefill ontologies:
-
-    ```bash
-    fab manage:update_ontologies
-    ```
 
 ## Making a working copy
 
