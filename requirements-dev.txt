@@ -1,8 +1,9 @@
 -r requirements.txt
 django-debug-toolbar==1.9.1 # Needs updating with Django
 sqlparse
-flake8>=2.4.0
+flake8>=3.5.0
 flake8-print
+flake8-per-file-ignores
 pep8-naming
 pytest==2.6.4
 pytest-django==3.1.2

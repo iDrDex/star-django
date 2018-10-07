@@ -1,7 +1,8 @@
 import os
 import re
 import gzip
-import urllib.request, urllib.error
+import urllib.request
+import urllib.error
 import shutil
 
 from easydict import EasyDict
