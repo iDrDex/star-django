@@ -1,24 +1,23 @@
-# encoding: utf-8
-from fabric.api import *
+from fabric.api import task, execute, env, local, run, sudo, cd, prefix, open_shell, quiet, hide
+# from fabric.api import *
 from fabric.contrib import django, files
 from fabric.colors import green, red
 
 
-__all__ = ('deploy', 'deploy_fast', 'rsync', 'dirty_deploy', 'dirty_fast',
-           'shell', 'ssh', 'config',
-           'restart', 'manage', 'install_requirements', 'install_crontab', 'migrate',
-           'pull_db', 'backup_db',
-           'install', 'install_python', 'install_r', 'install_web', 'install_node',
-           'conf_nginx', 'offline', 'online', 'docs')
+APP_NAME = 'stargeo'
+VIRTUALENV_PATH = '~/venv'
+PROJECT_PATH = '/home/ubuntu/app'
+LOG_PATH = '/home/ubuntu/logs'
 
 
 django.project('stargeo')
-env.cwd = '/home/ubuntu/app'
+env.cwd = PROJECT_PATH
 env.use_ssh_config = True
 env.hosts = ['stargeo']
-activate = lambda: prefix('source ~/venv/bin/activate')
+activate = lambda: prefix('source %s/bin/activate' % VIRTUALENV_PATH)
 
 
+@task
 def restart():
     print(green('Restarting celery...'))
     sudo('supervisorctl restart celery')
@@ -28,24 +27,30 @@ def restart():
 
 def restart_app():
     print(green('Gracefully reloading stargeo gunicorn...'))
-    run('kill -HUP `cat /tmp/stargeo-gunicorn.pid`')
+    run('kill -HUP `cat /tmp/%s-gunicorn.pid`' % APP_NAME)
 
 
 def collect_static():
+    print(green('Collecting static files...'))
     execute(manage, 'collectstatic --noinput')
 
 
+@task
 def build_frontend():
+    print(green('Building frontend...'))
     with cd('frontend'):
         run('npm install')
         run('npm run build')
         run('cp -r dist ../public')
 
 
+@task
 def migrate():
+    print(green('Running migrations...'))
     execute(manage, 'migrate')
 
 
+@task
 def manage(cmd):
     with activate():
         run('./manage.py %s' % cmd)
@@ -55,10 +60,12 @@ def smart_shell(command=''):
     env_commands = "cd '%s'; %s" % (env.cwd, " && ".join(env.command_prefixes))
     open_shell('%s; %s' % (env_commands, command))
 
+@task
 def shell():
     with activate():
         smart_shell('./manage.py shell')
 
+@task
 def ssh(command=''):
     with activate():
         if command:
@@ -66,83 +73,78 @@ def ssh(command=''):
         else:
             smart_shell()
 
+@task
 def config():
     local("vim sftp://%s/%s" % (env.host_string, 'app/.env'))
 
 
+@task
 def install_requirements():
+    print(green('Installing required Python libraries...'))
     with activate():
         run('pip install --exists-action=s -r requirements.txt')
 
 
+@task
 def install_crontab():
+    print(green('Installing new crontab...'))
     app_env = honcho.environ.parse(run('grep ADMIN= .env'))
     name, email = app_env['ADMIN'].split(':')
     run('sed s/{EMAIL}/%s/ stuff/crontab | crontab -' % email)
 
 
+@task
 def deploy():
-    print(green('Fetching git commits...'))
-    run('git fetch --progress')
+    execute(sync)
+    execute(install_requirements)
+    execute(migrate)
+    execute(collect_static)
+    execute(build_frontend)
+    execute(install_crontab)
+    execute(restart)
 
-    print(green('Updating the working copy...'))
-    result = run('git merge origin/master', warn_only=True)
+
+@task
+def deploy_fast():
+    execute(sync)
+    restart_app()  # Not restarting celery, make `fab restart` if you do want that
+
+
+@task
+def dirty_deploy():
+    execute(rsync)
+    execute(install_requirements)
+    execute(migrate)
+    execute(collect_static)
+    execute(restart)
+
+
+@task
+def dirty_fast():
+    execute(rsync)
+    restart_app()  # Not restarting celery, make `fab restart` if you do want that
+
+
+@task
+def sync():
+    print(green('Fetching git commits and merging...'))
+    result = run('git fetch --progress && git merge origin/master', warn_only=True)
 
     if result.return_code != 0:
         print(red('Git merge returned error, exiting'))
         raise SystemExit()
 
-    print(green('Installing required Python libraries...'))
-    execute(install_requirements)
-
-    print(green('Running migrations...'))
-    execute(migrate)
-
-    print(green('Collecting static files...'))
-    execute(collect_static)
-
-    print(green('Building frontend...'))
-    execute(build_frontend)
-
-    print(green('Installing new crontab...'))
-    execute(install_crontab)
-
-    execute(restart)
-
-
-def deploy_fast():
-    print(green('Updating working copy...'))
-    run('git pull')
-
-    # Not restarting celery, make `fab restart` if you do want that
-    restart_app()
-
-
+@task
 def rsync():
+    """
+    An alternative way to send code.
+
+    This sends current directory in its possibly dirty state.
+    Use `git pull` or `git fetch` for regular deployments.
+    """
     print(green('Uploading files...'))
-    local("rsync -avzL --progress --filter=':- .gitignore' -C . stargeo:/home/ubuntu/app")
-
-
-def dirty_deploy():
-    execute(rsync)
-
-    print(green('Installing required Python libraries...'))
-    execute(install_requirements)
-
-    print(green('Running migrations...'))
-    execute(migrate)
-
-    print(green('Collecting static files...'))
-    execute(collect_static)
-
-    execute(restart)
-
-
-def dirty_fast():
-    execute(rsync)
-
-    # Not restarting celery, make `fab restart` if you do want that
-    restart_app()
+    local("rsync -avzL --progress --filter=':- .gitignore' -C . %s:%s"
+          % (env.host_string, PROJECT_PATH))
 
 
 import os.path
@@ -152,6 +154,7 @@ import dj_database_url
 DUMP_COMMAND = 'PGPASSWORD=%(PASSWORD)s pg_dump -vC -Upostgres -h %(HOST)s %(NAME)s ' \
                '| gzip --fast --rsyncable > stargeo.sql.gz'
 
+@task
 def pull_db(dump='backup'):
     app_env = honcho.environ.parse(open('.env').read())
     remote_db = dj_database_url.parse(app_env['REAL_DATABASE_URL'])
@@ -194,7 +197,9 @@ def pull_db(dump='backup'):
     local('gzip -cd stargeo.sql.gz | psql -Upostgres -f -')
 
 
+@task
 def backup_db():
+    """This is designed to be run locally on backup target"""
     app_env = honcho.environ.parse(open('.env').read())
     db = dj_database_url.parse(app_env['DATABASE_URL'])
 
@@ -213,6 +218,7 @@ def backup_db():
     #   gzip -cd strageo.sql.gz | psql -Upostgres -h db -f -
 
 
+@task
 def install():
     """
     First deployment script, works with Amazon EC2 Ubuntu 16.04 image.
@@ -236,8 +242,7 @@ def install():
     if not files.exists('.env'):
         from django.utils.crypto import get_random_string
         files.upload_template('stuff/.env.prod', '.env', {'SECRET_KEY': get_random_string(32)},
-            use_jinja=True, keep_trailing_newline=True)
-    return
+                              use_jinja=True, keep_trailing_newline=True)
 
     # Set up hosts
     files.append('/etc/hosts', ['127.0.0.1 db', '127.0.0.1 redis'], use_sudo=True, shell=True)
@@ -247,8 +252,8 @@ def install():
 
     print(green('Configure celery...'))
     sudo('apt install --yes supervisor')
-    files.upload_template('stuff/celery.conf', '/etc/supervisor/conf.d/celery.conf',
-        use_sudo=True, backup=False)
+    upload_conf('stuff/celery.conf', '/etc/supervisor/conf.d/%s-celery.conf' % APP_NAME,
+                use_sudo=True, backup=False)
     sudo('service supervisor reload')
 
     execute(deploy)
@@ -259,6 +264,7 @@ def install():
     manage('update_ontologies')
 
 
+@task
 def install_python():
     print(green('Installing Python 3.6...'))
     sudo('add-apt-repository --yes ppa:deadsnakes/ppa')
@@ -270,6 +276,7 @@ def install_python():
     run('python3.6 -m venv /home/ubuntu/venv')
 
 
+@task
 def install_r():
     print(green('Installing R...'))
     sudo('apt-key adv --keyserver keyserver.ubuntu.com'
@@ -282,12 +289,13 @@ def install_r():
     run('''echo 'install.packages("meta")' | sudo R --save''')
 
 
+@task
 def install_postgres():
     print(green('Setting up PostgreSQL...'))
     sudo('apt install --yes postgresql-9.5 libpq-dev')
     files.sed('/etc/postgresql/9.5/main/pg_hba.conf',
-        '^(local.*|host\s+all\s+all\s+127\.0\.0\.1/32.*)(peer|md5)$', '\\1trust',
-        use_sudo=True, shell=True)
+              '^(local.*|host\s+all\s+all\s+127\.0\.0\.1/32.*)(peer|md5)$', '\\1trust',
+              use_sudo=True, shell=True)
     sudo('service postgresql reload')
     # TODO: configure postgres
 
@@ -298,12 +306,12 @@ def install_postgres():
         run('./manage.py migrate')
 
 
+@task
 def install_web():
     print(green('Setting up Django server...'))
     sudo('apt install --yes supervisor')
-    files.upload_template('stuff/app-supervisor.conf', '/etc/supervisor/conf.d/stargeo.conf',
-        use_sudo=True, backup=False)
-    sudo('sudo supervisorctl reread')
+    upload_conf('stuff/app-supervisor.conf', '/etc/supervisor/conf.d/%s.conf' % APP_NAME)
+    sudo('sudo supervisorctl reload')
 
     print(green('Configure nginx...'))
     sudo('apt install --yes nginx')
@@ -313,6 +321,7 @@ def install_web():
     # TODO: certbot
 
 
+@task
 def install_node():
     # draft implementation
     print(green('Installing node.js...'))
@@ -320,18 +329,29 @@ def install_node():
     sudo('apt install --yes nodejs')
 
 
+@task
 def conf_nginx():
-    files.upload_template('stuff/nginx.conf', '/etc/nginx/sites-enabled/stargeo.conf',
-        use_sudo=True, backup=False)
-    sudo('service nginx reload')
+    upload_conf('stuff/nginx.conf', '/etc/nginx/sites-enabled/%s.conf' % APP_NAME)
+    sudo('service nginx reload')  # `nginx -s reload` for any nginx accessible by path
 
-
+@task
 def offline():
     run('touch offline')
 
+@task
 def online():
     run('rm offline')
 
 
+@task
 def docs():
     local('jupyter nbconvert stuff/api.ipynb --template basic --output-dir templates/docs')
+
+
+# Utilities
+
+from funcy import select_keys
+
+def upload_conf(src_file, dst_file):
+    files.upload_template(src_file, dst_file, context=select_keys(str.isupper, globals()),
+                          use_sudo=True, backup=False, use_jinja=True)
