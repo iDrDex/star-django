@@ -12,7 +12,7 @@ fabric3==1.13.1.post1
 funcy>=1.10,<2.0
 handy==0.7
 honcho==0.6.4
-Jinja2==2.10
+Jinja2==2.11.3
 psycopg2==2.7.3.2
 redis==2.10.6
 celery==3.1.17
