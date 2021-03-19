@@ -5,7 +5,7 @@ dj-database-url==0.4.2
 Django==1.11.10
 django-jinja==2.4.1
 django-jinja-bootstrap-form==4.0.3
-djangorestframework==3.5.3
+djangorestframework==3.11.2
 django-rest-swagger==2.1.1
 django-filter==1.1.0 # Needs updating with Django
 fabric3==1.13.1.post1
