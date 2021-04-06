@@ -33,7 +33,7 @@ easydict==1.7
 django-datatable-view-compat==0.8.2
 boto==2.38.0
 rpy2==2.9.2
-django-registration==2.0.4
+django-registration==3.1.2
 biopython==1.68
 mygene==3.0.0
 requests-oauthlib==0.8.0
