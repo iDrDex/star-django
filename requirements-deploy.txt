@@ -1,5 +1,5 @@
 dj-database-url==0.3.0
-Django==1.8.13
+Django==2.2.24
 Fabric3==1.13.1.post1
 honcho==0.6.4
 Jinja2==2.7.3
