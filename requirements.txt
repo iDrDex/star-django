@@ -22,7 +22,7 @@ ftptool==0.7.1
 django-cacheops==4.0.5
 pandas==0.22
 termcolor==1.1.0
-numpy==1.14.1
+numpy==1.22.0
 numexpr==2.6.2  # There is an issue with newer version
 scipy==1.0.0
 statsmodels==0.8.0
